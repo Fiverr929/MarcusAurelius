@@ -85,6 +85,23 @@ window.CafeAPI = (function () {
     return checkSection(payload.subject) || checkSection(payload.stage) || checkSection(payload.style);
   }
 
+  // Snapshot ModuleState without base64 image data — images are already captured in usedImages
+  function snapshotModuleState() {
+    var ms = window.ModuleState;
+    if (!ms) return {};
+    var snap = {};
+    ['subject', 'stage', 'style'].forEach(function (key) {
+      if (!ms[key]) { snap[key] = null; return; }
+      snap[key] = {
+        selected: ms[key].selected,
+        slots: ms[key].slots.map(function (s) {
+          return { on: s.on, html: (s.html || '').replace(/src="data:[^"]*"/g, 'src=""') };
+        })
+      };
+    });
+    return snap;
+  }
+
   // ── Google Vertex AI image generation ─────────────────────────────────────
 
   function dataUrlToBase64(dataUrl) {
@@ -101,7 +118,8 @@ window.CafeAPI = (function () {
     var arMap = { '1:1': '1:1', '16:9': '16:9', '9:16': '9:16', '4:3': '4:3', '3:4': '3:4' };
     var ar = arMap[aspectRatio] || '1:1';
 
-    function runOne() {
+    function runOne(attempt) {
+      attempt = attempt || 0;
       var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + modelId + ':generateContent?key=' + apiKey;
 
       var parts = [{ text: prompt }];
@@ -137,7 +155,15 @@ window.CafeAPI = (function () {
       })
         .then(function (res) {
           return res.json().then(function (body) {
-            if (!res.ok) throw new Error('Google generate failed ' + res.status + ': ' + JSON.stringify(body));
+            if (!res.ok) {
+              if (res.status === 429 && attempt < 2) {
+                var wait = (attempt + 1) * 20000;
+                console.warn('[CafeAPI] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
+                return new Promise(function (resolve) { setTimeout(resolve, wait); })
+                  .then(function () { return runOne(attempt + 1); });
+              }
+              throw new Error('Google generate failed ' + res.status + ': ' + JSON.stringify(body));
+            }
             return body;
           });
         });
@@ -147,7 +173,7 @@ window.CafeAPI = (function () {
       var results = [];
       function next(i) {
         if (i >= n) return Promise.resolve(results);
-        return runOne().then(function (r) {
+        return runOne(0).then(function (r) {
           results.push(r);
           return next(i + 1);
         });
@@ -177,7 +203,6 @@ window.CafeAPI = (function () {
 
   // ── Main generate ─────────────────────────────────────────────────────────
 
-  // TODO: remove request limit once testing is done
   var REQUEST_LIMIT = 3;
   var _activeRequests = 0;
 
@@ -197,7 +222,7 @@ window.CafeAPI = (function () {
     }
 
     var payload = window.PromptBuilder.collect();
-    var moduleSnapshot = JSON.parse(JSON.stringify(window.ModuleState));
+    var moduleSnapshot = snapshotModuleState();
     var usedImages = collectUsedImages(payload);
     var ratio = payload.settings.aspectRatio || '1:1';
     var dims = dimsFromRatio(ratio);
@@ -243,7 +268,6 @@ window.CafeAPI = (function () {
       : Promise.resolve({ prompt: rawPrompt, manifest: [], enhancerInput: null });
 
     enhancePromise.then(function (enhanced) {
-      if (genBtn) genBtn.classList.remove('cafe-loading');
       var t1 = Date.now();
       var finalPrompt = enhanced.prompt;
       var manifest = enhanced.manifest;
@@ -345,6 +369,7 @@ window.CafeAPI = (function () {
         })
         .then(function () {
           _activeRequests--;
+          if (_activeRequests === 0 && genBtn) genBtn.classList.remove('cafe-loading');
         });
     });
   }
