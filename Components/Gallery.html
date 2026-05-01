@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gallery</title>
+  <style>
+    /* ───────────────────────────────── RESET & BASE ── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Times New Roman', serif;
+      background: #c7c7c7;
+      color: #3a3a3a;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* ───────────────────────────── CONTROLS BAR ── */
+    #gallery-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #c7c7c7;
+      flex-shrink: 0;
+      height: 38px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      position: relative;
+      z-index: 100;
+    }
+
+    /* ─── SELECT button ── */
+    #btn-select {
+      font-family: 'Times New Roman', serif;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      height: 24px;
+      width: 66px;
+      border: none;
+      border-radius: 0;
+      background: #999997;
+      color: #c7c7c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+      outline: none;
+    }
+
+    #btn-select.active {
+      background: #ea5823;
+      color: #c7c7c7;
+    }
+
+    /* ─── 3-dot wrapper — slides in, pushes SELECT right ── */
+    #threedot-wrap {
+      position: relative;
+      width: 0;
+      overflow: hidden;
+      flex-shrink: 0;
+      transition: width 0.2s ease;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+
+    #threedot-wrap.visible {
+      width: 32px;
+      overflow: visible;
+    }
+
+    /* ─── Filter wrapper ── */
+    #filter-wrap {
+      position: relative;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ─── 3-dot button ── */
+    #btn-threedot {
+      font-family: 'Times New Roman', serif;
+      font-size: 13px;
+      color: #c7c7c7;
+      background: #999997;
+      border: none;
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      outline: none;
+      line-height: 1;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    #btn-threedot.active {
+      background: #ea5823;
+    }
+
+    #btn-threedot.btn-disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    #btn-threedot span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #c7c7c7;
+      flex-shrink: 0;
+    }
+
+    /* ─── Spacer ── */
+    .ctrl-spacer {
+      flex: 1;
+    }
+
+    /* ─── View toggles ── */
+    .view-toggles {
+      display: flex;
+      gap: 3px;
+    }
+
+    .btn-view {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      outline: none;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+      color: #999997;
+    }
+
+    .btn-view.active {
+      background: #5271ff;
+      color: #ea5823;
+    }
+
+    /* ─── Filter button ── */
+    #btn-filter {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px;
+      border: none;
+      border-radius: 0;
+      background: #999997;
+      transition: background 0.15s;
+      outline: none;
+      margin-left: 4px;
+      flex-shrink: 0;
+    }
+
+    #btn-filter svg {
+      display: block;
+    }
+
+    #btn-filter.active {
+      background: #ea5823;
+    }
+
+    #btn-filter.has-filter::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #ea5823;
+    }
+
+    /* ───────────────────────────── DROPDOWNS ── */
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 7px);
+      background: #999997;
+      border-radius: 0;
+      min-width: 176px;
+      overflow: hidden;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+      transform-origin: top left;
+      pointer-events: none;
+      transition: opacity 0.14s, transform 0.14s;
+    }
+
+    .dropdown.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    /* 3-dot dropdown */
+    #threedot-dropdown {
+      left: 0;
+    }
+
+    .ddrop-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      font-family: 'Times New Roman', serif;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c7c7c7;
+      transition: background 0.1s;
+    }
+
+    .ddrop-item:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .ddrop-item.danger {
+      color: #ea5823;
+      opacity: 1;
+    }
+
+    .ddrop-item.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .ddrop-divider {
+      height: 1px;
+      background: rgba(199, 199, 199, 0.2);
+      margin: 2px 0;
+    }
+
+
+    /* Filter dropdown */
+    #filter-dropdown {
+      right: 0;
+      left: auto;
+      min-width: 210px;
+    }
+
+    .filter-section {
+      padding: 8px 14px 6px;
+    }
+
+    .filter-label {
+      font-family: 'Times New Roman', serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #c7c7c7;
+      opacity: 0.55;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .filter-chip {
+      font-family: 'Times New Roman', serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 0;
+      border: 1px solid rgba(199, 199, 199, 0.35);
+      color: rgba(199, 199, 199, 0.7);
+      background: transparent;
+      transition: border-color 0.12s, color 0.12s;
+      outline: none;
+    }
+
+    .filter-chip.active {
+      border-color: #ea5823;
+      color: #ea5823;
+    }
+
+    .filter-chip:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    /* ───────────────────────────── GALLERY GRID ── */
+    #gallery-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 2px;
+    }
+
+    #gallery-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #gallery-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #gallery-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 0;
+    }
+
+    #gallery-grid {
+      display: grid;
+      gap: 2px;
+      grid-template-columns: repeat(2, 1fr);
+      align-items: start;
+    }
+
+    /* ── View modes ── */
+    [data-view="large"] #gallery-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    [data-view="medium"] #gallery-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    [data-view="small"] #gallery-grid {
+      grid-template-columns: repeat(6, 1fr);
+    }
+
+    /* ── Cells ── */
+    .gallery-cell {
+      position: relative;
+      overflow: hidden;
+      border-radius: 0;
+      transition: transform 0.1s;
+    }
+
+    .gallery-cell:active {
+      transform: scale(0.985);
+    }
+
+    /* Large view: native aspect ratio */
+    [data-view="large"] .gallery-cell .cell-inner {
+      width: 100%;
+      /* aspect ratio set inline per cell */
+    }
+
+    [data-view="large"] .gallery-cell[data-ratio="16:9"] .cell-inner {
+      aspect-ratio: 16/9;
+    }
+
+    [data-view="large"] .gallery-cell[data-ratio="4:3"] .cell-inner {
+      aspect-ratio: 4/3;
+    }
+
+    [data-view="large"] .gallery-cell[data-ratio="1:1"] .cell-inner {
+      aspect-ratio: 1/1;
+    }
+
+    [data-view="large"] .gallery-cell[data-ratio="9:16"] .cell-inner {
+      aspect-ratio: 9/16;
+    }
+
+    [data-view="large"] .gallery-cell[data-ratio="3:4"] .cell-inner {
+      aspect-ratio: 3/4;
+    }
+
+    /* Medium / Small: square */
+    [data-view="medium"] .gallery-cell .cell-inner,
+    [data-view="small"] .gallery-cell .cell-inner {
+      aspect-ratio: 1/1;
+    }
+
+    .cell-inner {
+      width: 100%;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: filter 0.15s;
+    }
+
+    /* ── Selected state ── */
+    .gallery-cell.selected .cell-inner {
+      outline: 2.5px solid #ea5823;
+      outline-offset: -2.5px;
+    }
+
+    [data-select="on"] .gallery-cell:not(.selected)::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(199, 199, 199, 0.45);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .cell-check {
+      display: none;
+    }
+
+    /* ───────────────────────────── HUD OVERLAY ── */
+    #hud {
+      position: fixed;
+      inset: 0;
+      background: #c7c7c7;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s;
+    }
+
+    #hud.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── HUD Top bar ── */
+    #hud-topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      height: 40px;
+      background: #999997;
+      flex-shrink: 0;
+    }
+
+    #hud-close {
+      font-family: 'Times New Roman', serif;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      color: #c7c7c7;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      padding: 4px 8px 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      outline: none;
+      opacity: 0.85;
+      transition: opacity 0.12s;
+    }
+
+    #hud-close:hover {
+      opacity: 1;
+    }
+
+    #hud-close svg {
+      width: 13px;
+      height: 13px;
+      stroke: #c7c7c7;
+      stroke-width: 2.5;
+    }
+
+    .hud-divider {
+      width: 1px;
+      height: 14px;
+      background: rgba(199, 199, 199, 0.3);
+    }
+
+    #hud-counter {
+      font-family: 'Times New Roman', serif;
+      font-size: 13px;
+      color: #c7c7c7;
+      letter-spacing: 0.08em;
+      opacity: 0.8;
+    }
+
+    .hud-spacer {
+      flex: 1;
+    }
+
+    .hud-icon-btn {
+      background: none;
+      border: none;
+      color: #c7c7c7;
+      font-size: 18px;
+      padding: 5px 8px;
+      border-radius: 0;
+      opacity: 0.75;
+      transition: opacity 0.12s;
+      outline: none;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+    }
+
+    .hud-icon-btn:hover {
+      opacity: 1;
+    }
+
+    .hud-icon-btn.fav-active {
+      color: #ea5823;
+      opacity: 1;
+    }
+
+    #hud-fav {
+      font-size: 22px;
+      align-self: center;
+      padding-top: 7px;
+      padding-bottom: 2px;
+    }
+
+    #hud-threedot-wrap {
+      position: relative;
+    }
+
+    #hud-threedot-dropdown {
+      top: calc(100% + 4px);
+      right: 0;
+      left: auto;
+    }
+
+    /* ── HUD Image area ── */
+    #hud-image-area {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #hud-slide-track {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hud-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      will-change: transform;
+    }
+
+    .hud-slide-img {
+      max-width: 80vw;
+      max-height: 78vh;
+      object-fit: contain;
+      border-radius: 0;
+      display: block;
+    }
+
+    .hud-slide-placeholder {
+      border-radius: 0;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    /* ── Nav Arrows ── */
+    .hud-nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #999997;
+      font-size: 28px;
+      padding: 16px 14px;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.18s;
+      outline: none;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .hud-nav-arrow svg {
+      width: 24px;
+      height: 24px;
+      stroke: #999997;
+      stroke-width: 2px;
+      fill: none;
+    }
+
+    #hud-image-area:hover .hud-nav-arrow {
+      opacity: 0.6;
+    }
+
+    .hud-nav-arrow:hover {
+      opacity: 1 !important;
+    }
+
+    #hud-prev {
+      left: 0;
+    }
+
+    #hud-next {
+      right: 0;
+    }
+
+    /* ── HUD Bottom strip ── */
+    #hud-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      height: 42px;
+      background: #999997;
+      flex-shrink: 0;
+    }
+
+    .hud-action {
+      font-family: 'Times New Roman', serif;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c7c7c7;
+      background: none;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 0;
+      opacity: 0.8;
+      transition: opacity 0.12s, background 0.12s;
+      outline: none;
+    }
+
+    .hud-action:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .hud-action.danger {
+      color: #ea5823;
+      opacity: 1;
+    }
+
+    .hud-action-divider {
+      width: 1px;
+      height: 14px;
+      background: rgba(199, 199, 199, 0.25);
+      margin: 0 2px;
+    }
+
+    /* ── Info Panel ── */
+    #hud-info-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #999997;
+      z-index: 20;
+      padding: 16px 20px 20px;
+      transform: translateY(100%);
+      transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      max-height: 55vh;
+      overflow-y: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    #hud-info-panel.open {
+      transform: translateY(0);
+    }
+
+    #hud-info-panel::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    #hud-info-panel::-webkit-scrollbar-thumb {
+      background: rgba(199, 199, 199, 0.3);
+    }
+
+    .info-close {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: none;
+      border: none;
+      color: #c7c7c7;
+      opacity: 0.7;
+      font-size: 16px;
+      outline: none;
+      line-height: 1;
+      transition: opacity 0.12s;
+    }
+
+    .info-close:hover {
+      opacity: 1;
+    }
+
+    .info-section-title {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(199, 199, 199, 0.6);
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+
+    .info-section-title:first-child {
+      margin-top: 0;
+    }
+
+    .info-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .info-item-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(199, 199, 199, 0.5);
+    }
+
+    .info-item-value {
+      font-size: 11px;
+      color: #c7c7c7;
+      font-weight: 500;
+    }
+
+    .prompt-text {
+      font-size: 11px;
+      color: rgba(199, 199, 199, 0.85);
+      line-height: 1.6;
+      max-height: 90px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding-right: 4px;
+    }
+
+    .prompt-text::-webkit-scrollbar {
+      width: 2px;
+    }
+
+    .prompt-text::-webkit-scrollbar-thumb {
+      background: rgba(199, 199, 199, 0.25);
+    }
+
+    #btn-copy-prompt {
+      font-family: 'Times New Roman', serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #ea5823;
+      background: rgba(234, 88, 35, 0.10);
+      border: 1.5px solid rgba(234, 88, 35, 0.35);
+      border-radius: 0;
+      padding: 5px 12px;
+      transition: background 0.13s;
+      outline: none;
+    }
+
+    #btn-copy-prompt:hover {
+      background: rgba(234, 88, 35, 0.18);
+    }
+
+    /* ──────────────────────────── PLACEHOLDER COLORS ── */
+    .ph-0 {
+      background: #8a9bb0;
+    }
+
+    .ph-1 {
+      background: #b0a08a;
+    }
+
+    .ph-2 {
+      background: #8ab09a;
+    }
+
+    .ph-3 {
+      background: #a08ab0;
+    }
+
+    .ph-4 {
+      background: #b08a8a;
+    }
+
+    .ph-5 {
+      background: #8ab0ae;
+    }
+
+    .ph-6 {
+      background: #b0ab8a;
+    }
+
+    .ph-7 {
+      background: #9a8ab0;
+    }
+
+    .ph-8 {
+      background: #8aa8b0;
+    }
+
+    .ph-9 {
+      background: #b09a8a;
+    }
+
+    .ph-10 {
+      background: #8ab08a;
+    }
+
+    .ph-11 {
+      background: #b08aaa;
+    }
+
+    .ph-12 {
+      background: #8a9eb0;
+    }
+
+    .ph-13 {
+      background: #aab08a;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ───────────────────── CONTROLS BAR ───────────────────── -->
+  <div id="gallery-controls">
+    <div id="threedot-wrap">
+      <button id="btn-threedot" title="More actions"><span></span><span></span><span></span></button>
+      <div class="dropdown" id="threedot-dropdown">
+        <div class="ddrop-item disabled" id="ddrop-add-seq">
+          <span>Add to Sequence</span>
+        </div>
+        <div class="ddrop-item disabled" id="ddrop-reuse">
+          <span>Reuse</span>
+        </div>
+        <div class="ddrop-item disabled" id="ddrop-ref">
+          <span>Set as Reference</span>
+        </div>
+        <div class="ddrop-divider"></div>
+        <div class="ddrop-item disabled" id="ddrop-upscale">
+          <span>Upscale</span>
+        </div>
+        <div class="ddrop-item disabled" id="ddrop-download">
+          <span>Download</span>
+        </div>
+        <div class="ddrop-item disabled" id="ddrop-duplicate">
+          <span>Duplicate</span>
+        </div>
+        <div class="ddrop-item disabled" id="ddrop-favorite">
+          <span>Favorite</span>
+        </div>
+        <div class="ddrop-divider"></div>
+        <div class="ddrop-item danger disabled" id="ddrop-delete">
+          <span>Delete</span>
+        </div>
+      </div>
+    </div>
+
+    <button id="btn-select">SELECT</button>
+
+    <div class="ctrl-spacer"></div>
+
+    <div class="view-toggles">
+      <button class="btn-view" data-view-target="small" id="view-small">
+        <svg width="18" height="18" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="3" height="3" fill="currentColor"/><rect x="4" y="0" width="3" height="3" fill="currentColor"/><rect x="8" y="0" width="3" height="3" fill="currentColor"/><rect x="12" y="0" width="3" height="3" fill="currentColor"/><rect x="16" y="0" width="3" height="3" fill="currentColor"/><rect x="20" y="0" width="3" height="3" fill="currentColor"/><rect x="0" y="4" width="3" height="3" fill="currentColor"/><rect x="4" y="4" width="3" height="3" fill="currentColor"/><rect x="8" y="4" width="3" height="3" fill="currentColor"/><rect x="12" y="4" width="3" height="3" fill="currentColor"/><rect x="16" y="4" width="3" height="3" fill="currentColor"/><rect x="20" y="4" width="3" height="3" fill="currentColor"/><rect x="0" y="8" width="3" height="3" fill="currentColor"/><rect x="4" y="8" width="3" height="3" fill="currentColor"/><rect x="8" y="8" width="3" height="3" fill="currentColor"/><rect x="12" y="8" width="3" height="3" fill="currentColor"/><rect x="16" y="8" width="3" height="3" fill="currentColor"/><rect x="20" y="8" width="3" height="3" fill="currentColor"/><rect x="0" y="12" width="3" height="3" fill="currentColor"/><rect x="4" y="12" width="3" height="3" fill="currentColor"/><rect x="8" y="12" width="3" height="3" fill="currentColor"/><rect x="12" y="12" width="3" height="3" fill="currentColor"/><rect x="16" y="12" width="3" height="3" fill="currentColor"/><rect x="20" y="12" width="3" height="3" fill="currentColor"/><rect x="0" y="16" width="3" height="3" fill="currentColor"/><rect x="4" y="16" width="3" height="3" fill="currentColor"/><rect x="8" y="16" width="3" height="3" fill="currentColor"/><rect x="12" y="16" width="3" height="3" fill="currentColor"/><rect x="16" y="16" width="3" height="3" fill="currentColor"/><rect x="20" y="16" width="3" height="3" fill="currentColor"/><rect x="0" y="20" width="3" height="3" fill="currentColor"/><rect x="4" y="20" width="3" height="3" fill="currentColor"/><rect x="8" y="20" width="3" height="3" fill="currentColor"/><rect x="12" y="20" width="3" height="3" fill="currentColor"/><rect x="16" y="20" width="3" height="3" fill="currentColor"/><rect x="20" y="20" width="3" height="3" fill="currentColor"/></svg>
+      </button>
+      <button class="btn-view active" data-view-target="medium" id="view-medium">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="6" height="6" fill="currentColor"/><rect x="7" y="0" width="6" height="6" fill="currentColor"/><rect x="14" y="0" width="6" height="6" fill="currentColor"/><rect x="0" y="7" width="6" height="6" fill="currentColor"/><rect x="7" y="7" width="6" height="6" fill="currentColor"/><rect x="14" y="7" width="6" height="6" fill="currentColor"/><rect x="0" y="14" width="6" height="6" fill="currentColor"/><rect x="7" y="14" width="6" height="6" fill="currentColor"/><rect x="14" y="14" width="6" height="6" fill="currentColor"/></svg>
+      </button>
+      <button class="btn-view" data-view-target="large" id="view-large">
+        <svg width="18" height="18" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="7" height="7" fill="currentColor"/><rect x="8" y="0" width="7" height="7" fill="currentColor"/><rect x="0" y="8" width="7" height="7" fill="currentColor"/><rect x="8" y="8" width="7" height="7" fill="currentColor"/></svg>
+      </button>
+    </div>
+
+    <div class="ctrl-spacer"></div>
+
+    <div id="filter-wrap">
+      <button id="btn-filter">
+        <svg width="21" height="12" viewBox="0 0 21 12" fill="none">
+          <rect x="0" y="0" width="21" height="2" fill="#c7c7c7" />
+          <rect x="3" y="5" width="15" height="2" fill="#c7c7c7" />
+          <rect x="6" y="10" width="9" height="2" fill="#c7c7c7" />
+        </svg>
+      </button>
+      <div class="dropdown" id="filter-dropdown">
+
+        <div class="filter-section">
+          <div class="filter-label">Sort</div>
+          <div class="filter-row">
+            <button class="filter-chip active" data-group="sort" data-val="newest">Newest</button>
+            <button class="filter-chip" data-group="sort" data-val="oldest">Oldest</button>
+          </div>
+        </div>
+
+        <div class="ddrop-divider"></div>
+
+        <div class="filter-section">
+          <div class="filter-label">Aspect Ratio</div>
+          <div class="filter-row">
+            <button class="filter-chip active" data-group="ratio" data-val="all">All</button>
+            <button class="filter-chip" data-group="ratio" data-val="landscape">Landscape</button>
+            <button class="filter-chip" data-group="ratio" data-val="portrait">Portrait</button>
+            <button class="filter-chip" data-group="ratio" data-val="square">Square</button>
+          </div>
+        </div>
+
+        <div class="ddrop-divider"></div>
+
+        <div class="filter-section">
+          <div class="filter-label">Show</div>
+          <div class="filter-row">
+            <button class="filter-chip" data-group="show" data-val="favorites">Favorites</button>
+            <button class="filter-chip" data-group="show" data-val="selected">Selected Only</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────────────── GALLERY GRID ───────────────────── -->
+  <div id="gallery-scroll" data-view="medium" data-select="off">
+    <div id="gallery-grid">
+      <!-- cells injected by JS -->
+    </div>
+  </div>
+
+  <!-- ───────────────────── HUD OVERLAY ───────────────────── -->
+  <div id="hud">
+
+    <!-- Top bar -->
+    <div id="hud-topbar">
+      <button id="hud-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        CLOSE
+      </button>
+      <div class="hud-divider"></div>
+      <span id="hud-counter">1 OF 14</span>
+
+      <div class="hud-spacer"></div>
+
+      <button class="hud-icon-btn" id="hud-fav" title="Favorite">♡</button>
+      <button class="hud-icon-btn" id="hud-edit" title="Refine Area"><svg width="14" height="14"
+          viewBox="0 0 14.7989 14.7272" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M0 13.1289V11.5305L1.16648 10.3707C4.97904 6.57996 8.40899 3.18909 8.44436 3.17571C8.46326 3.16815 9.72577 4.40376 11.0113 5.68169L11.6502 6.31671L7.45474 10.5219L3.25927 14.7272H1.62965H0V13.1289ZM11.1262 3.66073L9.55907 2.09352L10.6058 1.04673L11.6526 0L13.2258 1.57315L14.7989 3.14624L13.7582 4.18715C13.1859 4.75963 12.7121 5.22799 12.7054 5.22799C12.6979 5.22799 11.9881 4.52272 11.1262 3.66073Z"
+            fill="currentColor" />
+        </svg></button>
+      <button class="hud-icon-btn" id="hud-info" title="Image Info">ℹ</button>
+
+      <div id="hud-threedot-wrap" style="position:relative;">
+        <button class="hud-icon-btn" id="hud-threedot" title="More">⋯</button>
+        <div class="dropdown" id="hud-threedot-dropdown">
+          <div class="ddrop-item"><span>Add to Sequence</span></div>
+          <div class="ddrop-item"><span>Reuse</span></div>
+          <div class="ddrop-item"><span>Set as Reference</span></div>
+          <div class="ddrop-divider"></div>
+          <div class="ddrop-item"><span>Upscale</span></div>
+          <div class="ddrop-item"><span>Download</span></div>
+          <div class="ddrop-item"><span>Duplicate</span></div>
+          <div class="ddrop-item"><span>Favorite</span></div>
+          <div class="ddrop-divider"></div>
+          <div class="ddrop-item danger"><span>Delete</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image viewport -->
+    <div id="hud-image-area">
+      <div id="hud-slide-track"></div>
+
+      <button class="hud-nav-arrow" id="hud-prev" title="Previous">
+        <svg viewBox="0 0 24 24">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <button class="hud-nav-arrow" id="hud-next" title="Next">
+        <svg viewBox="0 0 24 24">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+
+      <!-- Info panel -->
+      <div id="hud-info-panel">
+        <button class="info-close" id="hud-info-close">×</button>
+
+        <div class="info-section-title">Image Details</div>
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-item-label">Date</span>
+            <span class="info-item-value" id="info-date">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-item-label">Type</span>
+            <span class="info-item-value" id="info-type">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-item-label">Dimensions</span>
+            <span class="info-item-value" id="info-dims">—</span>
+          </div>
+        </div>
+
+        <div class="info-section-title">Prompt</div>
+        <div class="prompt-text" id="info-prompt">—</div>
+        <button id="btn-copy-prompt">COPY</button>
+      </div>
+    </div>
+
+    <!-- Bottom strip -->
+    <div id="hud-bottom">
+      <button class="hud-action">ADD TO SEQUENCE</button>
+      <div class="hud-action-divider"></div>
+      <button class="hud-action">UPSCALE</button>
+      <div class="hud-action-divider"></div>
+      <button class="hud-action">DOWNLOAD</button>
+      <div class="hud-action-divider"></div>
+      <button class="hud-action danger">DELETE</button>
+    </div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════
+       DATA — 14 placeholder cells with varied ratios
+    ════════════════════════════════════════════════════════════ */
+    const CELLS = [
+      { id: 0, ratio: '16:9', phClass: 'ph-0', date: 'Apr 10 2026', type: 'Image', dims: '1920 × 1080', prompt: 'Cinematic aerial shot of a misty mountain valley at golden hour, sweeping fog below, dramatic lighting, ultra-detailed, photorealistic.' },
+      { id: 1, ratio: '4:3', phClass: 'ph-1', date: 'Apr 10 2026', type: 'Image', dims: '1600 × 1200', prompt: 'Macro photograph of a dew-covered spider web at dawn, bokeh background, vivid greens, fine strands catching light.' },
+      { id: 2, ratio: '1:1', phClass: 'ph-2', date: 'Apr 9 2026', type: 'Image', dims: '1024 × 1024', prompt: 'Portrait of an elderly fisherman, weathered face, ocean behind him, analog film grain, warm tones.' },
+      { id: 3, ratio: '9:16', phClass: 'ph-3', date: 'Apr 9 2026', type: 'Video', dims: '1080 × 1920', prompt: 'Slow motion close-up of rain drops hitting a still forest pool, ripples expanding, cinematic depth of field.' },
+      { id: 4, ratio: '16:9', phClass: 'ph-4', date: 'Apr 9 2026', type: 'Image', dims: '1920 × 1080', prompt: 'Neon-lit Tokyo alley at night, rain reflections on asphalt, lone figure with umbrella, cyberpunk mood.' },
+      { id: 5, ratio: '1:1', phClass: 'ph-5', date: 'Apr 8 2026', type: 'Image', dims: '1024 × 1024', prompt: 'Abstract fluid art, iridescent colors swirling, high contrast, metallic sheen.' },
+      { id: 6, ratio: '3:4', phClass: 'ph-6', date: 'Apr 8 2026', type: 'Image', dims: '768 × 1024', prompt: 'Full-body fashion portrait, editorial style, minimalist white background, dramatic shadow play.' },
+      { id: 7, ratio: '16:9', phClass: 'ph-7', date: 'Apr 8 2026', type: 'Video', dims: '1920 × 1080', prompt: 'Time-lapse of storm clouds gathering over a desert landscape, red earth, dramatic sky.' },
+      { id: 8, ratio: '4:3', phClass: 'ph-8', date: 'Apr 7 2026', type: 'Image', dims: '1600 × 1200', prompt: 'Underwater world beneath an arctic ice shelf, bioluminescent creatures, deep blue atmosphere.' },
+      { id: 9, ratio: '1:1', phClass: 'ph-9', date: 'Apr 7 2026', type: 'Image', dims: '1024 × 1024', prompt: 'Miniature diorama of a cozy cabin in winter woods, tilt-shift lens, warm window glow, snowfall.' },
+      { id: 10, ratio: '9:16', phClass: 'ph-10', date: 'Apr 7 2026', type: 'Video', dims: '1080 × 1920', prompt: 'Vertical cinematic of a dancer silhouette against a stadium floodlight, smoke machine, backlit.' },
+      { id: 11, ratio: '16:9', phClass: 'ph-11', date: 'Apr 6 2026', type: 'Image', dims: '2560 × 1440', prompt: 'Wide panorama of a Martian terraformed landscape with aurora borealis, distant colony lights.' },
+      { id: 12, ratio: '4:3', phClass: 'ph-12', date: 'Apr 6 2026', type: 'Image', dims: '1600 × 1200', prompt: 'Still-life arrangement of antique astronomical instruments, candlelight, dark oak table.' },
+      { id: 13, ratio: '3:4', phClass: 'ph-13', date: 'Apr 6 2026', type: 'Image', dims: '768 × 1024', prompt: 'Character concept art — alchemist robes, glowing vials, stone tower library, fantasy realism.' },
+    ];
+
+    /* ═══════════════════════════════════════════════════════════
+       STATE
+    ════════════════════════════════════════════════════════════ */
+    let selectMode = false;
+    let currentView = 'medium';
+    let hudOpen = false;
+    let hudIndex = 0;
+    let infoPanelOpen = false;
+    let selectedIds = new Set();
+    let activeFilters = { sort: 'newest', ratio: 'all', type: ['image', 'video'], show: [] };
+
+    /* ═══════════════════════════════════════════════════════════
+       DOM REFS
+    ════════════════════════════════════════════════════════════ */
+    const $scroll = document.getElementById('gallery-scroll');
+    const $grid = document.getElementById('gallery-grid');
+    const $btnSelect = document.getElementById('btn-select');
+    const $btnThreedot = document.getElementById('btn-threedot');
+    const $tdropdown = document.getElementById('threedot-dropdown');
+    const $btnFilter = document.getElementById('btn-filter');
+    const $filterDrop = document.getElementById('filter-dropdown');
+    const $hud = document.getElementById('hud');
+    const $hudCounter = document.getElementById('hud-counter');
+    const $hudSlideTrack = document.getElementById('hud-slide-track');
+    const $hudFav = document.getElementById('hud-fav');
+    const $hudInfo = document.getElementById('hud-info');
+    const $hudInfoPanel = document.getElementById('hud-info-panel');
+    const $hudInfoClose = document.getElementById('hud-info-close');
+    const $hudPrev = document.getElementById('hud-prev');
+    const $hudNext = document.getElementById('hud-next');
+    const $hudClose = document.getElementById('hud-close');
+    const $hudThreedot = document.getElementById('hud-threedot');
+    const $hudThreedotDrop = document.getElementById('hud-threedot-dropdown');
+    const $infoPanelDate = document.getElementById('info-date');
+    const $infoPanelType = document.getElementById('info-type');
+    const $infoPanelDims = document.getElementById('info-dims');
+    const $infoPanelPrompt = document.getElementById('info-prompt');
+    const $btnCopy = document.getElementById('btn-copy-prompt');
+
+    /* ═══════════════════════════════════════════════════════════
+       BUILD GRID CELLS
+    ════════════════════════════════════════════════════════════ */
+    function buildGrid() {
+      $grid.innerHTML = '';
+      CELLS.forEach(cell => {
+        const el = document.createElement('div');
+        el.className = 'gallery-cell';
+        el.dataset.id = cell.id;
+        el.dataset.ratio = cell.ratio;
+        if (selectedIds.has(cell.id)) el.classList.add('selected');
+
+        const inner = document.createElement('div');
+        inner.className = `cell-inner ${cell.phClass}`;
+        el.appendChild(inner);
+
+        const check = document.createElement('div');
+        check.className = 'cell-check';
+        el.appendChild(check);
+
+        el.addEventListener('click', () => onCellClick(cell.id));
+        $grid.appendChild(el);
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CELL CLICK
+    ════════════════════════════════════════════════════════════ */
+    function onCellClick(id) {
+      if (selectMode) {
+        toggleSelect(id);
+      } else {
+        openHUD(id);
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SELECT MODE
+    ════════════════════════════════════════════════════════════ */
+    function toggleSelect(id) {
+      if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+      } else {
+        selectedIds.add(id);
+      }
+      updateCellSelection();
+      updateThreedotItems();
+    }
+
+    function updateCellSelection() {
+      document.querySelectorAll('.gallery-cell').forEach(el => {
+        const id = +el.dataset.id;
+        el.classList.toggle('selected', selectedIds.has(id));
+      });
+    }
+
+    function setSelectMode(on) {
+      selectMode = on;
+      $scroll.dataset.select = on ? 'on' : 'off';
+      $btnSelect.classList.toggle('active', on);
+      document.getElementById('threedot-wrap').classList.toggle('visible', on);
+      if (!on) {
+        selectedIds.clear();
+        updateCellSelection();
+        closeDropdown($tdropdown);
+        document.getElementById('threedot-wrap').classList.remove('visible');
+        $btnThreedot.classList.remove('active');
+      }
+      updateThreedotItems();
+    }
+
+    $btnSelect.addEventListener('click', () => setSelectMode(!selectMode));
+
+    /* ═══════════════════════════════════════════════════════════
+       3-DOT DROPDOWN
+    ════════════════════════════════════════════════════════════ */
+    function updateThreedotItems() {
+      const hasSelected = selectedIds.size > 0;
+      document.querySelectorAll('#threedot-dropdown .ddrop-item').forEach(el => {
+        el.classList.toggle('disabled', !hasSelected);
+      });
+      $btnThreedot.classList.toggle('btn-disabled', !hasSelected);
+      if (!hasSelected) closeDropdown($tdropdown);
+    }
+
+    $btnThreedot.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = $tdropdown.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        $tdropdown.classList.add('open');
+        $btnThreedot.classList.add('active');
+      }
+    });
+
+    /* ═══════════════════════════════════════════════════════════
+       VIEW TOGGLES
+    ════════════════════════════════════════════════════════════ */
+    document.querySelectorAll('.btn-view').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const view = btn.dataset.viewTarget;
+        currentView = view;
+        $scroll.dataset.view = view;
+        document.querySelectorAll('.btn-view').forEach(b => {
+          b.classList.toggle('active', b.dataset.viewTarget === view);
+        });
+      });
+    });
+
+    /* ═══════════════════════════════════════════════════════════
+       FILTER DROPDOWN
+    ════════════════════════════════════════════════════════════ */
+    $btnFilter.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = $filterDrop.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        $filterDrop.classList.add('open');
+        $btnFilter.classList.add('active');
+      }
+    });
+
+    // Filter chips — single-select per group (except type = multi)
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', e => {
+        e.stopPropagation();
+        const group = chip.dataset.group;
+        const val = chip.dataset.val;
+
+        if (group === 'type') {
+          chip.classList.toggle('active');
+        } else {
+          // radio within group
+          document.querySelectorAll(`.filter-chip[data-group="${group}"]`).forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+        }
+        checkFilterActive();
+      });
+    });
+
+    function checkFilterActive() {
+      // Orange dot if anything non-default
+      const sortActive = [...document.querySelectorAll('.filter-chip[data-group="sort"].active')].map(c => c.dataset.val);
+      const ratioActive = [...document.querySelectorAll('.filter-chip[data-group="ratio"].active')].map(c => c.dataset.val);
+      const showActive = [...document.querySelectorAll('.filter-chip[data-group="show"].active')].map(c => c.dataset.val);
+
+      const nonDefault = sortActive.includes('oldest') || !ratioActive.includes('all') || showActive.length > 0;
+      $btnFilter.classList.toggle('has-filter', nonDefault);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       DROPDOWN UTILITIES
+    ════════════════════════════════════════════════════════════ */
+    function closeDropdown(el) {
+      el.classList.remove('open');
+    }
+    function closeAllDropdowns() {
+      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+      $btnThreedot.classList.remove('active');
+      $btnFilter.classList.remove('active');
+      $hudThreedot.classList.remove('active');
+    }
+
+    document.addEventListener('click', () => closeAllDropdowns());
+    document.querySelectorAll('.dropdown').forEach(d => d.addEventListener('click', e => e.stopPropagation()));
+
+    /* ═══════════════════════════════════════════════════════════
+       HUD
+    ════════════════════════════════════════════════════════════ */
+    const favSet = new Set();
+
+    function openHUD(id) {
+      hudIndex = id;
+      hudOpen = true;
+      $hud.classList.add('open');
+      closeInfoPanel();
+      renderHUDSlide(id, 'none');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeHUD() {
+      hudOpen = false;
+      $hud.classList.remove('open');
+      closeInfoPanel();
+      document.body.style.overflow = '';
+    }
+
+    function renderHUDSlide(id, direction) {
+      const cell = CELLS[id];
+      $hudCounter.textContent = `${id + 1} OF ${CELLS.length}`;
+
+      // Fav state
+      $hudFav.textContent = favSet.has(id) ? '♥' : '♡';
+      $hudFav.classList.toggle('fav-active', favSet.has(id));
+
+      // Build slide
+      const incoming = document.createElement('div');
+      incoming.className = 'hud-slide';
+      incoming.dataset.slideId = id;
+
+      const placeholder = document.createElement('div');
+      placeholder.className = `hud-slide-placeholder ${cell.phClass}`;
+      const [w, h] = cell.ratio.split(':').map(Number);
+      const area = document.getElementById('hud-image-area');
+      const maxW = area.clientWidth * 0.86;
+      const maxH = area.clientHeight * 0.86;
+      const scale = Math.min(maxW / w, maxH / h);
+      placeholder.style.width = Math.round(w * scale) + 'px';
+      placeholder.style.height = Math.round(h * scale) + 'px';
+      incoming.appendChild(placeholder);
+
+      // Clear any stale slides from rapid navigation, keep only the last one
+      const allSlides = $hudSlideTrack.querySelectorAll('.hud-slide');
+      allSlides.forEach((s, i) => { if (i < allSlides.length - 1) s.remove(); });
+      const outgoing = $hudSlideTrack.querySelector('.hud-slide');
+
+      if (direction === 'none' || !outgoing) {
+        $hudSlideTrack.innerHTML = '';
+        $hudSlideTrack.appendChild(incoming);
+        return;
+      }
+
+      // Animate
+      const offset = direction === 'next' ? '100%' : '-100%';
+      incoming.style.transform = `translateX(${offset})`;
+      $hudSlideTrack.appendChild(incoming);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const outDir = direction === 'next' ? '-100%' : '100%';
+          outgoing.style.transform = `translateX(${outDir})`;
+          incoming.style.transform = 'translateX(0)';
+          setTimeout(() => {
+            if (outgoing.parentNode) outgoing.remove();
+          }, 290);
+        });
+      });
+    }
+
+    function navigateHUD(dir) {
+      const next = (hudIndex + dir + CELLS.length) % CELLS.length;
+      const direction = dir > 0 ? 'next' : 'prev';
+      hudIndex = next;
+      renderHUDSlide(hudIndex, direction);
+      if (infoPanelOpen) populateInfoPanel(hudIndex);
+    }
+
+    $hudClose.addEventListener('click', closeHUD);
+    $hudPrev.addEventListener('click', () => navigateHUD(-1));
+    $hudNext.addEventListener('click', () => navigateHUD(1));
+
+    // Favorite
+    $hudFav.addEventListener('click', e => {
+      e.stopPropagation();
+      if (favSet.has(hudIndex)) {
+        favSet.delete(hudIndex);
+      } else {
+        favSet.add(hudIndex);
+      }
+      $hudFav.textContent = favSet.has(hudIndex) ? '♥' : '♡';
+      $hudFav.classList.toggle('fav-active', favSet.has(hudIndex));
+    });
+
+    // HUD 3-dot
+    $hudThreedot.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = $hudThreedotDrop.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        $hudThreedotDrop.classList.add('open');
+        $hudThreedot.classList.add('active');
+      }
+    });
+
+    // Info panel toggle
+    $hudInfo.addEventListener('click', e => {
+      e.stopPropagation();
+      if (infoPanelOpen) {
+        closeInfoPanel();
+      } else {
+        openInfoPanel();
+      }
+    });
+
+    function openInfoPanel() {
+      infoPanelOpen = true;
+      populateInfoPanel(hudIndex);
+      $hudInfoPanel.classList.add('open');
+    }
+
+    function closeInfoPanel() {
+      infoPanelOpen = false;
+      $hudInfoPanel.classList.remove('open');
+    }
+
+    function populateInfoPanel(id) {
+      const cell = CELLS[id];
+      $infoPanelDate.textContent = cell.date;
+      $infoPanelType.textContent = cell.type;
+      $infoPanelDims.textContent = cell.dims;
+      $infoPanelPrompt.textContent = cell.prompt;
+    }
+
+    $hudInfoClose.addEventListener('click', closeInfoPanel);
+
+    // Copy prompt
+    $btnCopy.addEventListener('click', () => {
+      const text = $infoPanelPrompt.textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = $btnCopy.textContent;
+          $btnCopy.textContent = 'COPIED!';
+          setTimeout(() => $btnCopy.textContent = orig, 1400);
+        });
+      }
+    });
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (!hudOpen) return;
+      if (e.key === 'ArrowRight') navigateHUD(1);
+      if (e.key === 'ArrowLeft') navigateHUD(-1);
+      if (e.key === 'Escape') {
+        if (infoPanelOpen) closeInfoPanel();
+        else closeHUD();
+      }
+    });
+
+    // Close HUD on backdrop (not on controls)
+    $hud.addEventListener('click', e => {
+      if (e.target === $hud) closeHUD();
+    });
+
+    /* ═══════════════════════════════════════════════════════════
+       INIT
+    ════════════════════════════════════════════════════════════ */
+    buildGrid();
+    $scroll.dataset.view = 'medium';
+  </script>
+</body>
+
+</html>

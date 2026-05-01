@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Bar — Components</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── LEFT NAV ─────────────────────────────────────── */
+    .nav {
+      width: 180px;
+      flex-shrink: 0;
+      background: #999997;
+      border-right: 2px solid #5271ff;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      z-index: 10;
+    }
+
+    .nav-title {
+      color: #c7c7c7;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0 16px 16px;
+      border-bottom: 1px solid #5271ff;
+      margin-bottom: 12px;
+    }
+
+    .nav-section {
+      padding: 4px 0;
+    }
+
+    .nav-label {
+      color: #c7c7c7;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 16px 2px;
+      opacity: 0.5;
+    }
+
+    .nav a {
+      display: block;
+      padding: 7px 16px;
+      color: #c7c7c7;
+      font-size: 12px;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      border-left: 2px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .nav a:hover {
+      background: rgba(82, 113, 255, 0.2);
+      border-left-color: #5271ff;
+    }
+
+    .nav a.active {
+      background: rgba(82, 113, 255, 0.25);
+      border-left-color: #ea5823;
+    }
+
+    /* ── CONTENT ──────────────────────────────────────── */
+    .content {
+      margin-left: 180px;
+      flex: 1;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 64px;
+    }
+
+    /* ── SECTION ──────────────────────────────────────── */
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #999997;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #5271ff;
+      letter-spacing: 0.06em;
+    }
+
+    /* State-conditional dropdown sections & accent colors */
+    #liveBar {
+      --accent: #ea5823;
+    }
+
+    #liveBar[data-state="SCENE"] {
+      --accent: #5271ff;
+    }
+
+    .prompt-bar[data-state="FRAME"] .sd-scene-only {
+      display: none;
+    }
+
+    .prompt-bar[data-state="SCENE"] .sd-frame-only {
+      display: none;
+    }
+
+    .section-tag {
+      font-size: 10px;
+      color: #999997;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .section-body {
+      display: flex;
+      gap: 48px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* ── VARIANT BLOCK ────────────────────────────────── */
+    .variant {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .variant-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5271ff;
+      font-family: sans-serif;
+    }
+
+    .variant-label.scene {
+      color: #5271ff;
+    }
+
+    .variant-label.frame {
+      color: #ea5823;
+    }
+
+    .preview {
+      background: #c7c7c7;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #999997;
+    }
+
+    /* ── EXTRA SPACE below each variant for future use ── */
+    .variant-notes {
+      min-height: 32px;
+      width: 100%;
+    }
+
+    /* ════════════════════════════════════════════════════
+       COMPONENT STYLES
+    ════════════════════════════════════════════════════ */
+
+    /* ── Upload Ref Button ────────────────────────────── */
+    .btn-upload-ref {
+      width: 46.5px;
+      height: 46.8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .btn-upload-ref.frame {
+      background: #ea5823;
+    }
+
+    .btn-upload-ref.scene {
+      background: #5271ff;
+    }
+
+    .btn-upload-ref::before,
+    .btn-upload-ref::after {
+      content: '';
+      position: absolute;
+      background: #c7c7c7;
+    }
+
+    .btn-upload-ref::before {
+      width: 3px;
+      height: 15px;
+    }
+
+    .btn-upload-ref::after {
+      width: 15px;
+      height: 3px;
+    }
+
+    /* ── Settings Button ──────────────────────────────── */
+    .btn-settings {
+      background: #999997;
+      width: 43.5px;
+      height: 46.8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1.134px solid;
+    }
+
+    .btn-settings.frame {
+      border-color: #ea5823;
+    }
+
+    .btn-settings.scene {
+      border-color: #5271ff;
+    }
+
+    .btn-settings img {
+      width: 27px;
+      height: 27px;
+    }
+
+    /* ── Prompt Text Field ────────────────────────────── */
+    .prompt-text-field {
+      background: #999997;
+      height: 46.8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 20px;
+      text-align: center;
+      padding: 0 20px;
+      white-space: nowrap;
+    }
+
+    /* ── Generate Button ──────────────────────────────── */
+    .btn-generate {
+      border: 1.89px solid #999997;
+      height: 46.8px;
+      width: 169.9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 35px;
+      flex-shrink: 0;
+    }
+
+    .btn-generate.frame {
+      background: #ea5823;
+    }
+
+    .btn-generate.scene {
+      background: #5271ff;
+    }
+
+    /* ── Prompt Switch ────────────────────────────────── */
+    .prompt-switch {
+      width: 23.371px;
+      height: 47.58px;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .ps-track {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .ps-active {
+      width: 23.371px;
+      height: 24.58px;
+      flex-shrink: 0;
+      position: relative;
+      border: 1.13px solid #999997;
+    }
+
+    .ps-active::after {
+      content: '';
+      position: absolute;
+      top: 33%;
+      left: 31%;
+      width: 38%;
+      height: 34%;
+      background: #c7c7c7;
+    }
+
+    .ps-inactive {
+      width: 23px;
+      height: 23px;
+      flex-shrink: 0;
+      background: #999997;
+    }
+
+    /* ── Full Prompt Bar ──────────────────────────────── */
+    .prompt-bar {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .prompt-bar .prompt-input-area {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .prompt-bar .prompt-text-field {
+      flex: 1;
+      height: 46.8px;
+      font-size: 18px;
+    }
+
+    .prompt-switch[data-state="FRAME"] .ps-track {
+      justify-content: flex-start;
+    }
+
+    .prompt-switch[data-state="FRAME"] .ps-active {
+      order: 1;
+      background: #ea5823;
+    }
+
+    .prompt-switch[data-state="FRAME"] .ps-inactive {
+      order: 2;
+    }
+
+    .prompt-switch[data-state="SCENE"] .ps-track {
+      justify-content: flex-end;
+    }
+
+    .prompt-switch[data-state="SCENE"] .ps-active {
+      order: 2;
+      background: #5271ff;
+    }
+
+    .prompt-switch[data-state="SCENE"] .ps-inactive {
+      order: 1;
+    }
+
+    /* ── Live Preview state rules ─────────────────────── */
+    #liveBar[data-state="FRAME"] {
+      --accent: #ea5823;
+    }
+
+    #liveBar[data-state="SCENE"] {
+      --accent: #5271ff;
+    }
+
+    #liveBar[data-state="SCENE"] .btn-upload-ref {
+      background: #5271ff;
+    }
+
+    #liveBar[data-state="SCENE"] .btn-settings {
+      border-color: #5271ff;
+    }
+
+    #liveBar[data-state="SCENE"] .btn-generate {
+      background: #5271ff;
+    }
+
+    /* ── Settings Anchor ─────────────────────────────────── */
+    .settings-anchor {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Settings Dropdown ───────────────────────────── */
+    .settings-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      width: 300px;
+      background: #999997;
+      border: 1.89px solid var(--accent, #ea5823);
+      padding: 12px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      z-index: 100;
+    }
+
+    .settings-dropdown[data-open="true"] {
+      display: flex;
+    }
+
+    .sd-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sd-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #c7c7c7;
+    }
+
+    .sd-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sd-row-ratio {
+      gap: 5px;
+    }
+
+    /* Aspect Ratio */
+    .sd-ratio-btn {
+      width: 63px;
+      height: 63px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .sd-ratio-btn.active {
+      border-color: var(--accent, #ea5823);
+      background: var(--accent, #ea5823);
+    }
+
+    .ratio-inner {
+      background: #c7c7c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent, #ea5823);
+      font-weight: bold;
+      font-family: 'Times New Roman', serif;
+      flex-shrink: 0;
+      border: 1px solid var(--accent, #ea5823);
+    }
+
+    .sd-ratio-btn.active .ratio-inner {
+      border: none;
+    }
+
+    .sd-ratio-btn[data-value="1:1"] .ratio-inner {
+      width: 34px;
+      height: 34px;
+      font-size: 11px;
+    }
+
+    .sd-ratio-btn[data-value="9:16"] .ratio-inner {
+      width: 24px;
+      height: 41px;
+      font-size: 8px;
+    }
+
+    .sd-ratio-btn[data-value="16:9"] .ratio-inner {
+      width: 41px;
+      height: 23px;
+      font-size: 8px;
+    }
+
+    .sd-ratio-btn[data-value="3:4"] .ratio-inner {
+      width: 28px;
+      height: 36px;
+      font-size: 8px;
+    }
+
+    /* Variation */
+    .sd-var-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: #999997;
+      border: 0.75px solid #c7c7c7;
+      cursor: pointer;
+      font-size: 19px;
+      font-weight: bold;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sd-var-btn.active {
+      background: var(--accent, #ea5823);
+      border-color: var(--accent, #ea5823);
+    }
+
+    .sd-custom-group {
+      display: flex;
+      flex-shrink: 0;
+    }
+
+    .sd-custom-lbl {
+      width: 77px;
+      height: 32px;
+      background: #c7c7c7;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: #999997;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.04em;
+    }
+
+    .sd-custom-lbl.active {
+      background: var(--accent, #ea5823);
+      color: #c7c7c7;
+    }
+
+    /* Custom variation input (3–10) */
+    .sd-entry-lbl {
+      width: 32px;
+      height: 32px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      font-size: 19px;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+      appearance: textfield;
+      padding: 0;
+      display: block;
+      line-height: 32px;
+      cursor: text;
+      flex-shrink: 0;
+      caret-color: var(--accent, #ea5823);
+    }
+
+    .sd-entry-lbl::-webkit-outer-spin-button,
+    .sd-entry-lbl::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+    }
+
+    .sd-entry-lbl::placeholder {
+      color: #666666;
+    }
+
+    .sd-entry-lbl:focus::placeholder,
+    .sd-entry-lbl.active::placeholder {
+      color: transparent;
+    }
+
+    .sd-entry-lbl.active {
+      background: #c3c3c2;
+      border-color: var(--accent, #ea5823);
+      color: var(--accent, #ea5823);
+    }
+
+    /* Output Type */
+    .sd-output-label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sd-output-label strong {
+      font-weight: bold;
+    }
+
+    .sd-output-btn {
+      flex: 1;
+      height: 32px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      cursor: pointer;
+      font-size: 18px;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .sd-output-btn.active {
+      background: var(--accent, #ea5823);
+    }
+
+    /* Info "i" button + tooltip */
+    .sd-info-wrap {
+      position: relative;
+      display: inline-flex;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .sd-info {
+      width: 10px;
+      height: 10px;
+      border: 1px solid var(--accent, #ea5823);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      color: var(--accent, #ea5823);
+      font-style: italic;
+      font-weight: bold;
+      font-family: 'Times New Roman', serif;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .sd-tooltip {
+      display: none;
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 6px);
+      width: 220px;
+      background: var(--accent, #ea5823);
+      color: #c7c7c7;
+      font-size: 10px;
+      font-family: 'Times New Roman', serif;
+      font-weight: normal;
+      font-style: normal;
+      padding: 10px;
+      z-index: 9999;
+      line-height: 1.5;
+      letter-spacing: 0.02em;
+    }
+
+    .sd-info-wrap:hover .sd-tooltip,
+    .sd-info-wrap.open .sd-tooltip {
+      display: block;
+    }
+
+    #liveSettingsDropdown[data-active-output="PRECISE"] .tip-creative {
+      display: none;
+    }
+
+    #liveSettingsDropdown[data-active-output="CREATIVE"] .tip-precise {
+      display: none;
+    }
+
+    /* Seed */
+    .sd-seed-notice {
+      font-size: 10px;
+      color: #c7c7c7;
+      letter-spacing: 0.04em;
+      font-style: italic;
+      font-family: 'Times New Roman', serif;
+    }
+
+    .sd-seed-bar {
+      display: flex;
+      align-items: stretch;
+      height: 32px;
+    }
+
+    .sd-seed-lbl {
+      width: 87px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      color: #c7c7c7;
+      letter-spacing: 0.1em;
+      font-family: 'Times New Roman', serif;
+      flex-shrink: 0;
+    }
+
+    .sd-seed-input {
+      width: 185px;
+      height: 32px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      border: 0.756px solid;
+      overflow: hidden;
+    }
+
+    .sd-seed-num {
+      flex: 1;
+      text-align: center;
+      font-size: 24px;
+      font-family: 'Times New Roman', serif;
+      padding-right: 28px;
+      padding-left: 4px;
+      background: transparent;
+      border: none;
+      outline: none;
+      width: 100%;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+
+    .sd-seed-num::-webkit-outer-spin-button,
+    .sd-seed-num::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+    }
+
+    .sd-seed-lock {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 28px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .settings-dropdown[data-seed="locked"] .sd-seed-lbl {
+      background: var(--accent, #ea5823);
+      color: #c7c7c7;
+    }
+
+    .settings-dropdown[data-seed="locked"] .sd-seed-input {
+      background: #c7c7c7;
+      border-color: var(--accent, #ea5823);
+    }
+
+    .settings-dropdown[data-seed="locked"] .sd-seed-num {
+      color: var(--accent, #ea5823);
+    }
+
+    .settings-dropdown[data-seed="locked"] .lock-open {
+      display: none;
+    }
+
+    .settings-dropdown[data-seed="unlocked"] .sd-seed-lbl {
+      background: #c7c7c7;
+      color: var(--accent, #ea5823);
+    }
+
+    .settings-dropdown[data-seed="unlocked"] .sd-seed-input {
+      background: #999997;
+      border-color: #c7c7c7;
+    }
+
+    .settings-dropdown[data-seed="unlocked"] .sd-seed-num {
+      color: #c7c7c7;
+    }
+
+    .settings-dropdown[data-seed="unlocked"] .lock-closed {
+      display: none;
+    }
+
+    /* Gear icon turns orange/blue when dropdown is open — bg stays gray */
+    .btn-settings.open img,
+    .btn-settings.frame.open img {
+      filter: brightness(0) saturate(100%) invert(42%) sepia(84%) saturate(1547%) hue-rotate(345deg) brightness(96%) contrast(94%);
+    }
+
+    #liveBar[data-state="SCENE"] .btn-settings.open img,
+    .btn-settings.scene.open img {
+      filter: brightness(0) saturate(100%) invert(41%) sepia(85%) saturate(2335%) hue-rotate(218deg) brightness(101%) contrast(101%);
+    }
+
+    /* ── State-conditional dropdown sections ────────────────────── */
+    #liveBar[data-state="FRAME"] .sd-scene-only {
+      display: none;
+    }
+
+    #liveBar[data-state="SCENE"] .sd-frame-only {
+      display: none;
+    }
+
+    /* Frame Count buttons (scene-specific variation) */
+    .sd-fc-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: #999997;
+      border: 0.75px solid #c7c7c7;
+      cursor: pointer;
+      font-size: 19px;
+      font-weight: bold;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sd-fc-btn.active {
+      background: var(--accent, #5271ff);
+      border-color: var(--accent, #5271ff);
+    }
+
+    /* ── Prompt Bar Wrap ─────────────────────────── */
+    .prompt-bar-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    /* ── Reference Chips Row ─────────────────────── */
+    .ref-chips-row {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      display: flex;
+      gap: 4px;
+      padding-bottom: 4px;
+      align-items: center;
+    }
+
+    .ref-chip {
+      display: flex;
+      align-items: center;
+      cursor: default;
+    }
+
+    .ref-chip-remove {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .ref-chip.frame .ref-chip-remove { background: #ea5823; }
+    .ref-chip.scene .ref-chip-remove { background: #5271ff; }
+
+    .ref-chip-remove::before,
+    .ref-chip-remove::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 10px; height: 1.5px;
+      border-radius: 1px;
+      background: #c7c7c7;
+    }
+    .ref-chip-remove::before { transform: translate(-50%, -50%) rotate(45deg); }
+    .ref-chip-remove::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+    .ref-chip-thumb {
+      width: 52px;
+      height: 20px;
+      position: relative;
+      overflow: hidden;
+      border: 0.756px solid;
+      background: #999997;
+      flex-shrink: 0;
+    }
+
+    .ref-chip.frame .ref-chip-thumb {
+      border-color: #ea5823;
+    }
+
+    .ref-chip.scene .ref-chip-thumb {
+      border-color: #5271ff;
+    }
+
+    .ref-chip-thumb img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .ref-chip-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .ref-chip.frame .ref-chip-overlay { background: #ea5823; }
+    .ref-chip.scene .ref-chip-overlay { background: #5271ff; }
+
+    .ref-chip-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10.694px;
+      font-family: 'Times New Roman', serif;
+      pointer-events: none;
+    }
+
+    .ref-chip.frame .ref-chip-label {
+      color: #c7c7c7;
+    }
+
+    .ref-chip.scene .ref-chip-label {
+      color: #c7c7c7;
+    }
+
+    /* ── Upload Ref Button — Pop on hover/click ──── */
+    @keyframes plus-bar-v { 0% { height: 15px; } 40% { height: 22px; } 100% { height: 15px; } }
+    @keyframes plus-bar-h { 0% { width: 15px; } 40% { width: 22px; } 100% { width: 15px; } }
+    .btn-upload-ref:not(.disabled):hover::before,
+    .btn-upload-ref:not(.disabled):active::before { animation: plus-bar-v 0.25s ease forwards; }
+    .btn-upload-ref:not(.disabled):hover::after,
+    .btn-upload-ref:not(.disabled):active::after  { animation: plus-bar-h 0.25s ease forwards; }
+
+    /* ── Upload Ref Button — Disabled ────────────── */
+    .btn-upload-ref.disabled {
+      background: #999997 !important;
+      border: 1.134px solid #ea5823;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+    <div class="nav-title">Prompt Bar</div>
+    <div class="nav-section">
+      <div class="nav-label">Demo</div>
+      <a href="#live-preview">Live Preview</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Parent</div>
+      <a href="#prompt-bar">Prompt Bar</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Children</div>
+      <a href="#upload-ref">Upload Ref</a>
+      <a href="#ref-chips">Reference Chips</a>
+      <a href="#settings-btn">Settings</a>
+      <a href="#text-field">Text Field</a>
+      <a href="#generate-btn">Generate Button</a>
+      <a href="#prompt-switch">Prompt Switch</a>
+      <a href="#settings-dropdown">Settings Dropdown</a>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- ── LIVE PREVIEW ─────────────────────────────────── -->
+    <section class="section" id="live-preview">
+      <div class="section-header">
+        <span class="section-title">Live Preview</span>
+        <span class="section-tag">Interactive · click the switch</span>
+      </div>
+      <div class="section-body" style="flex-direction: column; gap: 16px;">
+        <div class="preview" style="width: 100%;">
+          <div class="prompt-bar-wrap">
+            <div class="ref-chips-row" id="liveRefChips" style="display:none"></div>
+            <div class="prompt-bar" id="liveBar" data-state="FRAME">
+              <div class="btn-upload-ref frame" id="liveUpload"></div>
+              <div class="settings-anchor">
+                <div class="btn-settings frame" id="liveSettingsBtn">
+                  <img src="../assets/icon-settings.svg" alt="settings" />
+                </div>
+                <div class="settings-dropdown" id="liveSettingsDropdown" data-open="false" data-seed="locked"
+                  data-active-output="PRECISE">
+
+                  <!-- ── FRAME ONLY: 4 aspect ratios + Variation ── -->
+                  <div class="sd-frame-only sd-section">
+                    <div class="sd-label">ASPECT RATIO</div>
+                    <div class="sd-row sd-row-ratio">
+                      <button class="sd-ratio-btn active" data-value="1:1"><span class="ratio-inner">1:1</span></button>
+                      <button class="sd-ratio-btn" data-value="9:16"><span class="ratio-inner">9:16</span></button>
+                      <button class="sd-ratio-btn" data-value="16:9"><span class="ratio-inner">16:9</span></button>
+                      <button class="sd-ratio-btn" data-value="3:4"><span class="ratio-inner">3:4</span></button>
+                    </div>
+                  </div>
+                  <div class="sd-frame-only sd-section">
+                    <div class="sd-label">VARIATION</div>
+                    <div class="sd-row">
+                      <button class="sd-var-btn active" data-value="1">1</button>
+                      <button class="sd-var-btn" data-value="2">2</button>
+                      <div class="sd-custom-group">
+                        <button class="sd-custom-lbl" data-value="CUSTOM">CUSTOM</button>
+                        <input class="sd-entry-lbl" id="liveCustomEntry" type="number" min="3" max="10" placeholder="−">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ── SCENE ONLY: 2 aspect ratios + Frame Count ── -->
+                  <div class="sd-scene-only sd-section">
+                    <div class="sd-label">ASPECT RATIO</div>
+                    <div class="sd-row sd-row-ratio">
+                      <button class="sd-ratio-btn active" data-value="9:16"><span
+                          class="ratio-inner">9:16</span></button>
+                      <button class="sd-ratio-btn" data-value="16:9"><span class="ratio-inner">16:9</span></button>
+                    </div>
+                  </div>
+                  <div class="sd-scene-only sd-section">
+                    <div class="sd-label">FRAME COUNT</div>
+                    <div class="sd-row">
+                      <button class="sd-fc-btn active" data-value="2">2</button>
+                      <button class="sd-fc-btn" data-value="4">4</button>
+                      <button class="sd-fc-btn" data-value="6">6</button>
+                      <button class="sd-fc-btn" data-value="8">8</button>
+                      <div class="sd-custom-group">
+                        <button class="sd-custom-lbl" data-value="CUSTOM">CUSTOM</button>
+                        <input class="sd-entry-lbl" id="liveFrameEntry" type="number" min="1" max="99" placeholder="−">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ── SHARED: Output Type + Seed ── -->
+                  <div class="sd-section">
+                    <div class="sd-output-label">OUTPUT TYPE: <strong id="liveOutputType">CONTROLLED</strong> <span
+                        class="sd-info-wrap" id="liveInfoWrap"><span class="sd-info">i</span>
+                        <div class="sd-tooltip">
+                          <div class="tip-precise">Precise mode uses your uploaded image directly to generate more
+                            accurate results.</div>
+                          <div class="tip-creative">Creative mode analyzes and interprets your image, producing a more
+                            imaginative and expressive output.</div>
+                        </div>
+                      </span></div>
+                    <div class="sd-row">
+                      <button class="sd-output-btn active" data-value="PRECISE">PRECISE</button>
+                      <button class="sd-output-btn" data-value="CREATIVE">CREATIVE</button>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-seed-notice" id="liveSeedNotice">*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS</div>
+                    <div class="sd-seed-bar">
+                      <div class="sd-seed-lbl">SEED</div>
+                      <div class="sd-seed-input">
+                        <input class="sd-seed-num" id="liveSeedNum" type="number" min="1" max="999999" value="421326"
+                          readonly>
+                        <div class="sd-seed-lock" id="liveSeedLock">
+                          <svg class="lock-closed" width="12" height="14" viewBox="0 0 14 16" fill="none">
+                            <rect x="1" y="7" width="12" height="9" rx="1.5" fill="var(--accent)" />
+                            <path d="M4 7V5.5a3 3 0 0 1 6 0V7" stroke="var(--accent)" stroke-width="2"
+                              stroke-linecap="round" fill="none" />
+                            <circle cx="7" cy="11.5" r="1.5" fill="#c7c7c7" />
+                            <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#c7c7c7" />
+                          </svg>
+                          <svg class="lock-open" width="12" height="14" viewBox="0 0 14 16" fill="none">
+                            <rect x="1" y="7" width="12" height="9" rx="1.5" fill="#c7c7c7" />
+                            <path d="M10 7V5.5a3 3 0 0 0-6 0" stroke="#c7c7c7" stroke-width="2" stroke-linecap="round"
+                              fill="none" />
+                            <circle cx="7" cy="11.5" r="1.5" fill="#999997" />
+                            <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#999997" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+              <div class="prompt-input-area">
+                <div class="prompt-text-field" id="liveText" style="flex:1;">What are we making today?</div>
+                <div class="btn-generate frame" id="liveGenerate">FRAME</div>
+              </div>
+              <div class="prompt-switch" data-state="FRAME" id="liveSwitch">
+                <div class="ps-track">
+                  <div class="ps-active"></div>
+                  <div class="ps-inactive"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="liveStatus"
+          style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:#ea5823; font-family:sans-serif;">
+          State: FRAME</div>
+      </div>
+    </section>
+
+    <!-- ── PARENT: Full Prompt Bar ───────────────────── -->
+    <section class="section" id="prompt-bar">
+      <div class="section-header">
+        <span class="section-title">Prompt Bar</span>
+        <span class="section-tag">Parent</span>
+      </div>
+      <div class="section-body" style="flex-direction: column; gap: 24px;">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview" style="width: 100%;">
+            <div class="prompt-bar">
+              <div class="btn-upload-ref frame"></div>
+              <div class="btn-settings frame">
+                <img src="../assets/icon-settings.svg" alt="settings" />
+              </div>
+              <div class="prompt-input-area">
+                <div class="prompt-text-field" style="flex:1;">What are we making today?</div>
+                <div class="btn-generate frame">FRAME</div>
+              </div>
+              <div class="prompt-switch" data-state="FRAME">
+                <div class="ps-track">
+                  <div class="ps-active"></div>
+                  <div class="ps-inactive"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview" style="width: 100%;">
+            <div class="prompt-bar">
+              <div class="btn-upload-ref scene"></div>
+              <div class="btn-settings scene">
+                <img src="../assets/icon-settings.svg" alt="settings" />
+              </div>
+              <div class="prompt-input-area">
+                <div class="prompt-text-field" style="flex:1;">Are we making a movie?</div>
+                <div class="btn-generate scene">SCENE</div>
+              </div>
+              <div class="prompt-switch" data-state="SCENE">
+                <div class="ps-track">
+                  <div class="ps-active"></div>
+                  <div class="ps-inactive"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Upload Ref Button ──────────────────── -->
+    <section class="section" id="upload-ref">
+      <div class="section-header">
+        <span class="section-title">Upload Ref Button</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview">
+            <div class="btn-upload-ref frame"></div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview">
+            <div class="btn-upload-ref scene"></div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label" style="color:#999997;">DISABLED (5 refs)</div>
+          <div class="preview">
+            <div class="btn-upload-ref frame disabled"></div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Reference Chips ───────────────────── -->
+    <section class="section" id="ref-chips">
+      <div class="section-header">
+        <span class="section-title">Reference Chips</span>
+        <span class="section-tag">Child · shown above prompt bar</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview" style="gap: 4px; flex-direction: row; flex-wrap: wrap;">
+            <div class="ref-chip frame">
+              <div class="ref-chip-remove"></div>
+              <div class="ref-chip-thumb"><div class="ref-chip-overlay"></div><span class="ref-chip-label">R1</span></div>
+            </div>
+            <div class="ref-chip frame">
+              <div class="ref-chip-remove"></div>
+              <div class="ref-chip-thumb"><div class="ref-chip-overlay"></div><span class="ref-chip-label">R2</span></div>
+            </div>
+            <div class="ref-chip frame">
+              <div class="ref-chip-remove"></div>
+              <div class="ref-chip-thumb"><div class="ref-chip-overlay"></div><span class="ref-chip-label">R3</span></div>
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview" style="gap: 4px; flex-direction: row; flex-wrap: wrap;">
+            <div class="ref-chip scene">
+              <div class="ref-chip-remove"></div>
+              <div class="ref-chip-thumb"><div class="ref-chip-overlay"></div><span class="ref-chip-label">R1</span></div>
+            </div>
+            <div class="ref-chip scene">
+              <div class="ref-chip-remove"></div>
+              <div class="ref-chip-thumb"><div class="ref-chip-overlay"></div><span class="ref-chip-label">R2</span></div>
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Settings Button ────────────────────── -->
+    <section class="section" id="settings-btn">
+      <div class="section-header">
+        <span class="section-title">Settings Button</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview">
+            <div class="btn-settings frame">
+              <img src="../assets/icon-settings.svg" alt="settings" />
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview">
+            <div class="btn-settings scene">
+              <img src="../assets/icon-settings.svg" alt="settings" />
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Text Field ─────────────────────────── -->
+    <section class="section" id="text-field">
+      <div class="section-header">
+        <span class="section-title">Text Field</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body" style="flex-direction: column; gap: 16px;">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview">
+            <div class="prompt-text-field" style="width: 500px;">What are we making today?</div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview">
+            <div class="prompt-text-field" style="width: 500px;">Are we making a movie?</div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Generate Button ────────────────────── -->
+    <section class="section" id="generate-btn">
+      <div class="section-header">
+        <span class="section-title">Generate Button</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview">
+            <div class="btn-generate frame">FRAME</div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview">
+            <div class="btn-generate scene">SCENE</div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Prompt Switch ──────────────────────── -->
+    <section class="section" id="prompt-switch">
+      <div class="section-header">
+        <span class="section-title">Prompt Switch</span>
+        <span class="section-tag">Child · click to toggle</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label frame">FRAME</div>
+          <div class="preview" style="height: 100px; align-items: center;">
+            <div class="prompt-switch" data-state="FRAME" id="switchA">
+              <div class="ps-track">
+                <div class="ps-active"></div>
+                <div class="ps-inactive"></div>
+              </div>
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label scene">SCENE</div>
+          <div class="preview" style="height: 100px; align-items: center;">
+            <div class="prompt-switch" data-state="SCENE" id="switchB">
+              <div class="ps-track">
+                <div class="ps-active"></div>
+                <div class="ps-inactive"></div>
+              </div>
+            </div>
+          </div>
+          <div class="variant-notes"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Settings Dropdown ───────────────────────── -->
+    <section class="section" id="settings-dropdown">
+      <div class="section-header">
+        <span class="section-title">Settings Dropdown</span>
+        <span class="section-tag">Frame &amp; Scene · click gear in Live Preview to toggle</span>
+      </div>
+      <div class="section-body" style="flex-direction: column; gap: 32px;">
+
+        <!-- FRAME: CONTROLLED / LOCKED -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div
+            style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #ea5823; font-family: sans-serif;">
+            FRAME STATE</div>
+          <div style="display: flex; gap: 48px; flex-wrap: wrap; align-items: flex-start;">
+
+            <div class="variant">
+              <div class="variant-label frame">CONTROLLED / LOCKED</div>
+              <div class="preview">
+                <div class="settings-dropdown" data-open="true" data-seed="locked"
+                  style="position:static; --accent:#ea5823;">
+                  <div class="sd-section">
+                    <div class="sd-label">ASPECT RATIO</div>
+                    <div class="sd-row sd-row-ratio">
+                      <button class="sd-ratio-btn active" data-value="1:1"><span class="ratio-inner">1:1</span></button>
+                      <button class="sd-ratio-btn" data-value="9:16"><span class="ratio-inner">9:16</span></button>
+                      <button class="sd-ratio-btn" data-value="16:9"><span class="ratio-inner">16:9</span></button>
+                      <button class="sd-ratio-btn" data-value="3:4"><span class="ratio-inner">3:4</span></button>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-label">VARIATION</div>
+                    <div class="sd-row">
+                      <button class="sd-var-btn active" data-value="1">1</button>
+                      <button class="sd-var-btn" data-value="2">2</button>
+                      <div class="sd-custom-group">
+                        <button class="sd-custom-lbl">CUSTOM</button>
+                        <input class="sd-entry-lbl" type="number" min="1" max="99" placeholder="−" readonly>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-output-label">OUTPUT TYPE: <strong>CONTROLLED</strong> <span
+                        class="sd-info-wrap"><span class="sd-info">i</span>
+                        <div class="sd-tooltip">
+                          <div class="tip-precise">Precise mode uses your uploaded image directly to generate more
+                            accurate results.</div>
+                          <div class="tip-creative">Creative mode analyzes and interprets your image, producing a more
+                            imaginative and expressive output.</div>
+                        </div>
+                      </span></div>
+                    <div class="sd-row">
+                      <button class="sd-output-btn active" data-value="PRECISE">PRECISE</button>
+                      <button class="sd-output-btn" data-value="CREATIVE">CREATIVE</button>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-seed-notice">*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS</div>
+                    <div class="sd-seed-bar">
+                      <div class="sd-seed-lbl">SEED</div>
+                      <div class="sd-seed-input">
+                        <span class="sd-seed-num">421326</span>
+                        <div class="sd-seed-lock">
+                          <svg class="lock-closed" width="12" height="14" viewBox="0 0 14 16" fill="none">
+                            <rect x="1" y="7" width="12" height="9" rx="1.5" fill="var(--accent, #ea5823)" />
+                            <path d="M4 7V5.5a3 3 0 0 1 6 0V7" stroke="var(--accent, #ea5823)" stroke-width="2"
+                              stroke-linecap="round" fill="none" />
+                            <circle cx="7" cy="11.5" r="1.5" fill="#c7c7c7" />
+                            <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#c7c7c7" />
+                          </svg>
+                          <svg class="lock-open" width="12" height="14" viewBox="0 0 14 16" fill="none">
+                            <rect x="1" y="7" width="12" height="9" rx="1.5" fill="#c7c7c7" />
+                            <path d="M10 7V5.5a3 3 0 0 0-6 0" stroke="#c7c7c7" stroke-width="2" stroke-linecap="round"
+                              fill="none" />
+                            <circle cx="7" cy="11.5" r="1.5" fill="#999997" />
+                            <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#999997" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="variant-notes"></div>
+            </div>
+
+
+
+          </div>
+        </div>
+
+        <!-- SCENE: CONTROLLED / LOCKED (blue accent) -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div
+            style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #5271ff; font-family: sans-serif;">
+            SCENE STATE</div>
+          <div style="display: flex; gap: 48px; flex-wrap: wrap; align-items: flex-start;">
+
+            <div class="variant">
+              <div class="variant-label scene">CONTROLLED / LOCKED</div>
+              <div class="preview">
+                <div class="settings-dropdown" data-open="true" data-seed="locked"
+                  style="position:static; --accent:#5271ff;">
+                  <div class="sd-section">
+                    <div class="sd-label">ASPECT RATIO</div>
+                    <div class="sd-row sd-row-ratio">
+                      <button class="sd-ratio-btn active" data-value="9:16"><span
+                          class="ratio-inner">9:16</span></button>
+                      <button class="sd-ratio-btn" data-value="16:9"><span class="ratio-inner">16:9</span></button>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-label">FRAME COUNT</div>
+                    <div class="sd-row">
+                      <button class="sd-fc-btn active" data-value="2">2</button>
+                      <button class="sd-fc-btn" data-value="4">4</button>
+                      <button class="sd-fc-btn" data-value="6">6</button>
+                      <button class="sd-fc-btn" data-value="8">8</button>
+                      <div class="sd-custom-group">
+                        <button class="sd-custom-lbl">CUSTOM</button>
+                        <input class="sd-entry-lbl" type="number" min="1" max="99" placeholder="−" readonly>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-output-label">OUTPUT TYPE: <strong>CONTROLLED</strong> <span
+                        class="sd-info-wrap"><span class="sd-info">i</span>
+                        <div class="sd-tooltip">
+                          <div class="tip-precise">Precise mode uses your uploaded image directly to generate more
+                            accurate results.</div>
+                          <div class="tip-creative">Creative mode analyzes and interprets your image, producing a more
+                            imaginative and expressive output.</div>
+                        </div>
+                      </span></div>
+                    <div class="sd-row">
+                      <button class="sd-output-btn active" data-value="PRECISE">PRECISE</button>
+                      <button class="sd-output-btn" data-value="CREATIVE">CREATIVE</button>
+                    </div>
+                  </div>
+                  <div class="sd-section">
+                    <div class="sd-seed-notice">*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS</div>
+                    <div class="sd-seed-bar">
+                      <div class="sd-seed-lbl">SEED</div>
+                      <div class="sd-seed-input">
+                        <span class="sd-seed-num">421326</span>
+                        <div class="sd-seed-lock">
+                          <svg class="lock-closed" width="12" height="14" viewBox="0 0 14 16" fill="none">
+                            <rect x="1" y="7" width="12" height="9" rx="1.5" fill="var(--accent, #ea5823)" />
+                            <path d="M4 7V5.5a3 3 0 0 1 6 0V7" stroke="var(--accent, #ea5823)" stroke-width="2"
+                              stroke-linecap="round" fill="none" />
+                            <circle cx="7" cy="11.5" r="1.5" fill="#c7c7c7" />
+                            <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#c7c7c7" />
+                          </svg>
+                          <svg class="lock-open" width="12" height="14" viewBox="0 0 14 16" fill="none">
+                            <rect x="1" y="7" width="12" height="9" rx="1.5" fill="#c7c7c7" />
+                            <path d="M10 7V5.5a3 3 0 0 0-6 0" stroke="#c7c7c7" stroke-width="2" stroke-linecap="round"
+                              fill="none" />
+                            <circle cx="7" cy="11.5" r="1.5" fill="#999997" />
+                            <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#999997" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="variant-notes"></div>
+            </div>
+
+
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <input type="file" id="refFileInput" accept="image/*" style="display:none">
+
+  <script>
+    // ── Reference Upload State ─────────────────────
+    var refState = { FRAME: [], SCENE: [] };
+
+    function renderChips() {
+      var mode = document.getElementById('liveBar').dataset.state;
+      var refs = refState[mode];
+      var row = document.getElementById('liveRefChips');
+      var uploadBtn = document.getElementById('liveUpload');
+
+      row.innerHTML = refs.map(function (src, i) {
+        return '<div class="ref-chip ' + mode.toLowerCase() + '" data-index="' + i + '">' +
+          '<div class="ref-chip-remove"></div>' +
+          '<div class="ref-chip-thumb">' +
+          '<img src="' + src + '" alt="">' +
+          '<div class="ref-chip-overlay"></div>' +
+          '<span class="ref-chip-label">R' + (i + 1) + '</span>' +
+          '</div>' +
+          '</div>';
+      }).join('');
+
+      row.style.display = refs.length ? 'flex' : 'none';
+
+      if (refs.length >= 5) {
+        uploadBtn.classList.add('disabled');
+      } else {
+        uploadBtn.classList.remove('disabled');
+      }
+
+      row.querySelectorAll('.ref-chip').forEach(function (chip) {
+        chip.querySelector('.ref-chip-remove').addEventListener('click', function () {
+          var idx = parseInt(chip.dataset.index, 10);
+          refState[mode].splice(idx, 1);
+          renderChips();
+        });
+      });
+    }
+
+    document.getElementById('liveUpload').addEventListener('click', function () {
+      var mode = document.getElementById('liveBar').dataset.state;
+      if (refState[mode].length >= 5) return;
+      document.getElementById('refFileInput').click();
+    });
+
+    document.getElementById('refFileInput').addEventListener('change', function (e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (evt) {
+        var mode = document.getElementById('liveBar').dataset.state;
+        if (refState[mode].length < 5) {
+          refState[mode].push(evt.target.result);
+          renderChips();
+        }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
+    // Live Preview toggle
+    document.getElementById('liveSwitch').addEventListener('click', function () {
+      const next = this.dataset.state === 'FRAME' ? 'SCENE' : 'FRAME';
+      this.dataset.state = next;
+      document.getElementById('liveBar').dataset.state = next;
+      document.getElementById('liveGenerate').textContent = next;
+      document.getElementById('liveText').textContent =
+        next === 'SCENE' ? 'Are we making a movie?' : 'What are we making today?';
+      const status = document.getElementById('liveStatus');
+      status.textContent = 'State: ' + next;
+      status.style.color = next === 'SCENE' ? '#5271ff' : '#ea5823';
+
+      const prev = next === 'FRAME' ? 'scene' : 'frame';
+      document.getElementById('liveUpload').classList.replace(prev, next.toLowerCase());
+      document.getElementById('liveSettingsBtn').classList.replace(prev, next.toLowerCase());
+      document.getElementById('liveGenerate').classList.replace(prev, next.toLowerCase());
+
+      document.getElementById('liveSettingsDropdown').dataset.open = 'false';
+      renderChips();
+    });
+
+    // Settings dropdown interaction
+    (function () {
+      // Setup static component variants
+      document.querySelectorAll('.btn-settings:not(#liveSettingsBtn)').forEach(function (sb) {
+        sb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          this.classList.toggle('open');
+        });
+      });
+
+      const btn = document.getElementById('liveSettingsBtn');
+      const drop = document.getElementById('liveSettingsDropdown');
+
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var opening = drop.dataset.open !== 'true';
+        drop.dataset.open = opening ? 'true' : 'false';
+        btn.classList.toggle('open', opening);
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!drop.contains(e.target)) {
+          drop.dataset.open = 'false';
+          btn.classList.remove('open');
+        }
+      });
+
+      document.querySelectorAll('.settings-dropdown').forEach(function (drop) {
+        drop.querySelectorAll('.sd-ratio-btn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            drop.querySelectorAll('.sd-ratio-btn').forEach(function (x) { x.classList.remove('active'); });
+            this.classList.add('active');
+          });
+        });
+
+        drop.querySelectorAll('.sd-var-btn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            drop.querySelectorAll('.sd-var-btn').forEach(function (x) { x.classList.remove('active'); });
+            drop.querySelectorAll('.sd-frame-only .sd-custom-lbl, .sd-frame-only .sd-entry-lbl').forEach(function (x) { x.classList.remove('active'); });
+            this.classList.add('active');
+          });
+        });
+
+        drop.querySelectorAll('.sd-fc-btn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            drop.querySelectorAll('.sd-fc-btn').forEach(function (x) { x.classList.remove('active'); });
+            drop.querySelectorAll('.sd-scene-only .sd-custom-lbl, .sd-scene-only .sd-entry-lbl').forEach(function (x) { x.classList.remove('active'); });
+            this.classList.add('active');
+          });
+        });
+
+        drop.querySelectorAll('.sd-custom-lbl').forEach(function (b) {
+          b.addEventListener('click', function () {
+            drop.querySelectorAll('.sd-var-btn, .sd-fc-btn').forEach(function (x) { x.classList.remove('active'); });
+            const group = this.closest('.sd-custom-group');
+            group.querySelectorAll('.sd-custom-lbl, .sd-entry-lbl').forEach(function (x) { x.classList.add('active'); });
+            var entry = group.querySelector('.sd-entry-lbl');
+            if (entry) { entry.removeAttribute('readonly'); entry.focus(); }
+          });
+        });
+
+        drop.querySelectorAll('.sd-output-btn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            drop.querySelectorAll('.sd-output-btn').forEach(function (x) { x.classList.remove('active'); });
+            this.classList.add('active');
+            var outputTypeLbl = drop.querySelector('.sd-output-label strong');
+            if (outputTypeLbl) {
+              outputTypeLbl.textContent = this.dataset.value === 'PRECISE' ? 'CONTROLLED' : 'REMIX';
+            }
+            drop.dataset.activeOutput = this.dataset.value;
+          });
+        });
+      }); // End of document.querySelectorAll('.settings-dropdown').forEach
+
+      // Seed lock toggle + editable input when unlocked
+      var seedInput = document.getElementById('liveSeedNum');
+      var seedTimer = null;
+
+      document.getElementById('liveSeedLock').addEventListener('click', function () {
+        const locked = drop.dataset.seed === 'locked';
+        drop.dataset.seed = locked ? 'unlocked' : 'locked';
+        document.getElementById('liveSeedNotice').textContent = locked
+          ? '*SEED IS UNLOCKED TO GIVE MORE VARIETY'
+          : '*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS';
+        seedInput.readOnly = !locked; // was locked → now unlocked → editable
+        if (locked) { seedInput.focus(); }
+        else { seedInput.blur(); if (seedTimer) clearTimeout(seedTimer); }
+      });
+
+      seedInput.addEventListener('input', function () {
+        if (drop.dataset.seed !== 'unlocked') return;
+        var v = parseInt(this.value, 10);
+        if (this.value !== '' && (isNaN(v) || v < 1)) this.value = 1;
+        if (v > 999999) this.value = 999999;
+        if (seedTimer) clearTimeout(seedTimer);
+        seedTimer = setTimeout(function () {
+          if (drop.dataset.seed === 'unlocked') {
+            drop.dataset.seed = 'locked';
+            seedInput.readOnly = true;
+            document.getElementById('liveSeedNotice').textContent = '*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS';
+          }
+        }, 2000);
+      });
+
+      // Info tooltip — click toggles, hover shows
+      document.getElementById('liveInfoWrap').addEventListener('click', function (e) {
+        e.stopPropagation();
+        this.classList.toggle('open');
+      });
+
+      // Custom variation entry — activate CUSTOM when typing, validate 3–10
+      var customEntry = document.getElementById('liveCustomEntry');
+      customEntry.addEventListener('focus', function () {
+        drop.querySelectorAll('.sd-var-btn').forEach(function (x) { x.classList.remove('active'); });
+        drop.querySelectorAll('.sd-custom-lbl, .sd-entry-lbl').forEach(function (x) { x.classList.add('active'); });
+      });
+      customEntry.addEventListener('change', function () {
+        var v = parseInt(this.value, 10);
+        if (isNaN(v) || v < 3) this.value = 3;
+        if (v > 10) this.value = 10;
+      });
+    }());
+
+    // Prompt switch toggle on click (static variants)
+    document.querySelectorAll('.prompt-switch:not(#liveSwitch)').forEach(function (sw) {
+      sw.addEventListener('click', function () {
+        this.dataset.state = this.dataset.state === 'FRAME' ? 'SCENE' : 'FRAME';
+      });
+    });
+
+    // Nav active state on scroll
+    const sections = document.querySelectorAll('.section');
+    const navLinks = document.querySelectorAll('.nav a');
+    window.addEventListener('scroll', function () {
+      let current = '';
+      sections.forEach(function (s) {
+        if (window.scrollY >= s.offsetTop - 80) current = s.id;
+      });
+      navLinks.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+      });
+    });
+  </script>
+
+
+</body>
+
+</html>

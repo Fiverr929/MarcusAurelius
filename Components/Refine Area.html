@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Refine Area — Component</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Times New Roman', serif;
+      background: #c7c7c7;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── REFINE LIGHTBOX ───────────────────────────────── */
+    .refine-lightbox {
+      position: fixed;
+      inset: 0;
+      background: #c7c7c7;
+      display: flex;
+    }
+
+    /* ── HISTORY PANEL ─────────────────────────────────── */
+    .refine-history {
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      width: 140px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      background: #999997;
+    }
+
+    .history-header {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      flex-shrink: 0;
+    }
+
+    .history-frames {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 3px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .history-frames::-webkit-scrollbar { display: none; }
+
+    .history-thumb {
+      width: 100%;
+      aspect-ratio: 1;
+      background: transparent;
+      border: 1.5px solid #c7c7c7;
+      flex-shrink: 0;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .history-placeholder {
+      opacity: 0.3;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .history-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .history-thumb.active {
+      border: 2.5px solid #5271ff;
+      opacity: 1;
+    }
+
+    .history-thumb.active::after {
+      content: 'ACTIVE';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #5271ff;
+      color: #c7c7c7;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-align: center;
+      padding: 2px 0;
+      font-family: 'Times New Roman', serif;
+    }
+
+    /* ── MAIN AREA ─────────────────────────────────────── */
+    .refine-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 28px;
+    }
+
+    .refine-center {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 820px;
+    }
+
+    .refine-canvas-wrap {
+      width: 100%;
+      height: 513px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .refine-canvas {
+      height: 100%;
+      width: auto;
+      max-width: 100%;
+      aspect-ratio: 874 / 547;
+      background: #999997;
+      border: 3px solid #5271ff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .refine-canvas.drag-over {
+      border-color: #c7c7c7;
+      opacity: 0.85;
+    }
+
+    .refine-canvas img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ── PROMPT BAR ────────────────────────────────────── */
+    .prompt-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .ref-chips-row {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      display: flex;
+      gap: 4px;
+      padding-top: 4px;
+      align-items: center;
+    }
+
+    .ref-chip {
+      display: flex;
+      align-items: center;
+      cursor: default;
+    }
+
+    .ref-chip-remove {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+      position: relative;
+      background: #5271ff;
+    }
+
+    .ref-chip-remove::before,
+    .ref-chip-remove::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 10px; height: 1.5px;
+      border-radius: 1px;
+      background: #c7c7c7;
+    }
+    .ref-chip-remove::before { transform: translate(-50%, -50%) rotate(45deg); }
+    .ref-chip-remove::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+    .ref-chip-thumb {
+      width: 52px;
+      height: 20px;
+      position: relative;
+      overflow: hidden;
+      border: 0.756px solid #5271ff;
+      background: #999997;
+      flex-shrink: 0;
+    }
+
+    .ref-chip-thumb img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .ref-chip-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.45;
+      background: #5271ff;
+      pointer-events: none;
+    }
+
+    .ref-chip-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-family: 'Times New Roman', serif;
+      color: #c7c7c7;
+      pointer-events: none;
+    }
+
+    .prompt-ref-btn.disabled {
+      opacity: 1;
+      pointer-events: none;
+      background: #999997;
+      box-shadow: inset 0 0 0 2px #5271ff;
+    }
+
+    .prompt-ref-btn.disabled svg line {
+      stroke: #5271ff;
+    }
+
+    .refine-prompt {
+      display: flex;
+      align-items: stretch;
+      height: 47px;
+      width: 100%;
+    }
+
+    .prompt-ref-btn {
+      width: 47px;
+      flex-shrink: 0;
+      background: #5271ff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prompt-input {
+      flex: 1;
+      background: #999997;
+      border: none;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 18px;
+      padding: 0 14px;
+      outline: none;
+    }
+
+    .prompt-input::placeholder {
+      color: #c7c7c7;
+      opacity: 0.65;
+    }
+
+    .prompt-refine-btn {
+      width: 160px;
+      flex-shrink: 0;
+      background: #5271ff;
+      border: 3px solid #999997;
+      border-left: none;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 24px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .prompt-refine-btn:hover { opacity: 0.85; }
+
+    .prompt-refine-btn.loading {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* ── CANVAS GROUP ─────────────────────────────────── */
+    .canvas-group {
+      display: inline-flex;
+      align-items: stretch;
+      height: 100%;
+    }
+
+    /* ── SUBMENU PANEL ─────────────────────────────────── */
+    .tool-submenu {
+      width: 0;
+      overflow: hidden;
+      transition: width 0.18s ease;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #5271ff;
+    }
+
+    .tool-submenu.open { width: 52px; }
+
+    .submenu-panel {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 8px;
+      min-width: 52px;
+      background: #5271ff;
+    }
+
+    .submenu-panel.visible { display: flex; }
+
+    .sub-divider {
+      width: 22px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Size dots */
+    .size-options {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .size-dot {
+      width: 30px;
+      height: 30px;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .size-dot::after {
+      content: '';
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      display: block;
+      transition: background 0.15s;
+    }
+
+    .size-dot[data-size="3"]::after  { width: 5px;  height: 5px; }
+    .size-dot[data-size="8"]::after  { width: 10px; height: 10px; }
+    .size-dot[data-size="16"]::after { width: 17px; height: 17px; }
+    .size-dot.active::after { background: #ffffff; }
+
+    /* Color swatches */
+    .color-options {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .color-swatch {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .color-swatch.active { border-color: #ffffff; }
+
+    /* Undo / Redo icons */
+    .edit-options {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .edit-btn {
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+
+    .edit-btn:hover { color: rgba(255, 255, 255, 0.6); }
+    .edit-btn svg { width: 16px; height: 16px; }
+
+    /* Crop ratio icons */
+    .crop-options {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .crop-btn {
+      width: 36px;
+      height: 28px;
+      background: none;
+      border: none;
+      padding: 3px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+
+    .crop-btn svg { width: 100%; height: 100%; }
+    .crop-btn.active { color: #ffffff; }
+
+    .apply-btn {
+      width: 32px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      font-family: 'Times New Roman', serif;
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+
+    /* ── RIGHT TOOLBAR ─────────────────────────────────── */
+    .refine-toolbar {
+      width: 52px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #999997;
+    }
+
+    .tool-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      padding: 6px;
+      color: #c7c7c7;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .tool-btn svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .tool-btn.active {
+      color: #c7c7c7;
+      background: #5271ff;
+    }
+
+    /* ── CANVAS OVERLAYS ───────────────────────────────── */
+    #drawLayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    #cropOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      z-index: 3;
+      overflow: hidden;
+    }
+
+    #cropOverlay.active { display: block; }
+
+    .crop-box {
+      position: absolute;
+      border: 2px solid #c7c7c7;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+      cursor: move;
+    }
+
+    .crop-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #c7c7c7;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="refine-lightbox">
+
+    <!-- History Panel -->
+    <div class="refine-history">
+      <div class="history-header">HISTORY</div>
+      <div class="history-frames" id="historyFrames"></div>
+    </div>
+
+    <!-- Canvas + prompt -->
+    <div class="refine-main">
+      <div class="refine-center">
+
+        <div class="refine-canvas-wrap">
+          <div class="canvas-group">
+
+            <div class="refine-canvas" id="refineCanvas">
+              <canvas id="drawLayer"></canvas>
+              <div id="cropOverlay"></div>
+            </div>
+
+            <!-- Submenu panel -->
+            <div class="tool-submenu" id="toolSubmenu">
+
+              <!-- Pencil submenu -->
+              <div class="submenu-panel" data-tool="pencil">
+                <div class="size-options">
+                  <button class="size-dot active" data-size="3"></button>
+                  <button class="size-dot" data-size="8"></button>
+                  <button class="size-dot" data-size="16"></button>
+                </div>
+                <div class="sub-divider"></div>
+                <div class="color-options">
+                  <button class="color-swatch active" data-color="#ea5823" style="background:#ea5823"></button>
+                  <button class="color-swatch" data-color="#c7c7c7" style="background:#c7c7c7"></button>
+                  <button class="color-swatch" data-color="#22c55e" style="background:#22c55e"></button>
+                </div>
+                <div class="sub-divider"></div>
+                <div class="edit-options">
+                  <button class="edit-btn" id="undoBtn">
+                    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 7H11C13.2 7 15 8.8 15 11C15 13.2 13.2 15 11 15H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M6 4L3 7L6 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button class="edit-btn" id="redoBtn">
+                    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15 7H7C4.8 7 3 8.8 3 11C3 13.2 4.8 15 7 15H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M12 4L15 7L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Crop submenu -->
+              <div class="submenu-panel" data-tool="crop">
+                <div class="crop-options">
+                  <button class="crop-btn active" data-ratio="16/9">
+                    <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="7" width="32" height="14" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </button>
+                  <button class="crop-btn" data-ratio="9/16">
+                    <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="1" width="12" height="26" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </button>
+                  <button class="crop-btn" data-ratio="1/1">
+                    <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="2" width="20" height="24" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </button>
+                  <button class="crop-btn" data-ratio="free">
+                    <svg viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="3" width="30" height="22" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+                      <rect x="1" y="1" width="5" height="5" fill="currentColor"/>
+                      <rect x="30" y="1" width="5" height="5" fill="currentColor"/>
+                      <rect x="1" y="22" width="5" height="5" fill="currentColor"/>
+                      <rect x="30" y="22" width="5" height="5" fill="currentColor"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="sub-divider"></div>
+                <button class="apply-btn" id="applyCropBtn">APPLY</button>
+              </div>
+
+            </div>
+
+            <!-- Toolbar -->
+            <div class="refine-toolbar">
+              <button class="tool-btn" data-tool="pencil">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 33L10.5 22L28 7L35 14L16.5 30.5L7 33Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M25.5 9.5L32 16" stroke="currentColor" stroke-width="2"/>
+                  <path d="M7 33L11 29.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="tool-btn" data-tool="crop">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="8" y1="4" x2="8" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="8" y1="32" x2="36" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="14" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="32" y1="8" x2="32" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="14" y="8" width="18" height="18" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
+                </svg>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="prompt-wrap">
+          <div class="ref-chips-row" id="refChipsRow"></div>
+          <div class="refine-prompt">
+            <button class="prompt-ref-btn" id="refUploadBtn">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="10" y1="2" x2="10" y2="18" stroke="#c7c7c7" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="2" y1="10" x2="18" y2="10" stroke="#c7c7c7" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <input class="prompt-input" id="promptInput" type="text" placeholder="What do you want me to do now ?" />
+            <button class="prompt-refine-btn" id="refineBtn">REFINE</button>
+          </div>
+        </div>
+        <input type="file" id="refFileInput" accept="image/*" style="display:none">
+
+      </div>
+    </div>
+
+
+  </div>
+
+  <script>
+    // ── Refs ──────────────────────────────────────────────
+    const canvas        = document.getElementById('refineCanvas');
+    const drawLayer     = document.getElementById('drawLayer');
+    const cropOverlay   = document.getElementById('cropOverlay');
+    const historyFrames = document.getElementById('historyFrames');
+    const promptInput   = document.getElementById('promptInput');
+    const toolSubmenu   = document.getElementById('toolSubmenu');
+
+    // ── History stack ─────────────────────────────────────
+    function addPlaceholders() {
+      for (let i = 0; i < 3; i++) {
+        const p = document.createElement('div');
+        p.className = 'history-thumb history-placeholder';
+        historyFrames.appendChild(p);
+      }
+    }
+
+    function clearHistory() {
+      historyFrames.innerHTML = '';
+      addPlaceholders();
+    }
+
+    function setActiveVersion(url, thumb) {
+      const probe = new Image();
+      probe.onload = () => {
+        canvas.style.aspectRatio = `${probe.naturalWidth} / ${probe.naturalHeight}`;
+      };
+      probe.src = url;
+      // Replace only the img tag, keep overlays intact
+      const existing = canvas.querySelector('img');
+      if (existing) existing.remove();
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'refine image';
+      canvas.insertBefore(img, canvas.firstChild);
+      document.querySelectorAll('.history-thumb').forEach(t => t.classList.remove('active'));
+      thumb.classList.add('active');
+    }
+
+    function addToHistory(url) {
+      const placeholder = historyFrames.querySelector('.history-placeholder');
+      if (placeholder) placeholder.remove();
+      const thumb = document.createElement('div');
+      thumb.className = 'history-thumb';
+      thumb.innerHTML = `<img src="${url}" alt="version">`;
+      thumb.addEventListener('click', () => setActiveVersion(url, thumb));
+      historyFrames.prepend(thumb);
+      setActiveVersion(url, thumb);
+    }
+
+    addPlaceholders();
+
+    function loadImageIntoCanvas(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const url = URL.createObjectURL(file);
+      clearHistory();
+      addToHistory(url);
+    }
+
+    // Drag & drop
+    canvas.addEventListener('dragover', e => {
+      e.preventDefault();
+      canvas.classList.add('drag-over');
+    });
+    canvas.addEventListener('dragleave', () => canvas.classList.remove('drag-over'));
+    canvas.addEventListener('drop', e => {
+      e.preventDefault();
+      canvas.classList.remove('drag-over');
+      loadImageIntoCanvas(e.dataTransfer.files[0]);
+    });
+
+    // ── Tool system ───────────────────────────────────────
+    let activeTool = null;
+
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tool = btn.dataset.tool;
+        if (activeTool === tool) deactivateTool();
+        else activateTool(tool, btn);
+      });
+    });
+
+    function activateTool(tool, btn) {
+      deactivateTool();
+      activeTool = tool;
+      btn.classList.add('active');
+      toolSubmenu.classList.add('open');
+      document.querySelectorAll('.submenu-panel').forEach(p => p.classList.remove('visible'));
+      document.querySelector(`.submenu-panel[data-tool="${tool}"]`).classList.add('visible');
+      if (tool === 'pencil') enablePencil();
+      if (tool === 'crop')   enableCrop();
+    }
+
+    function deactivateTool() {
+      if (!activeTool) return;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      toolSubmenu.classList.remove('open');
+      document.querySelectorAll('.submenu-panel').forEach(p => p.classList.remove('visible'));
+      if (activeTool === 'pencil') disablePencil();
+      if (activeTool === 'crop')   disableCrop();
+      activeTool = null;
+    }
+
+    function updatePromptPlaceholder() {
+      if (undoStack.length > 0) {
+        promptInput.placeholder = 'Describe what to do in the marked area...';
+      } else {
+        promptInput.placeholder = 'What do you want me to do now ?';
+      }
+    }
+
+    // ── PENCIL TOOL ───────────────────────────────────────
+    let strokeColor = '#ea5823';
+    let strokeSize  = 3;
+    let undoStack   = [];
+    let redoStack   = [];
+    let isDrawing   = false;
+    let currentStroke = null;
+    const ctx = drawLayer.getContext('2d');
+
+    function syncDrawLayer() {
+      drawLayer.width  = canvas.offsetWidth;
+      drawLayer.height = canvas.offsetHeight;
+      redrawStrokes();
+    }
+
+    function redrawStrokes() {
+      ctx.clearRect(0, 0, drawLayer.width, drawLayer.height);
+      undoStack.forEach(stroke => {
+        if (stroke.points.length < 2) return;
+        ctx.beginPath();
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth   = stroke.size;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        stroke.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.stroke();
+      });
+    }
+
+    function pencilMouseDown(e) {
+      isDrawing = true;
+      const r = drawLayer.getBoundingClientRect();
+      const sx = drawLayer.width  / drawLayer.offsetWidth;
+      const sy = drawLayer.height / drawLayer.offsetHeight;
+      currentStroke = { color: strokeColor, size: strokeSize, points: [{ x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy }] };
+      redoStack = [];
+    }
+
+    function pencilMouseMove(e) {
+      if (!isDrawing) return;
+      const r = drawLayer.getBoundingClientRect();
+      const sx = drawLayer.width  / drawLayer.offsetWidth;
+      const sy = drawLayer.height / drawLayer.offsetHeight;
+      const pt = { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+      currentStroke.points.push(pt);
+      ctx.beginPath();
+      ctx.strokeStyle = currentStroke.color;
+      ctx.lineWidth   = currentStroke.size;
+      ctx.lineCap     = 'round';
+      ctx.lineJoin    = 'round';
+      const pts = currentStroke.points;
+      ctx.moveTo(pts[pts.length - 2].x, pts[pts.length - 2].y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+    }
+
+    function pencilMouseUp() {
+      if (!isDrawing || !currentStroke) return;
+      isDrawing = false;
+      undoStack.push(currentStroke);
+      currentStroke = null;
+      updatePromptPlaceholder();
+    }
+
+    function enablePencil() {
+      syncDrawLayer();
+      drawLayer.style.pointerEvents = 'all';
+      drawLayer.style.cursor = 'crosshair';
+      drawLayer.addEventListener('mousedown', pencilMouseDown);
+      drawLayer.addEventListener('mousemove', pencilMouseMove);
+      drawLayer.addEventListener('mouseup',   pencilMouseUp);
+      drawLayer.addEventListener('mouseleave', pencilMouseUp);
+    }
+
+    function disablePencil() {
+      drawLayer.style.pointerEvents = 'none';
+      drawLayer.style.cursor = '';
+      drawLayer.removeEventListener('mousedown', pencilMouseDown);
+      drawLayer.removeEventListener('mousemove', pencilMouseMove);
+      drawLayer.removeEventListener('mouseup',   pencilMouseUp);
+      drawLayer.removeEventListener('mouseleave', pencilMouseUp);
+    }
+
+    // Pencil submenu wiring
+    document.querySelectorAll('.size-dot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-dot').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        strokeSize = parseInt(btn.dataset.size);
+      });
+    });
+
+    document.querySelectorAll('.color-swatch').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        strokeColor = btn.dataset.color;
+      });
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      if (!undoStack.length) return;
+      redoStack.push(undoStack.pop());
+      redrawStrokes();
+      updatePromptPlaceholder();
+    });
+
+    document.getElementById('redoBtn').addEventListener('click', () => {
+      if (!redoStack.length) return;
+      undoStack.push(redoStack.pop());
+      redrawStrokes();
+      updatePromptPlaceholder();
+    });
+
+    // ── CROP TOOL ─────────────────────────────────────────
+    let cropBox = null;
+    let cropRatio = 16 / 9;
+    let cropIsFree = false;
+    let cropDrag = null;
+    let cropResize = null;
+
+    function enableCrop() {
+      cropOverlay.classList.add('active');
+      buildCropBox();
+    }
+
+    function disableCrop() {
+      cropOverlay.classList.remove('active');
+      cropOverlay.innerHTML = '';
+      cropBox = null;
+    }
+
+    function buildCropBox() {
+      cropOverlay.innerHTML = '';
+      const cw = canvas.offsetWidth;
+      const ch = canvas.offsetHeight;
+      let bw, bh;
+      if (cropIsFree) {
+        bw = cw * 0.7;
+        bh = ch * 0.7;
+      } else {
+        bw = Math.min(cw * 0.8, ch * 0.8 * cropRatio);
+        bh = bw / cropRatio;
+        if (bh > ch * 0.8) { bh = ch * 0.8; bw = bh * cropRatio; }
+      }
+      const bx = (cw - bw) / 2;
+      const by = (ch - bh) / 2;
+
+      cropBox = document.createElement('div');
+      cropBox.className = 'crop-box';
+      cropBox.style.left   = bx + 'px';
+      cropBox.style.top    = by + 'px';
+      cropBox.style.width  = bw + 'px';
+      cropBox.style.height = bh + 'px';
+
+      const handles = [
+        { pos: 'tl', cursor: 'nw-resize', top: '-5px', left: '-5px' },
+        { pos: 'tr', cursor: 'ne-resize', top: '-5px', right: '-5px' },
+        { pos: 'bl', cursor: 'sw-resize', bottom: '-5px', left: '-5px' },
+        { pos: 'br', cursor: 'se-resize', bottom: '-5px', right: '-5px' },
+      ];
+
+      handles.forEach(h => {
+        const el = document.createElement('div');
+        el.className = 'crop-handle';
+        el.dataset.pos = h.pos;
+        el.style.cursor = h.cursor;
+        if (h.top    !== undefined) el.style.top    = h.top;
+        if (h.bottom !== undefined) el.style.bottom = h.bottom;
+        if (h.left   !== undefined) el.style.left   = h.left;
+        if (h.right  !== undefined) el.style.right  = h.right;
+        el.addEventListener('mousedown', startCropResize);
+        cropBox.appendChild(el);
+      });
+
+      cropBox.addEventListener('mousedown', startCropDrag);
+      cropOverlay.appendChild(cropBox);
+
+      document.addEventListener('mousemove', onCropMouseMove);
+      document.addEventListener('mouseup',   onCropMouseUp);
+    }
+
+    function startCropDrag(e) {
+      if (e.target !== cropBox) return;
+      e.preventDefault();
+      cropDrag = { startX: e.clientX, startY: e.clientY, origLeft: parseInt(cropBox.style.left), origTop: parseInt(cropBox.style.top) };
+    }
+
+    function startCropResize(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      cropResize = {
+        pos: e.target.dataset.pos,
+        startX: e.clientX, startY: e.clientY,
+        origLeft: parseInt(cropBox.style.left), origTop: parseInt(cropBox.style.top),
+        origW: parseInt(cropBox.style.width),   origH: parseInt(cropBox.style.height),
+      };
+    }
+
+    function onCropMouseMove(e) {
+      const cw = canvas.offsetWidth;
+      const ch = canvas.offsetHeight;
+
+      if (cropDrag) {
+        const dx = e.clientX - cropDrag.startX;
+        const dy = e.clientY - cropDrag.startY;
+        let nx = cropDrag.origLeft + dx;
+        let ny = cropDrag.origTop  + dy;
+        const bw = parseInt(cropBox.style.width);
+        const bh = parseInt(cropBox.style.height);
+        nx = Math.max(0, Math.min(nx, cw - bw));
+        ny = Math.max(0, Math.min(ny, ch - bh));
+        cropBox.style.left = nx + 'px';
+        cropBox.style.top  = ny + 'px';
+      }
+
+      if (cropResize) {
+        const dx = e.clientX - cropResize.startX;
+        const dy = e.clientY - cropResize.startY;
+        let { origLeft: l, origTop: t, origW: w, origH: h } = cropResize;
+        const pos = cropResize.pos;
+        let nl = l, nt = t, nw = w, nh = h;
+
+        if (pos === 'br') { nw = Math.max(40, w + dx); nh = cropIsFree ? Math.max(40, h + dy) : nw / cropRatio; }
+        if (pos === 'bl') { nw = Math.max(40, w - dx); nl = l + w - nw; nh = cropIsFree ? Math.max(40, h + dy) : nw / cropRatio; }
+        if (pos === 'tr') { nw = Math.max(40, w + dx); nh = cropIsFree ? Math.max(40, h - dy) : nw / cropRatio; nt = cropIsFree ? t + h - nh : t + h - nw / cropRatio; }
+        if (pos === 'tl') { nw = Math.max(40, w - dx); nl = l + w - nw; nh = cropIsFree ? Math.max(40, h - dy) : nw / cropRatio; nt = t + h - nh; }
+
+        nl = Math.max(0, nl); nt = Math.max(0, nt);
+        nw = Math.min(nw, cw - nl); nh = Math.min(nh, ch - nt);
+        cropBox.style.left   = nl + 'px';
+        cropBox.style.top    = nt + 'px';
+        cropBox.style.width  = nw + 'px';
+        cropBox.style.height = nh + 'px';
+      }
+    }
+
+    function onCropMouseUp() { cropDrag = null; cropResize = null; }
+
+    // Crop ratio buttons
+    document.querySelectorAll('.crop-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.crop-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const r = btn.dataset.ratio;
+        if (r === 'free') {
+          cropIsFree = true;
+        } else {
+          cropIsFree = false;
+          const parts = r.split('/');
+          cropRatio = parseFloat(parts[0]) / parseFloat(parts[1]);
+        }
+        if (activeTool === 'crop') buildCropBox();
+      });
+    });
+
+    // Apply crop
+    document.getElementById('applyCropBtn').addEventListener('click', () => {
+      const img = canvas.querySelector('img');
+      if (!img || !cropBox) return;
+      const scaleX = img.naturalWidth  / canvas.offsetWidth;
+      const scaleY = img.naturalHeight / canvas.offsetHeight;
+      const bx = parseInt(cropBox.style.left)   * scaleX;
+      const by = parseInt(cropBox.style.top)    * scaleY;
+      const bw = parseInt(cropBox.style.width)  * scaleX;
+      const bh = parseInt(cropBox.style.height) * scaleY;
+      const offscreen = document.createElement('canvas');
+      offscreen.width  = bw;
+      offscreen.height = bh;
+      const octx = offscreen.getContext('2d');
+      octx.drawImage(img, bx, by, bw, bh, 0, 0, bw, bh);
+      offscreen.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        disableCrop();
+        deactivateTool();
+        addToHistory(url);
+      });
+    });
+
+
+    // ── REFERENCE UPLOAD ──────────────────────────────────
+    const references   = [];
+    const refChipsRow  = document.getElementById('refChipsRow');
+    const refFileInput = document.getElementById('refFileInput');
+    const refUploadBtn = document.getElementById('refUploadBtn');
+
+    refUploadBtn.addEventListener('click', () => {
+      if (references.length >= 3) return;
+      refFileInput.value = '';
+      refFileInput.click();
+    });
+
+    refFileInput.addEventListener('change', () => {
+      const file = refFileInput.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      if (references.length >= 3) return;
+      references.push(URL.createObjectURL(file));
+      renderRefChips();
+    });
+
+    function renderRefChips() {
+      refChipsRow.innerHTML = references.map((url, i) => `
+        <div class="ref-chip" data-index="${i}">
+          <div class="ref-chip-remove"></div>
+          <div class="ref-chip-thumb">
+            <img src="${url}" alt="">
+            <div class="ref-chip-overlay"></div>
+            <span class="ref-chip-label">R${i + 1}</span>
+          </div>
+        </div>
+      `).join('');
+
+      refChipsRow.querySelectorAll('.ref-chip').forEach(chip => {
+        chip.querySelector('.ref-chip-remove').addEventListener('click', () => {
+          const idx = parseInt(chip.dataset.index, 10);
+          URL.revokeObjectURL(references[idx]);
+          references.splice(idx, 1);
+          renderRefChips();
+        });
+      });
+
+      if (references.length >= 3) {
+        refUploadBtn.classList.add('disabled');
+      } else {
+        refUploadBtn.classList.remove('disabled');
+      }
+    }
+
+    // ── REFINE BUTTON ─────────────────────────────────────
+    const refineBtn = document.getElementById('refineBtn');
+
+    refineBtn.addEventListener('click', async () => {
+      const prompt = document.getElementById('promptInput').value.trim();
+      if (!prompt) return;
+
+      refineBtn.classList.add('loading');
+      refineBtn.textContent = '...';
+
+      // Collect canvas image as base64
+      const canvasImg = document.querySelector('#refineCanvas img');
+      const canvasDataUrl = canvasImg ? canvasImg.src : null;
+
+      // Collect draw layer annotations
+      const annotationDataUrl = drawLayer.toDataURL('image/png');
+
+      // Payload ready for API
+      const payload = {
+        prompt,
+        canvasImage:  canvasDataUrl,
+        annotations:  annotationDataUrl,
+        references:   [...references],
+      };
+
+      console.log('[Refine] Payload ready:', payload);
+
+      // ── API CALL GOES HERE ────────────────────────────
+      // const result = await callGenerationAPI(payload);
+      // addToHistory(result.imageUrl);
+      // ─────────────────────────────────────────────────
+
+      refineBtn.classList.remove('loading');
+      refineBtn.textContent = 'REFINE';
+    });
+
+  </script>
+
+</body>
+</html>

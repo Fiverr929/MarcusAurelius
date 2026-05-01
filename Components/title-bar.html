@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Title Bar — Components</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── LEFT NAV ─────────────────────────────────────── */
+    .nav {
+      width: 180px;
+      flex-shrink: 0;
+      background: #999997;
+      border-right: 2px solid #5271ff;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      z-index: 10;
+    }
+
+    .nav-title {
+      color: #c7c7c7;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0 16px 16px;
+      border-bottom: 1px solid #5271ff;
+      margin-bottom: 12px;
+    }
+
+    .nav-section {
+      padding: 4px 0;
+    }
+
+    .nav-label {
+      color: #c7c7c7;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 16px 2px;
+      opacity: 0.5;
+    }
+
+    .nav a {
+      display: block;
+      padding: 7px 16px;
+      color: #c7c7c7;
+      font-size: 12px;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      border-left: 2px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .nav a:hover {
+      background: rgba(82, 113, 255, 0.2);
+      border-left-color: #5271ff;
+    }
+
+    .nav a.active {
+      background: rgba(82, 113, 255, 0.25);
+      border-left-color: #ea5823;
+    }
+
+    /* ── CONTENT ──────────────────────────────────────── */
+    .content {
+      margin-left: 180px;
+      flex: 1;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 64px;
+    }
+
+    /* ── SECTION ──────────────────────────────────────── */
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #999997;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #5271ff;
+      letter-spacing: 0.06em;
+    }
+
+    .section-tag {
+      font-size: 10px;
+      color: #999997;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .section-body {
+      display: flex;
+      gap: 48px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* ── VARIANT BLOCK ────────────────────────────────── */
+    .variant {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .variant-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5271ff;
+      font-family: sans-serif;
+    }
+
+    .preview {
+      background: #c7c7c7;
+      border: 1px solid #999997;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── TITLE BAR COMPONENT ──────────────────────────── */
+    .title-bar {
+      position: relative;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      background: #5271ff;
+    }
+
+    .title-bar-buttons {
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-menu {
+      background: #5271ff;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .btn-menu svg {
+      width: 22.5px;
+      height: 22.5px;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .tab {
+      width: 133px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Times New Roman', serif;
+      font-size: 35px;
+      flex-shrink: 0;
+      cursor: pointer;
+      border: 1.89px solid;
+      user-select: none;
+    }
+
+    .tab.active {
+      background: #999997;
+      border-color: #c7c7c7;
+      color: #c7c7c7;
+    }
+
+    .tab.inactive {
+      background: #5271ff;
+      border-color: #ea5823;
+      color: #ea5823;
+    }
+
+    /* ── CAFE MENU DROPDOWN ───────────────────────────── */
+    .btn-menu-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .cafe-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 100;
+      background: #5271ff;
+      border: 1.89px solid #ea5823;
+      width: 241px;
+      padding: 12px 0 14px 0;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cafe-menu.open {
+      display: flex;
+    }
+
+    .menu-item {
+      font-family: 'Times New Roman', serif;
+      font-size: 19.766px;
+      color: #ea5823;
+      width: 100%;
+      cursor: pointer;
+      padding: 2px 72px 2px 13px;
+    }
+
+    .menu-item:hover {
+      background: #ea5823;
+      color: #5271ff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+    <div class="nav-title">Title Bar</div>
+    <div class="nav-section">
+      <div class="nav-label">Demo</div>
+      <a href="#live-preview">Live Preview</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Parent</div>
+      <a href="#title-bar">Title Bar</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Children</div>
+      <a href="#tabs">Tabs</a>
+      <a href="#menu-button">Menu Button</a>
+      <a href="#cafe-menu">Cafe Menu</a>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── LIVE PREVIEW ──────────────────────────────── -->
+    <section class="section" id="live-preview">
+      <div class="section-header">
+        <span class="section-title">Live Preview</span>
+        <span class="section-tag">Interactive</span>
+      </div>
+      <div class="preview" style="padding: 0; width: 100%;">
+        <div class="title-bar" id="liveTitleBar" style="width: 100%;">
+          <div class="title-bar-buttons">
+            <div class="btn-menu-wrap">
+              <div class="btn-menu" id="liveMenuBtn">
+                <svg width="22.5" height="22.5" viewBox="0 0 22.5478 22.5478" fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M0 11.2664C0 8.1684 1.10572 5.51865 3.31717 3.31717C5.52861 1.10572 8.18833 0 11.2963 0C14.3844 0 17.0291 1.10572 19.2306 3.31717C21.4421 5.51865 22.5478 8.1684 22.5478 11.2664C22.5478 14.3644 21.4421 17.0192 19.2306 19.2306C17.0291 21.4421 14.3844 22.5478 11.2963 22.5478C8.18833 22.5478 5.52861 21.447 3.31717 19.2456C1.10572 17.0341 0 14.3744 0 11.2664ZM20.68 11.2664C20.68 8.6864 19.7586 6.47495 17.9157 4.63208C16.0728 2.78921 13.8664 1.86777 11.2963 1.86777C8.70632 1.86777 6.48491 2.78921 4.63208 4.63208C2.78921 6.47495 1.86777 8.6864 1.86777 11.2664C1.86777 13.8564 2.78921 16.0778 4.63208 17.9306C6.48491 19.7735 8.70632 20.6949 11.2963 20.6949C13.8664 20.6949 16.0728 19.7685 17.9157 17.9157C19.7586 16.0629 20.68 13.8464 20.68 11.2664ZM14.8974 13.1043L16.7353 13.6422C16.4165 14.9372 15.764 15.9483 14.7778 16.6755C13.8016 17.3927 12.6511 17.7513 11.3262 17.7513C9.48332 17.7513 8.02894 17.1636 6.96307 15.9882C5.90715 14.8027 5.37919 13.174 5.37919 11.1021C5.37919 9.24922 5.92707 7.76496 7.02283 6.64928C8.12856 5.52363 9.59289 4.96081 11.4158 4.96081C12.7108 4.96081 13.7966 5.26463 14.6732 5.87228C15.5598 6.46997 16.1675 7.33662 16.4962 8.47223L14.7181 8.90555C14.1303 7.37149 12.9698 6.60445 11.2365 6.60445C10.091 6.60445 9.16455 7.04276 8.45728 7.91937C7.75998 8.79597 7.41133 9.95151 7.41133 11.386C7.41133 12.8204 7.755 13.9461 8.44234 14.7629C9.12968 15.5698 10.081 15.9732 11.2963 15.9732C12.143 15.9732 12.8951 15.7192 13.5526 15.2112C14.21 14.7031 14.6583 14.0008 14.8974 13.1043Z"
+                    fill="#EA5823" />
+                </svg>
+              </div>
+              <div class="cafe-menu" id="cafeMenu">
+                <div class="menu-item">NEW</div>
+                <div class="menu-item">EXPORT</div>
+                <div class="menu-item">IMPORT</div>
+                <div class="menu-item">HELP</div>
+                <div class="menu-item">SETTING</div>
+              </div>
+            </div>
+            <div class="tab active" data-tab="image">IMAGE</div>
+            <div class="tab inactive" data-tab="video">VIDEO</div>
+          </div>
+        </div>
+      </div>
+      <div
+        style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:#ea5823; font-family:sans-serif;"
+        id="liveStatus">Active: IMAGE</div>
+    </section>
+
+    <!-- ── PARENT: Title Bar ─────────────────────────── -->
+    <section class="section" id="title-bar">
+      <div class="section-header">
+        <span class="section-title">Title Bar</span>
+        <span class="section-tag">Parent</span>
+      </div>
+      <div class="section-body" style="flex-direction: column; gap: 24px;">
+
+        <div class="variant">
+          <div class="variant-label">IMAGE ACTIVE</div>
+          <div class="preview" style="width: 600px; padding: 0;">
+            <div class="title-bar" style="width: 100%;">
+              <div class="title-bar-buttons">
+                <div class="btn-menu">
+                  <svg width="22.5" height="22.5" viewBox="0 0 22.5478 22.5478" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M0 11.2664C0 8.1684 1.10572 5.51865 3.31717 3.31717C5.52861 1.10572 8.18833 0 11.2963 0C14.3844 0 17.0291 1.10572 19.2306 3.31717C21.4421 5.51865 22.5478 8.1684 22.5478 11.2664C22.5478 14.3644 21.4421 17.0192 19.2306 19.2306C17.0291 21.4421 14.3844 22.5478 11.2963 22.5478C8.18833 22.5478 5.52861 21.447 3.31717 19.2456C1.10572 17.0341 0 14.3744 0 11.2664ZM20.68 11.2664C20.68 8.6864 19.7586 6.47495 17.9157 4.63208C16.0728 2.78921 13.8664 1.86777 11.2963 1.86777C8.70632 1.86777 6.48491 2.78921 4.63208 4.63208C2.78921 6.47495 1.86777 8.6864 1.86777 11.2664C1.86777 13.8564 2.78921 16.0778 4.63208 17.9306C6.48491 19.7735 8.70632 20.6949 11.2963 20.6949C13.8664 20.6949 16.0728 19.7685 17.9157 17.9157C19.7586 16.0629 20.68 13.8464 20.68 11.2664ZM14.8974 13.1043L16.7353 13.6422C16.4165 14.9372 15.764 15.9483 14.7778 16.6755C13.8016 17.3927 12.6511 17.7513 11.3262 17.7513C9.48332 17.7513 8.02894 17.1636 6.96307 15.9882C5.90715 14.8027 5.37919 13.174 5.37919 11.1021C5.37919 9.24922 5.92707 7.76496 7.02283 6.64928C8.12856 5.52363 9.59289 4.96081 11.4158 4.96081C12.7108 4.96081 13.7966 5.26463 14.6732 5.87228C15.5598 6.46997 16.1675 7.33662 16.4962 8.47223L14.7181 8.90555C14.1303 7.37149 12.9698 6.60445 11.2365 6.60445C10.091 6.60445 9.16455 7.04276 8.45728 7.91937C7.75998 8.79597 7.41133 9.95151 7.41133 11.386C7.41133 12.8204 7.755 13.9461 8.44234 14.7629C9.12968 15.5698 10.081 15.9732 11.2963 15.9732C12.143 15.9732 12.8951 15.7192 13.5526 15.2112C14.21 14.7031 14.6583 14.0008 14.8974 13.1043Z"
+                      fill="#EA5823" />
+                  </svg>
+                </div>
+                <div class="tab active">IMAGE</div>
+                <div class="tab inactive">VIDEO</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label">VIDEO ACTIVE</div>
+          <div class="preview" style="width: 600px; padding: 0;">
+            <div class="title-bar" style="width: 100%;">
+              <div class="title-bar-buttons">
+                <div class="btn-menu">
+                  <svg width="22.5" height="22.5" viewBox="0 0 22.5478 22.5478" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M0 11.2664C0 8.1684 1.10572 5.51865 3.31717 3.31717C5.52861 1.10572 8.18833 0 11.2963 0C14.3844 0 17.0291 1.10572 19.2306 3.31717C21.4421 5.51865 22.5478 8.1684 22.5478 11.2664C22.5478 14.3644 21.4421 17.0192 19.2306 19.2306C17.0291 21.4421 14.3844 22.5478 11.2963 22.5478C8.18833 22.5478 5.52861 21.447 3.31717 19.2456C1.10572 17.0341 0 14.3744 0 11.2664ZM20.68 11.2664C20.68 8.6864 19.7586 6.47495 17.9157 4.63208C16.0728 2.78921 13.8664 1.86777 11.2963 1.86777C8.70632 1.86777 6.48491 2.78921 4.63208 4.63208C2.78921 6.47495 1.86777 8.6864 1.86777 11.2664C1.86777 13.8564 2.78921 16.0778 4.63208 17.9306C6.48491 19.7735 8.70632 20.6949 11.2963 20.6949C13.8664 20.6949 16.0728 19.7685 17.9157 17.9157C19.7586 16.0629 20.68 13.8464 20.68 11.2664ZM14.8974 13.1043L16.7353 13.6422C16.4165 14.9372 15.764 15.9483 14.7778 16.6755C13.8016 17.3927 12.6511 17.7513 11.3262 17.7513C9.48332 17.7513 8.02894 17.1636 6.96307 15.9882C5.90715 14.8027 5.37919 13.174 5.37919 11.1021C5.37919 9.24922 5.92707 7.76496 7.02283 6.64928C8.12856 5.52363 9.59289 4.96081 11.4158 4.96081C12.7108 4.96081 13.7966 5.26463 14.6732 5.87228C15.5598 6.46997 16.1675 7.33662 16.4962 8.47223L14.7181 8.90555C14.1303 7.37149 12.9698 6.60445 11.2365 6.60445C10.091 6.60445 9.16455 7.04276 8.45728 7.91937C7.75998 8.79597 7.41133 9.95151 7.41133 11.386C7.41133 12.8204 7.755 13.9461 8.44234 14.7629C9.12968 15.5698 10.081 15.9732 11.2963 15.9732C12.143 15.9732 12.8951 15.7192 13.5526 15.2112C14.21 14.7031 14.6583 14.0008 14.8974 13.1043Z"
+                      fill="#EA5823" />
+                  </svg>
+                </div>
+                <div class="tab inactive">IMAGE</div>
+                <div class="tab active">VIDEO</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Tabs ────────────────────────────────── -->
+    <section class="section" id="tabs">
+      <div class="section-header">
+        <span class="section-title">Tabs</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label">IMAGE ACTIVE</div>
+          <div class="preview">
+            <div class="tab active">IMAGE</div>
+          </div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label" style="color:#999997;">IMAGE INACTIVE</div>
+          <div class="preview">
+            <div class="tab inactive">IMAGE</div>
+          </div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label">VIDEO ACTIVE</div>
+          <div class="preview">
+            <div class="tab active">VIDEO</div>
+          </div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label" style="color:#999997;">VIDEO INACTIVE</div>
+          <div class="preview">
+            <div class="tab inactive">VIDEO</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Cafe Menu ──────────────────────────── -->
+    <section class="section" id="cafe-menu">
+      <div class="section-header">
+        <span class="section-title">Cafe Menu</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body" style="align-items: flex-start;">
+
+        <div class="variant">
+          <div class="variant-label">OPEN</div>
+          <div class="preview" style="padding: 0;">
+            <div class="cafe-menu open" style="position: static;">
+              <div class="menu-item">NEW</div>
+              <div class="menu-item">EXPORT</div>
+              <div class="menu-item">IMPORT</div>
+              <div class="menu-item">HELP</div>
+              <div class="menu-item">SETTING</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label">ITEM DEFAULT</div>
+          <div class="preview" style="background: #5271ff; padding: 4px 0; width: 241px;">
+            <div class="menu-item">EXPORT</div>
+          </div>
+        </div>
+
+        <div class="variant">
+          <div class="variant-label" style="color:#999997;">ITEM HOVER</div>
+          <div class="preview" style="background: #5271ff; padding: 4px 0; width: 241px;">
+            <div class="menu-item" style="background: #ea5823; color: #5271ff;">EXPORT</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD: Menu Button ─────────────────────────── -->
+    <section class="section" id="menu-button">
+      <div class="section-header">
+        <span class="section-title">Menu Button</span>
+        <span class="section-tag">Child</span>
+      </div>
+      <div class="section-body">
+
+        <div class="variant">
+          <div class="variant-label">DEFAULT</div>
+          <div class="preview">
+            <div class="btn-menu">
+              <svg width="22.5" height="22.5" viewBox="0 0 22.5478 22.5478" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M0 11.2664C0 8.1684 1.10572 5.51865 3.31717 3.31717C5.52861 1.10572 8.18833 0 11.2963 0C14.3844 0 17.0291 1.10572 19.2306 3.31717C21.4421 5.51865 22.5478 8.1684 22.5478 11.2664C22.5478 14.3644 21.4421 17.0192 19.2306 19.2306C17.0291 21.4421 14.3844 22.5478 11.2963 22.5478C8.18833 22.5478 5.52861 21.447 3.31717 19.2456C1.10572 17.0341 0 14.3744 0 11.2664ZM20.68 11.2664C20.68 8.6864 19.7586 6.47495 17.9157 4.63208C16.0728 2.78921 13.8664 1.86777 11.2963 1.86777C8.70632 1.86777 6.48491 2.78921 4.63208 4.63208C2.78921 6.47495 1.86777 8.6864 1.86777 11.2664C1.86777 13.8564 2.78921 16.0778 4.63208 17.9306C6.48491 19.7735 8.70632 20.6949 11.2963 20.6949C13.8664 20.6949 16.0728 19.7685 17.9157 17.9157C19.7586 16.0629 20.68 13.8464 20.68 11.2664ZM14.8974 13.1043L16.7353 13.6422C16.4165 14.9372 15.764 15.9483 14.7778 16.6755C13.8016 17.3927 12.6511 17.7513 11.3262 17.7513C9.48332 17.7513 8.02894 17.1636 6.96307 15.9882C5.90715 14.8027 5.37919 13.174 5.37919 11.1021C5.37919 9.24922 5.92707 7.76496 7.02283 6.64928C8.12856 5.52363 9.59289 4.96081 11.4158 4.96081C12.7108 4.96081 13.7966 5.26463 14.6732 5.87228C15.5598 6.46997 16.1675 7.33662 16.4962 8.47223L14.7181 8.90555C14.1303 7.37149 12.9698 6.60445 11.2365 6.60445C10.091 6.60445 9.16455 7.04276 8.45728 7.91937C7.75998 8.79597 7.41133 9.95151 7.41133 11.386C7.41133 12.8204 7.755 13.9461 8.44234 14.7629C9.12968 15.5698 10.081 15.9732 11.2963 15.9732C12.143 15.9732 12.8951 15.7192 13.5526 15.2112C14.21 14.7031 14.6583 14.0008 14.8974 13.1043Z"
+                  fill="#EA5823" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // ── Tab switching ──────────────────────────────────
+    var tabs = document.querySelectorAll('#liveTitleBar .tab');
+    var status = document.getElementById('liveStatus');
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var clicked = tab.dataset.tab;
+        tabs.forEach(function (t) {
+          t.classList.remove('active', 'inactive');
+          t.classList.add(t.dataset.tab === clicked ? 'active' : 'inactive');
+        });
+        status.textContent = 'Active: ' + clicked.toUpperCase();
+      });
+    });
+
+    // ── Cafe Menu dropdown ─────────────────────────────
+    var menuBtn = document.getElementById('liveMenuBtn');
+    var cafeMenu = document.getElementById('cafeMenu');
+
+    menuBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      cafeMenu.classList.toggle('open');
+    });
+
+    document.addEventListener('click', function () {
+      cafeMenu.classList.remove('open');
+    });
+
+    cafeMenu.querySelectorAll('.menu-item').forEach(function (item) {
+      item.addEventListener('click', function (e) {
+        e.stopPropagation();
+        cafeMenu.classList.remove('open');
+      });
+    });
+  </script>
+
+</body>
+
+</html>

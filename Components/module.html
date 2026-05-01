@@ -1,0 +1,2796 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Module — Components</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── LEFT NAV ─────────────────────────────────────── */
+    .nav {
+      width: 180px;
+      flex-shrink: 0;
+      background: #999997;
+      border-right: 2px solid #5271ff;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      z-index: 10;
+    }
+
+    .nav-title {
+      color: #c7c7c7;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0 16px 16px;
+      border-bottom: 1px solid #5271ff;
+      margin-bottom: 12px;
+    }
+
+    .nav-section {
+      padding: 4px 0;
+    }
+
+    .nav-label {
+      color: #c7c7c7;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 16px 2px;
+      opacity: 0.5;
+    }
+
+    .nav a {
+      display: block;
+      padding: 7px 16px;
+      color: #c7c7c7;
+      font-size: 12px;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      border-left: 2px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .nav a:hover {
+      background: rgba(82, 113, 255, 0.2);
+      border-left-color: #5271ff;
+    }
+
+    .nav a.active {
+      background: rgba(82, 113, 255, 0.25);
+      border-left-color: #ea5823;
+    }
+
+    /* ── CONTENT ──────────────────────────────────────── */
+    .content {
+      margin-left: 180px;
+      flex: 1;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 64px;
+    }
+
+    /* ── SECTION ──────────────────────────────────────── */
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #999997;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #5271ff;
+      letter-spacing: 0.06em;
+    }
+
+    .section-tag {
+      font-size: 10px;
+      color: #999997;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .section-body {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* ── VARIANT BLOCK ────────────────────────────────── */
+    .variant {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .variant-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5271ff;
+      font-family: sans-serif;
+    }
+
+    .preview {
+      background: #c7c7c7;
+      border: 1px solid #999997;
+      padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    /* ── MODULE PANEL ─────────────────────────────────── */
+    .module-panel {
+      position: relative;
+      width: 264px;
+      height: 680px;
+      flex-shrink: 0;
+    }
+
+    .module-bg {
+      position: absolute;
+      inset: -0.12% -0.36%;
+      background: #999997;
+      border: 1.89px solid #5271ff;
+    }
+
+    .module-content {
+      position: relative;
+      z-index: 1;
+      width: 264px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 24px;
+      gap: 24px;
+      padding-bottom: 24px;
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .module-content::-webkit-scrollbar { display: none; }
+
+    /* ── PRESET ROW ───────────────────────────────────── */
+    .preset-row {
+      height: 50px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      gap: 4px;
+    }
+
+    .btn-preset-label {
+      background: #5271ff;
+      border: 1.134px solid #c7c7c7;
+      height: 28px;
+      width: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 15.9px;
+      flex-shrink: 0;
+    }
+
+    .btn-preset-view {
+      background: #ea5823;
+      border: 1px solid #c7c7c7;
+      height: 28px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 9.4px;
+    }
+
+    .btn-dropdown {
+      background: #5271ff;
+      border: 1.134px solid #c7c7c7;
+      height: 28px;
+      width: 21px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .btn-dropdown img {
+      width: 9.2px;
+      height: 7.8px;
+    }
+
+    /* ── MODULE SECTION WRAP ──────────────────────────── */
+    .mod-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 0;
+    }
+
+    .mod-section-label {
+      color: #c7c7c7;
+      font-size: 11.9px;
+      text-align: left;
+      width: 250px;
+    }
+
+    /* ── SUBJECT SWITCH ROW ───────────────────────────── */
+    .subject-control {
+      width: 100%;
+      padding: 0 8px;
+    }
+
+    .subject-row {
+      background: #c7c7c7;
+      box-shadow: 0 0 0 2px #c7c7c7;
+      height: 15px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .subject-switch {
+      display: flex;
+      gap: 1px;
+      align-items: center;
+    }
+
+    .btn-subject-a {
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Default tab = blue (section ON, not selected) */
+    .btn-subject-a {
+      background: #5271ff;
+    }
+
+    /* .off used by static variant docs */
+    .btn-subject-a.off {
+      background: #999997;
+      color: #c7c7c7;
+    }
+
+    /* Selected tab = orange border + orange text */
+    .btn-subject-a.on {
+      background: #5271ff;
+      border: 0.756px solid #ea5823;
+      color: #ea5823;
+    }
+
+    /* Section OFF → all tabs gray */
+    .mod-section.is-off .btn-subject-a {
+      background: #999997;
+      color: #c7c7c7;
+      border: none;
+    }
+
+    .mod-section.is-off .btn-subject-a.on {
+      background: #999997;
+      border: 0.756px solid #ea5823;
+      color: #ea5823;
+    }
+
+    .btn-add-slot {
+      background: #ea5823;
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .btn-add-slot img {
+      width: 8.1px;
+      height: 8.5px;
+    }
+
+    .on-off-switch {
+      display: flex;
+      gap: 1px;
+      align-items: center;
+    }
+
+    .btn-on {
+      background: #ea5823;
+      border: 1px solid #5271ff;
+      width: 29px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5271ff;
+      font-size: 11.6px;
+      flex-shrink: 0;
+    }
+
+    .btn-off {
+      background: #c7c7c7;
+      border: 0.756px solid #999997;
+      width: 29px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999997;
+      font-size: 11.6px;
+      flex-shrink: 0;
+    }
+
+    /* ── PARENT LAYER ROW ─────────────────────────────── */
+    .plr {
+      width: 250px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    /* X button */
+    .plr-x {
+      width: 24px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .plr-x.blue {
+      background: #5271ff;
+    }
+
+    .plr-x.off {
+      background: #c7c7c7;
+    }
+
+    .plr-x img {
+      width: 15.8px;
+      height: 12.2px;
+    }
+
+    /* Expand/collapse button */
+    .plr-exp {
+      width: 24px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .plr-exp.orange {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .plr-exp.off {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+    }
+
+    .plr-exp::after {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 11px solid #5271ff;
+    }
+
+    .plr-exp.off::after {
+      border-top-color: #c7c7c7;
+    }
+
+    .plr-exp.collapsed::after {
+      transform: rotate(-90deg);
+    }
+
+    /* Layer name */
+    .plr-name {
+      width: 153px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 13.65px;
+      white-space: nowrap;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .plr-name.blue {
+      background: #5271ff;
+      color: #c7c7c7;
+      border: 0.756px solid #5271ff;
+    }
+
+    .plr-name.gray {
+      background: #999997;
+      color: #c7c7c7;
+      border: 0.756px solid #c3c3c2;
+    }
+
+    .plr-name.editing {
+      outline: none;
+      border: 0.756px solid #ea5823;
+    }
+
+    /* Link/unlink button */
+    .plr-link {
+      width: 24px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .plr-link.linked {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .plr-link.unlinked {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+    }
+
+    .plr-link.off {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+    }
+
+    .plr-link img {
+      width: 15.6px;
+      height: 7.1px;
+    }
+
+    /* Eye/visibility button */
+    .plr-eye {
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .plr-eye.on {
+      background: #5271ff;
+      border: 1.134px solid #5271ff;
+    }
+
+    .plr-eye.off {
+      background: #999997;
+      border: 1.134px solid #c3c3c2;
+    }
+
+    .plr-eye.on img {
+      width: 16.6px;
+      height: 9.3px;
+    }
+
+    .plr-eye.off img {
+      width: 16.6px;
+      height: 14.2px;
+    }
+
+    /* ── CHILD LAYER ROW ──────────────────────────────── */
+    .clr {
+      width: 250px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      padding-left: 24px;
+      padding-right: 7px;
+    }
+
+    /* X button on child rows */
+    .clr-x {
+      width: 24px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #5271ff;
+      flex-shrink: 0;
+    }
+
+    .clr-x.off {
+      background: #c7c7c7;
+    }
+
+    .clr-x img {
+      width: 15.8px;
+      height: 12.2px;
+    }
+
+    /* Main content (LOAD / image-view / PROMPT area) */
+    .clr-main {
+      width: 153px;
+      flex-shrink: 0;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .clr-main.load {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .clr-main.load img {
+      width: 75px;
+      height: 19px;
+    }
+
+    .clr-main.img-a {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .clr-main.img-i {
+      background: #999997;
+      border: 0.756px solid #999997;
+    }
+    .clr-main.img-i img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) brightness(0.7);
+    }
+
+    .clr-main.prompt-a {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+      color: #c7c7c7;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    .clr-main.prompt-i {
+      background: #c7c7c7;
+      border: 0.756px solid #c7c7c7;
+      color: #999997;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    /* T button (text/prompt type indicator) */
+    .clr-t {
+      width: 23px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18.8px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .clr-t.blue {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+      color: #c7c7c7;
+    }
+
+    .clr-t.orange {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+      color: #5271ff;
+    }
+
+    .clr-t.gray {
+      background: #c7c7c7;
+      border: 0.756px solid #999997;
+      color: #999997;
+    }
+
+    /* Edit button on child rows */
+    .clr-edit {
+      width: 24px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .clr-edit.a {
+      background: #5271ff;
+    }
+
+    .clr-edit.i {
+      background: #c7c7c7;
+    }
+
+    .clr-edit img {
+      width: 14.8px;
+      height: 14.7px;
+    }
+
+    /* Eye button on child rows — same as .plr-eye */
+
+    /* ── ADD CHILD ROW ────────────────────────────────── */
+    .add-child-row {
+      width: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .btn-add-child {
+      background: #999997;
+      border: 1.134px solid #c7c7c7;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .btn-add-child img {
+      width: 15.2px;
+      height: 16px;
+      filter: brightness(0) invert(0.78);
+    }
+
+    /* ── SLOT CONTENT ────────────────────────────────────── */
+    .slot-content {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* ── ON / OFF STATE — managed via JS per slot ──────── */
+    .subject-row.slot-is-off .btn-on {
+      background: #c7c7c7;
+      border-color: #999997;
+      color: #999997;
+    }
+
+    .subject-row.slot-is-off .btn-off {
+      background: #ea5823;
+      border-color: #5271ff;
+      color: #5271ff;
+    }
+
+    /* Slot tab: selected AND slot is OFF */
+    .btn-subject-a.on.slot-off {
+      background: #999997;
+      border: 0.756px solid #ea5823;
+      color: #ea5823;
+    }
+
+    /* Child row — missing inactive states (from Figma 407:441) */
+    .clr-main.load-i {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+    }
+
+    .clr-main.load-i img {
+      width: 75px;
+      height: 19px;
+      filter: brightness(0) invert(0.78);
+    }
+
+    .clr-t.off {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      color: #c7c7c7;
+    }
+
+    /* ── COMPOSE LAYER ROW ───────────────────────────────── */
+    .compose-row {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    /* Top strip: X + COMPOSE label */
+    .compose-row-bar {
+      width: 250px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .compose-row-label {
+      flex: 1;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+      color: #5271ff;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+    }
+
+    /* Textarea area — full width, no side padding */
+    .compose-row-input {
+      width: 250px;
+      background: #5271ff;
+      border-top: 0.756px solid rgba(255,255,255,0.15);
+      padding: 8px;
+    }
+
+    .compose-row-textarea {
+      width: 100%;
+      min-height: 60px;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .compose-row-textarea::placeholder {
+      color: #c7c7c7;
+      opacity: 0.45;
+    }
+
+    /* Bottom action row — full width */
+    .compose-row-actions {
+      width: 250px;
+      display: flex;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .compose-row-btn {
+      flex: 1;
+      border: none;
+      cursor: default;
+      font-family: 'Times New Roman', serif;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .compose-row-btn.generate { background: #ea5823; color: #5271ff; }
+    .compose-row-btn.save     { background: #5271ff; color: #ea5823; }
+
+    /* Style row — missing inactive states (from Figma 407:459) */
+    .sty-load.i {
+      background: #c7c7c7;
+      border: 0.756px solid #c7c7c7;
+    }
+
+    .sty-load.i img {
+      width: 124px;
+      height: 31.5px;
+      filter: brightness(0) invert(0.6);
+    }
+
+    .sty-load.i img {
+      opacity: 0.5;
+      filter: grayscale(1);
+    }
+
+    .sty-t.off {
+      background: #c7c7c7;
+      border: 0.756px solid #999997;
+      color: #999997;
+    }
+
+    /* Individual layer hidden — gray out entire parent row */
+    .plr.layer-off .plr-exp.orange {
+      background: #999997;
+      border-color: #c7c7c7;
+    }
+
+    .plr.layer-off .plr-exp.orange::after {
+      border-top-color: #c7c7c7;
+    }
+
+    .plr.layer-off .plr-name.blue {
+      background: #999997;
+      color: #c7c7c7;
+      border-color: #c3c3c2;
+    }
+
+    .plr.layer-off .plr-link.linked,
+    .plr.layer-off .plr-link.unlinked {
+      background: #999997;
+      border-color: #c7c7c7;
+    }
+
+    .plr.layer-off .plr-link img { filter: brightness(0) invert(0.78); }
+
+    /* Lock name editing when layer is hidden */
+    .plr.layer-off .plr-name { pointer-events: none; }
+
+    /* ── NEW LAYER BUTTON ─────────────────────────────── */
+    .mod-section.slot-off .btn-new-layer {
+      pointer-events: none;
+    }
+
+    .btn-new-layer {
+      background: #999997;
+      border: 1.134px solid #c7c7c7;
+      height: 23px;
+      width: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c7c7c7;
+      font-size: 15.4px;
+      user-select: none;
+    }
+
+    /* ── STYLE ROW ────────────────────────────────────── */
+    .style-row {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Constrain style row to panel width — content area fills remaining space */
+    #mp-sty-row { width: 250px; }
+    #mp-sty-row .sty-load,
+    #mp-sty-row .sty-prompt { flex: 1; width: auto; }
+
+    /* Clear button (style section) */
+    .sty-clear {
+      height: 49px;
+      width: 49px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .sty-clear.a {
+      background: #5271ff;
+    }
+
+    .sty-clear.i {
+      background: #c7c7c7;
+    }
+
+    .sty-clear img {
+      width: 29px;
+      height: 22px;
+    }
+
+    /* LOAD button (style section) */
+    .sty-load {
+      height: 49px;
+      width: 154px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sty-load.a {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .sty-load.a img {
+      width: 124px;
+      height: 31.5px;
+    }
+
+    .sty-load.img-a {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .sty-load.img-i {
+      background: #c7c7c7;
+      border: 0.756px solid #c3c3c2;
+    }
+
+    /* T button (style section) */
+    .sty-t {
+      height: 49px;
+      width: 47px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 38.5px;
+      user-select: none;
+    }
+
+    .sty-t.blue {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+      color: #c7c7c7;
+    }
+
+    .sty-t.orange {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+      color: #5271ff;
+    }
+
+    .sty-t.gray {
+      background: #c7c7c7;
+      border: 0.756px solid #999997;
+      color: #999997;
+    }
+
+    /* PROMPT area (style section) */
+    .sty-prompt {
+      height: 49px;
+      width: 154px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+    }
+
+    .sty-prompt.a {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+      color: #c7c7c7;
+    }
+
+    .sty-prompt.i {
+      background: #c7c7c7;
+      border: 0.756px solid #c7c7c7;
+      color: #999997;
+    }
+
+    /* Edit button (style section) */
+    .sty-edit {
+      height: 49px;
+      width: 47px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sty-edit.a {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+    }
+
+    .sty-edit.i {
+      background: #c7c7c7;
+      border: 0.756px solid #c7c7c7;
+    }
+
+    .sty-edit img {
+      width: 23px;
+      height: 23px;
+    }
+
+    /* Link/unlink button (style section) */
+    .sty-link {
+      height: 49px;
+      width: 47px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sty-link.linked {
+      background: #ea5823;
+      border: 0.756px solid #5271ff;
+    }
+
+    .sty-link.unlinked {
+      background: #5271ff;
+      border: 0.756px solid #5271ff;
+    }
+
+    .sty-link.inactive {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+    }
+
+    .sty-link img {
+      width: 31.9px;
+      height: 14.5px;
+    }
+
+    /* ── LIVE ROW ────────────────────────────────────── */
+    .live-row-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+
+    /* ── MODULE PANEL LIVE ────────────────────────────── */
+    #module-panel-live .section-body { justify-content: center; }
+    .mod-panel-wrap { display: flex; flex-direction: column; width: 264px; }
+
+    .mod-strip {
+      position: relative;
+      width: 264px; height: 26px;
+      background: #5271ff; flex-shrink: 0;
+    }
+    .mod-strip-tabs {
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 26px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 0 0 0 2px;
+    }
+    .mod-tab-module {
+      background: #ea5823; height: 21px; width: 85px;
+      display: flex; align-items: center; justify-content: center;
+      color: #c7c7c7; font-size: 16.7px;
+      border: none; outline: none; padding: 0;
+      font-family: 'Times New Roman', serif;
+    }
+    .mod-tab-archive {
+      background: #5271ff; height: 19px; width: 85px;
+      display: flex; align-items: center; justify-content: center;
+      color: #c7c7c7; font-size: 14.7px;
+    }
+    .mod-btn-dd {
+      background: #ea5823; border: none;
+      width: 23px; height: 23px;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      align-self: flex-start; margin-left: 3px;
+    }
+    .mod-btn-dd::after {
+      content: ''; width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 8px solid #c7c7c7;
+      transition: transform 0.2s ease;
+    }
+    .mod-panel-wrap.collapsed .mod-btn-dd::after {
+      transform: rotate(180deg);
+    }
+    .module-panel {
+      overflow: hidden;
+      transition: height 0.2s ease;
+    }
+    .mod-panel-wrap.collapsed .module-panel {
+      height: 0;
+    }
+    .mod-layers { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .layer-group { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .layer-children {
+      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0;
+      padding-top: 0;
+      overflow: hidden;
+      max-height: 500px;
+      opacity: 1;
+      transition: max-height 0.22s ease, opacity 0.18s ease;
+    }
+    .layer-group.collapsed .layer-children { max-height: 0; opacity: 0; }
+    .layer-group.parent-off .clr-x                          { background: #c7c7c7; }
+    .layer-group.parent-off .clr-main                       { background: #999997; border-color: #c7c7c7; color: #c7c7c7; }
+    .layer-group.parent-off .clr-main img                   { filter: grayscale(1) brightness(0.7); }
+    .layer-group.parent-off .clr-main.load img              { filter: brightness(0) invert(0.78); }
+    .layer-group.parent-off .clr-t                          { background: #999997; border-color: #c7c7c7; color: #c7c7c7; }
+    .layer-group.parent-off .clr-main.load                  { pointer-events: none; }
+    .layer-group.parent-off .clr-t                          { pointer-events: none; }
+    .layer-group.parent-off .clr-edit                       { pointer-events: none; }
+    .layer-group.parent-off .layer-children .plr-eye        { pointer-events: none; }
+    .layer-group.parent-off .btn-add-child                  { pointer-events: none; }
+    .plr.layer-off .plr-link                                { pointer-events: none; }
+    .sty-load.i                                             { pointer-events: none; }
+
+
+    /* ── DEMO SLOT TOGGLE (preview tool, not real UI) ── */
+    .demo-slot-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .demo-slot-toggle span {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #5271ff;
+      font-family: sans-serif;
+    }
+
+    .demo-slot-btn {
+      background: #ea5823;
+      border: 1px solid #5271ff;
+      color: #5271ff;
+      font-size: 10px;
+      font-family: 'Times New Roman', serif;
+      padding: 2px 8px;
+      user-select: none;
+      letter-spacing: 0.06em;
+    }
+
+    .demo-slot-btn.off {
+      background: #c7c7c7;
+      border-color: #999997;
+      color: #999997;
+    }
+
+    /* Slot tab clickable states */
+    .btn-subject-a {
+      user-select: none;
+    }
+
+    .btn-on,
+    .btn-off {
+      user-select: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+    <div class="nav-title">Module</div>
+    <div class="nav-section">
+      <div class="nav-label">Rows</div>
+      <a href="#parent-layer">Parent Layer</a>
+      <a href="#child-layer">Child Layer</a>
+      <a href="#style-row">Style Row</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Controls</div>
+      <a href="#subject-row">Subject / Stage</a>
+      <div class="nav-label">Panel</div>
+      <a href="#module-panel-live">Module Panel</a>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── LIVE PREVIEW ──────────────────────────────── -->
+    <!-- ── PARENT LAYER ROW ───────────────────────────── -->
+    <section class="section" id="parent-layer">
+      <div class="section-header">
+        <span class="section-title">Parent Layer Row</span>
+        <span class="section-tag">3 Variants</span>
+      </div>
+      <div class="section-body">
+
+        <!-- LIVE INTERACTIVE -->
+        <div class="live-row-wrap">
+          <div class="variant-label">Live · Interactive</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="plr" id="plr-live">
+              <div class="plr-x blue" id="plr-live-x"><img src="../assets/icon-x-active.svg" alt="x"></div>
+              <div class="plr-exp orange" id="plr-live-exp"></div>
+              <div class="plr-name blue" id="plr-live-name">New Layer</div>
+              <div class="plr-link linked" id="plr-live-link"><img src="../assets/icon-link.svg" alt="link"></div>
+              <div class="plr-eye on" id="plr-live-eye"><img src="../assets/icon-eye-on.svg" alt="eye"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1: Active Parent — Linked -->
+        <div class="variant">
+          <div class="variant-label">Active · Linked</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="plr">
+              <div class="plr-x blue"><img src="../assets/icon-x-active.svg" alt="x"></div>
+              <div class="plr-exp orange"></div>
+              <div class="plr-name blue">New Layer</div>
+              <div class="plr-link linked"><img src="../assets/icon-link.svg" alt="link"></div>
+              <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="on"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2: Active Parent — Unlinked -->
+        <div class="variant">
+          <div class="variant-label">Active · Unlinked</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="plr">
+              <div class="plr-x blue"><img src="../assets/icon-x-active.svg" alt="x"></div>
+              <div class="plr-exp orange"></div>
+              <div class="plr-name blue">New Layer</div>
+              <div class="plr-link unlinked"><img src="../assets/icon-unlink-small.svg" alt="unlink"></div>
+              <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="on"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3: OFF state -->
+        <div class="variant">
+          <div class="variant-label">OFF state</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="plr">
+              <div class="plr-x off"><img src="../assets/icon-x-inactive.svg" alt="x"></div>
+              <div class="plr-exp off"></div>
+              <div class="plr-name gray">New Layer</div>
+              <div class="plr-link off"><img src="../assets/icon-unlink-small.svg" alt="unlink"></div>
+              <div class="plr-eye off"><img src="../assets/icon-eye-off.svg" alt="off"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── CHILD LAYER ROW ────────────────────────────── -->
+    <section class="section" id="child-layer">
+      <div class="section-header">
+        <span class="section-title">Child Layer Row</span>
+        <span class="section-tag">6 Variants</span>
+      </div>
+      <div class="section-body">
+
+        <!-- LIVE INTERACTIVE -->
+        <div class="live-row-wrap">
+          <div class="variant-label">Live &middot; Interactive</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr" id="clr-live"></div>
+          </div>
+        </div>
+
+        <!-- 1: Default — empty LOAD state -->
+        <div class="variant">
+          <div class="variant-label">Default · Load Empty</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+              <div class="clr-main load"><img src="../assets/icon-load.svg" alt="LOAD"></div>
+              <div class="clr-t blue">T</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1b: Default · OFF — inactive LOAD state -->
+        <div class="variant">
+          <div class="variant-label">Default · OFF</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x off"><img src="../assets/icon-x-inactive.svg" alt="x"></div>
+              <div class="clr-main load-i"><img src="../assets/icon-load.svg" alt="LOAD"></div>
+              <div class="clr-t off">T</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2: Image Loaded (active / visible) -->
+        <div class="variant">
+          <div class="variant-label">Image Loaded · Visible</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+              <div class="clr-main img-a"></div>
+              <div class="clr-edit a"><img src="../assets/icon-edit-active.svg" alt="edit"></div>
+              <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="on"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3: Image Loaded (inactive / hidden) -->
+        <div class="variant">
+          <div class="variant-label">Image Loaded · Hidden</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x off"><img src="../assets/icon-x-inactive.svg" alt="x"></div>
+              <div class="clr-main img-i"></div>
+              <div class="clr-edit i"><img src="../assets/icon-edit-inactive.svg" alt="edit"></div>
+              <div class="plr-eye off"><img src="../assets/icon-eye-off.svg" alt="off"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4: Prompt Active (visible) -->
+        <div class="variant">
+          <div class="variant-label">Prompt Active · Visible</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+              <div class="clr-t orange">T</div>
+              <div class="clr-main prompt-a">PROMPT</div>
+              <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="on"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5: Prompt Active (hidden) -->
+        <div class="variant">
+          <div class="variant-label">Prompt Active · Hidden</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x off"><img src="../assets/icon-x-inactive.svg" alt="x"></div>
+              <div class="clr-t gray">T</div>
+              <div class="clr-main prompt-i">PROMPT</div>
+              <div class="plr-eye off"><img src="../assets/icon-eye-off.svg" alt="off"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── COMPOSE LAYER ROW ────────────────────────────── -->
+    <section class="section" id="compose-layer">
+      <div class="section-header">
+        <span class="section-title">Compose Layer Row</span>
+        <span class="section-tag">2 Variants</span>
+      </div>
+      <div class="section-body">
+
+        <!-- 1: Compose · Open (editor expanded) -->
+        <div class="variant">
+          <div class="variant-label">Compose · Open</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="compose-row">
+              <div class="compose-row-bar">
+                <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+                <div class="compose-row-label">COMPOSE</div>
+              </div>
+              <div class="compose-row-input">
+                <textarea class="compose-row-textarea" placeholder="Describe what to generate..."></textarea>
+              </div>
+              <div class="compose-row-actions">
+                <button class="compose-row-btn generate">GENERATE</button>
+                <button class="compose-row-btn save">SAVE</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2: Compose · Closed (prompt saved, T button collapses back to prompt row) -->
+        <div class="variant">
+          <div class="variant-label">Compose · Closed · Prompt Saved</div>
+          <div class="preview" style="padding: 4px;">
+            <div class="clr">
+              <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+              <div class="clr-t orange">T</div>
+              <div class="clr-main prompt-a">PROMPT</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── STYLE ROW ──────────────────────────────────── -->
+    <section class="section" id="style-row">
+      <div class="section-header">
+        <span class="section-title">Style Row</span>
+        <span class="section-tag">8 Variants</span>
+      </div>
+      <div class="section-body">
+
+        <!-- LIVE INTERACTIVE -->
+        <div class="live-row-wrap">
+          <div class="variant-label">Live &middot; Interactive</div>
+          <div class="demo-slot-toggle">
+            <span>Slot</span>
+            <div class="demo-slot-btn" id="sty2-slot">ON</div>
+          </div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row" id="sty-live"></div>
+          </div>
+        </div>
+
+        <!-- 1: Default — empty (LOAD + T) -->
+        <div class="variant">
+          <div class="variant-label">Default · Empty</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-load a"><img src="../assets/icon-load-style.svg" alt="LOAD"></div>
+              <div class="sty-t blue">T</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1b: Default · OFF — inactive style state -->
+        <div class="variant">
+          <div class="variant-label">Default · OFF</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-load i"><img src="../assets/icon-load-style.svg" alt="LOAD"></div>
+              <div class="sty-t off">T</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2: Image Active · Linked -->
+        <div class="variant">
+          <div class="variant-label">Image · Active · Linked</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-clear a"><img src="../assets/icon-close.svg" alt="clear"></div>
+              <div class="sty-load img-a"></div>
+              <div class="sty-edit a"><img src="../assets/icon-edit-large-active.svg" alt="edit"></div>
+              <div class="sty-link linked"><img src="../assets/icon-link-ref.svg" alt="link"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3: Image Active · Unlinked -->
+        <div class="variant">
+          <div class="variant-label">Image · Active · Unlinked</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-clear a"><img src="../assets/icon-close.svg" alt="clear"></div>
+              <div class="sty-load img-a"></div>
+              <div class="sty-edit a"><img src="../assets/icon-edit-large-active.svg" alt="edit"></div>
+              <div class="sty-link unlinked"><img src="../assets/icon-unlink-ref.svg" alt="unlink"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4: Inactive Image · Unlinked -->
+        <div class="variant">
+          <div class="variant-label">Image · Hidden · Unlinked</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-clear i"><img src="../assets/icon-x-inactive.svg" alt="clear"></div>
+              <div class="sty-load img-i"></div>
+              <div class="sty-edit i"><img src="../assets/icon-edit-large-inactive.svg" alt="edit"></div>
+              <div class="sty-link inactive"><img src="../assets/icon-unlink-ref.svg" alt="unlink"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5: Prompt Active · Linked -->
+        <div class="variant">
+          <div class="variant-label">Prompt · Active · Linked</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-clear a"><img src="../assets/icon-close.svg" alt="clear"></div>
+              <div class="sty-t orange">T</div>
+              <div class="sty-prompt a">PROMPT</div>
+              <div class="sty-link linked"><img src="../assets/icon-link-ref.svg" alt="link"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6: Prompt Active · Unlinked -->
+        <div class="variant">
+          <div class="variant-label">Prompt · Active · Unlinked</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-clear a"><img src="../assets/icon-close.svg" alt="clear"></div>
+              <div class="sty-t orange">T</div>
+              <div class="sty-prompt a">PROMPT</div>
+              <div class="sty-link unlinked"><img src="../assets/icon-unlink-ref.svg" alt="unlink"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7: Prompt Hidden · Unlinked -->
+        <div class="variant">
+          <div class="variant-label">Prompt · Hidden · Unlinked</div>
+          <div class="preview" style="padding: 8px;">
+            <div class="style-row">
+              <div class="sty-clear i"><img src="../assets/icon-x-inactive.svg" alt="clear"></div>
+              <div class="sty-t gray">T</div>
+              <div class="sty-prompt i">PROMPT</div>
+              <div class="sty-link inactive"><img src="../assets/icon-unlink-ref.svg" alt="unlink"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── SUBJECT / STAGE SWITCH ─────────────────────── -->
+    <section class="section" id="subject-row">
+      <div class="section-header">
+        <span class="section-title">Slots</span>
+        <span class="section-tag">4 Variants</span>
+      </div>
+      <div class="section-body">
+
+        <!-- LIVE INTERACTIVE -->
+        <div class="live-row-wrap">
+          <div class="variant-label">Live &middot; Interactive</div>
+          <div class="preview" style="padding: 8px 0; width: 248px;">
+            <div class="subject-control" style="width: 248px;">
+              <div class="subject-row" id="slot-live"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1: Subject Active + ON -->
+        <div class="variant">
+          <div class="variant-label">Subject Active · ON</div>
+          <div class="preview" style="padding: 8px 0; width: 248px;">
+            <div class="subject-control" style="width: 248px;">
+              <div class="subject-row">
+                <div class="subject-switch">
+                  <div class="btn-subject-a on">A</div>
+                  <div class="btn-add-slot"><img src="../assets/icon-add-subject.svg" alt="+"></div>
+                </div>
+                <div class="on-off-switch">
+                  <div class="btn-on">ON</div>
+                  <div class="btn-off">OFF</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2: Subject Active + OFF -->
+        <div class="variant">
+          <div class="variant-label">Subject Active · OFF</div>
+          <div class="preview" style="padding: 8px 0; width: 248px;">
+            <div class="subject-control" style="width: 248px;">
+              <div class="subject-row slot-is-off">
+                <div class="subject-switch">
+                  <div class="btn-subject-a on">A</div>
+                  <div class="btn-add-slot"><img src="../assets/icon-add-subject.svg" alt="+"></div>
+                </div>
+                <div class="on-off-switch">
+                  <div class="btn-on">ON</div>
+                  <div class="btn-off">OFF</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3: Subject Inactive + ON -->
+        <div class="variant">
+          <div class="variant-label">Subject Inactive · ON</div>
+          <div class="preview" style="padding: 8px 0; width: 248px;">
+            <div class="subject-control" style="width: 248px;">
+              <div class="subject-row">
+                <div class="subject-switch">
+                  <div class="btn-subject-a off">A</div>
+                  <div class="btn-add-slot"><img src="../assets/icon-add-subject.svg" alt="+"></div>
+                </div>
+                <div class="on-off-switch">
+                  <div class="btn-on">ON</div>
+                  <div class="btn-off">OFF</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4: Subject Inactive + OFF -->
+        <div class="variant">
+          <div class="variant-label">Subject Inactive · OFF</div>
+          <div class="preview" style="padding: 8px 0; width: 248px;">
+            <div class="subject-control" style="width: 248px;">
+              <div class="subject-row slot-is-off">
+                <div class="subject-switch">
+                  <div class="btn-subject-a off">A</div>
+                  <div class="btn-add-slot"><img src="../assets/icon-add-subject.svg" alt="+"></div>
+                </div>
+                <div class="on-off-switch">
+                  <div class="btn-on">ON</div>
+                  <div class="btn-off">OFF</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── MODULE PANEL LIVE ────────────────────────── -->
+    <section class="section" id="module-panel-live">
+      <div class="section-header">
+        <span class="section-title">Module Panel</span>
+        <span class="section-tag">Live</span>
+      </div>
+      <div class="section-body">
+        <div class="live-row-wrap">
+          <div class="variant-label">Live · Interactive</div>
+          <div class="preview" style="padding: 0; border: none;">
+            <div class="mod-panel-wrap">
+
+              <!-- Tab strip -->
+              <div class="mod-strip">
+                <div class="mod-strip-tabs">
+                  <div class="mod-btn-dd"></div>
+                  <button class="mod-tab-module">MODULE</button>
+                </div>
+              </div>
+
+              <!-- Panel -->
+              <div class="module-panel">
+                <div class="module-bg"></div>
+                <div class="module-content" style="padding-top: 12px;">
+
+                  <!-- SUBJECT -->
+                  <div class="mod-section">
+                    <div class="mod-section-label">[SUBJECT]</div>
+                    <div class="subject-control">
+                      <div class="subject-row" id="mp-slot-subj"></div>
+                    </div>
+                    <div class="mod-layers" id="mp-layers-subj">
+                      <div class="layer-group">
+                        <div class="plr">
+                          <div class="plr-x blue"><img src="../assets/icon-x-active.svg" alt="x"></div>
+                          <div class="plr-exp orange"></div>
+                          <div class="plr-name blue">CHARACTER</div>
+                          <div class="plr-link linked"><img src="../assets/icon-link.svg" alt="link"></div>
+                          <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="eye"></div>
+                        </div>
+                        <div class="layer-children">
+                          <div class="clr">
+                            <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+                            <div class="clr-main load"><img src="../assets/icon-load.svg" alt="LOAD"></div>
+                            <div class="clr-t blue">T</div>
+                          </div>
+                          <div class="add-child-row">
+                            <div class="btn-add-child"><img src="../assets/icon-add-child.svg" alt="+"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layer-group">
+                        <div class="plr">
+                          <div class="plr-x blue"><img src="../assets/icon-x-active.svg" alt="x"></div>
+                          <div class="plr-exp orange"></div>
+                          <div class="plr-name blue">OUTFIT</div>
+                          <div class="plr-link linked"><img src="../assets/icon-link.svg" alt="link"></div>
+                          <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="eye"></div>
+                        </div>
+                        <div class="layer-children">
+                          <div class="clr">
+                            <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+                            <div class="clr-main load"><img src="../assets/icon-load.svg" alt="LOAD"></div>
+                            <div class="clr-t blue">T</div>
+                          </div>
+                          <div class="add-child-row">
+                            <div class="btn-add-child"><img src="../assets/icon-add-child.svg" alt="+"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="btn-new-layer">+ NEW LAYER</div>
+                  </div>
+
+                  <!-- STAGE -->
+                  <div class="mod-section">
+                    <div class="mod-section-label">[STAGE]</div>
+                    <div class="subject-control">
+                      <div class="subject-row" id="mp-slot-stage"></div>
+                    </div>
+                    <div class="mod-layers" id="mp-layers-stage">
+                      <div class="layer-group">
+                        <div class="plr">
+                          <div class="plr-x blue"><img src="../assets/icon-x-active.svg" alt="x"></div>
+                          <div class="plr-exp orange"></div>
+                          <div class="plr-name blue">BACKGROUND</div>
+                          <div class="plr-link linked"><img src="../assets/icon-link.svg" alt="link"></div>
+                          <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="eye"></div>
+                        </div>
+                        <div class="layer-children">
+                          <div class="clr">
+                            <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+                            <div class="clr-main load"><img src="../assets/icon-load.svg" alt="LOAD"></div>
+                            <div class="clr-t blue">T</div>
+                          </div>
+                          <div class="add-child-row">
+                            <div class="btn-add-child"><img src="../assets/icon-add-child.svg" alt="+"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="btn-new-layer">+ NEW LAYER</div>
+                  </div>
+
+                  <!-- STYLE -->
+                  <div class="mod-section">
+                    <div class="mod-section-label">[STYLE]</div>
+                    <div class="subject-control">
+                      <div class="subject-row" id="mp-slot-sty"></div>
+                    </div>
+                    <div class="style-row" id="mp-sty-row"></div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <input type="file" id="mp-file-input" accept="image/*" style="display:none">
+  </main>
+
+  <script>
+    // ── PARENT LAYER LIVE ROW ─────────────────────────
+    const plrLive = document.getElementById('plr-live');
+    const plrLiveEye = document.getElementById('plr-live-eye');
+    const plrLiveX = document.getElementById('plr-live-x');
+    const plrLiveExp = document.getElementById('plr-live-exp');
+    const plrLiveLink = document.getElementById('plr-live-link');
+
+    // Eye toggle → active / inactive
+    plrLiveEye.addEventListener('click', () => {
+      const isOn = plrLiveEye.classList.contains('on');
+      if (isOn) {
+        plrLiveEye.classList.replace('on', 'off');
+        plrLiveEye.querySelector('img').src = '../assets/icon-eye-off.svg';
+        plrLiveX.classList.replace('blue', 'off');
+        plrLiveX.querySelector('img').src = '../assets/icon-x-inactive.svg';
+        plrLive.classList.add('layer-off');
+      } else {
+        plrLiveEye.classList.replace('off', 'on');
+        plrLiveEye.querySelector('img').src = '../assets/icon-eye-on.svg';
+        plrLiveX.classList.replace('off', 'blue');
+        plrLiveX.querySelector('img').src = '../assets/icon-x-active.svg';
+        plrLive.classList.remove('layer-off');
+      }
+    });
+
+    // Link / Unlink toggle
+    plrLiveLink.addEventListener('click', () => {
+      const isLinked = plrLiveLink.classList.contains('linked');
+      if (isLinked) {
+        plrLiveLink.classList.replace('linked', 'unlinked');
+        plrLiveLink.querySelector('img').src = '../assets/icon-unlink-small.svg';
+      } else {
+        plrLiveLink.classList.replace('unlinked', 'linked');
+        plrLiveLink.querySelector('img').src = '../assets/icon-link.svg';
+      }
+    });
+
+    // Expand / Collapse toggle
+    plrLiveExp.addEventListener('click', () => {
+      plrLiveExp.classList.toggle('collapsed');
+    });
+
+    // X button — demo has 1 parent only, so always RESET to default
+    plrLiveX.addEventListener('click', () => {
+      // Reset eye → ON
+      plrLiveEye.classList.replace('off', 'on');
+      plrLiveEye.querySelector('img').src = '../assets/icon-eye-on.svg';
+      // Reset X → blue
+      plrLiveX.classList.replace('off', 'blue');
+      plrLiveX.querySelector('img').src = '../assets/icon-x-active.svg';
+      // Reset link → linked
+      plrLiveLink.className = 'plr-link linked';
+      plrLiveLink.querySelector('img').src = '../assets/icon-link.svg';
+      // Reset expand → not collapsed
+      plrLiveExp.classList.remove('collapsed');
+      // Remove layer-off state
+      plrLive.classList.remove('layer-off');
+    });
+
+    // Layer name — click to edit inline
+    const plrLiveName = document.getElementById('plr-live-name');
+    plrLiveName.addEventListener('click', () => {
+      plrLiveName.contentEditable = 'true';
+      plrLiveName.classList.add('editing');
+      plrLiveName.focus();
+      // Select all text
+      const range = document.createRange();
+      range.selectNodeContents(plrLiveName);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    function commitName() {
+      plrLiveName.contentEditable = 'false';
+      plrLiveName.classList.remove('editing');
+      // If empty, reset to default
+      if (!plrLiveName.textContent.trim()) {
+        plrLiveName.textContent = 'New Layer';
+      }
+    }
+
+    plrLiveName.addEventListener('blur', commitName);
+    plrLiveName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitName();
+      }
+    });
+
+    // ── CHILD LAYER LIVE ROW ──────────────────────────
+    (function () {
+      const clrLive = document.getElementById('clr-live');
+      // mode: 'load' | 'image' | 'prompt'
+      let mode = 'load';
+      let eyeOn = true;
+
+      function render() {
+        let html = '';
+
+        // X button — inactive only when eye is off in image/prompt modes
+        const xActive = (mode === 'load') || eyeOn;
+        // X button — demo has 1 child only, so always RESET to Load default
+        const xClass = xActive ? 'clr-x' : 'clr-x off';
+        html += `<div class="${xClass}" id="clr2-x" title="Reset child layer">`
+          + `<img src="../assets/${xActive ? 'icon-close.svg' : 'icon-x-inactive.svg'}" alt="x">`
+          + `</div>`;
+
+        if (mode === 'load') {
+          html += `<div class="clr-main load" id="clr2-load" title="Click to load image">`
+            + `<img src="../assets/icon-load.svg" alt="LOAD">`
+            + `</div>`;
+          // T in load mode → activates Prompt
+          html += `<div class="clr-t blue" id="clr2-t" title="Activate Prompt layer">T</div>`;
+
+        } else if (mode === 'image') {
+          html += `<div class="clr-main ${eyeOn ? 'img-a' : 'img-i'}"></div>`;
+          // Edit is placeholder — no mode switch (future: edit image action)
+          html += `<div class="clr-edit ${eyeOn ? 'a' : 'i'}" title="Edit image (coming soon)">`
+            + `<img src="../assets/${eyeOn ? 'icon-edit-active.svg' : 'icon-edit-inactive.svg'}" alt="edit">`
+            + `</div>`;
+          html += `<div class="plr-eye ${eyeOn ? 'on' : 'off'}" id="clr2-eye">`
+            + `<img src="../assets/${eyeOn ? 'icon-eye-on.svg' : 'icon-eye-off.svg'}" alt="eye">`
+            + `</div>`;
+
+        } else if (mode === 'prompt') {
+          html += `<div class="clr-t ${eyeOn ? 'orange' : 'gray'}" id="clr2-t" title="Deactivate Prompt layer">T</div>`;
+          html += `<div class="clr-main ${eyeOn ? 'prompt-a' : 'prompt-i'}">PROMPT</div>`;
+          html += `<div class="plr-eye ${eyeOn ? 'on' : 'off'}" id="clr2-eye">`
+            + `<img src="../assets/${eyeOn ? 'icon-eye-on.svg' : 'icon-eye-off.svg'}" alt="eye">`
+            + `</div>`;
+        }
+
+        clrLive.innerHTML = html;
+
+        // Attach events after innerHTML update
+
+        // X button — always resets to Load default (demo: only 1 child, so reset not remove)
+        document.getElementById('clr2-x').addEventListener('click', () => {
+          mode = 'load'; eyeOn = true; render();
+        });
+
+        if (mode === 'load') {
+          // LOAD button → enter Image mode
+          document.getElementById('clr2-load').addEventListener('click', () => {
+            mode = 'image'; eyeOn = true; render();
+          });
+          // T button → activate Prompt mode
+          document.getElementById('clr2-t').addEventListener('click', () => {
+            mode = 'prompt'; eyeOn = true; render();
+          });
+
+        } else if (mode === 'image') {
+          // Edit button → placeholder, no action yet
+          // Eye button → toggle visibility
+          document.getElementById('clr2-eye').addEventListener('click', () => {
+            eyeOn = !eyeOn; render();
+          });
+
+        } else if (mode === 'prompt') {
+          // T button → deactivate, back to Load
+          document.getElementById('clr2-t').addEventListener('click', () => {
+            mode = 'load'; eyeOn = true; render();
+          });
+          // Eye button → toggle visibility
+          document.getElementById('clr2-eye').addEventListener('click', () => {
+            eyeOn = !eyeOn; render();
+          });
+        }
+      }
+
+      render();
+    })();
+
+    // ── STYLE ROW LIVE ROW ──────────────────────────
+    (function () {
+      const styLive = document.getElementById('sty-live');
+      const slotBtn = document.getElementById('sty2-slot');
+      // mode: 'default' | 'image' | 'prompt'
+      let mode = 'default';
+      let slotOn = true;   // simulates parent slot ON/OFF
+      let linked = true;
+
+      // Slot demo toggle (outside render — persistent element)
+      slotBtn.addEventListener('click', () => {
+        slotOn = !slotOn;
+        slotBtn.textContent = slotOn ? 'ON' : 'OFF';
+        slotBtn.classList.toggle('off', !slotOn);
+        render();
+      });
+
+      function render() {
+        let html = '';
+        const on = slotOn; // shorthand
+
+        if (mode === 'default') {
+          if (on) {
+            // LOAD → image mode
+            html += `<div class="sty-load a" id="sty2-load" title="Click to load style image">`
+              + `<img src="../assets/icon-load-style.svg" alt="LOAD">`
+              + `</div>`;
+            // T → prompt mode
+            html += `<div class="sty-t blue" id="sty2-t" title="Activate Prompt style">T</div>`;
+          } else {
+            // OFF state
+            html += `<div class="sty-load i">`
+              + `<img src="../assets/icon-load-style.svg" alt="LOAD">`
+              + `</div>`;
+            html += `<div class="sty-t off">T</div>`;
+          }
+
+        } else if (mode === 'image') {
+          // Clear → reset to default
+          html += `<div class="sty-clear ${on ? 'a' : 'i'}" id="sty2-clear" title="Clear style image">`
+            + `<img src="../assets/${on ? 'icon-close.svg' : 'icon-x-inactive.svg'}" alt="clear">`
+            + `</div>`;
+          // Image area
+          html += `<div class="sty-load ${on ? 'img-a' : 'img-i'}"></div>`;
+          // Edit → placeholder
+          html += `<div class="sty-edit ${on ? 'a' : 'i'}" title="Edit style image (coming soon)">`
+            + `<img src="../assets/${on ? 'icon-edit-large-active.svg' : 'icon-edit-large-inactive.svg'}" alt="edit">`
+            + `</div>`;
+          // Link toggle (inactive when slot off)
+          const lClass = on ? (linked ? 'linked' : 'unlinked') : 'inactive';
+          const lIcon = on ? (linked ? 'icon-link-ref.svg' : 'icon-unlink-ref.svg') : 'icon-unlink-ref.svg';
+          html += `<div class="sty-link ${lClass}" id="sty2-link">`
+            + `<img src="../assets/${lIcon}" alt="link">`
+            + `</div>`;
+
+        } else if (mode === 'prompt') {
+          // Clear → reset to default
+          html += `<div class="sty-clear ${on ? 'a' : 'i'}" id="sty2-clear" title="Clear prompt style">`
+            + `<img src="../assets/${on ? 'icon-close.svg' : 'icon-x-inactive.svg'}" alt="clear">`
+            + `</div>`;
+          // T → deactivate back to default
+          html += `<div class="sty-t ${on ? 'orange' : 'gray'}" id="sty2-t" title="Deactivate Prompt style">T</div>`;
+          // Prompt area
+          html += `<div class="sty-prompt ${on ? 'a' : 'i'}">PROMPT</div>`;
+          // Link toggle (inactive when slot off)
+          const lClass = on ? (linked ? 'linked' : 'unlinked') : 'inactive';
+          const lIcon = on ? (linked ? 'icon-link-ref.svg' : 'icon-unlink-ref.svg') : 'icon-unlink-ref.svg';
+          html += `<div class="sty-link ${lClass}" id="sty2-link">`
+            + `<img src="../assets/${lIcon}" alt="link">`
+            + `</div>`;
+        }
+
+        styLive.innerHTML = html;
+
+        // Attach events after innerHTML update
+        if (mode === 'default' && on) {
+          // LOAD → image mode
+          document.getElementById('sty2-load').addEventListener('click', () => {
+            mode = 'image'; linked = true; render();
+          });
+          // T → prompt mode
+          document.getElementById('sty2-t').addEventListener('click', () => {
+            mode = 'prompt'; linked = true; render();
+          });
+
+        } else if (mode === 'image') {
+          // Clear → reset to default
+          document.getElementById('sty2-clear').addEventListener('click', () => {
+            mode = 'default'; render();
+          });
+          // Link toggle (only when slot on)
+          if (on) {
+            document.getElementById('sty2-link').addEventListener('click', () => {
+              linked = !linked; render();
+            });
+          }
+
+        } else if (mode === 'prompt') {
+          // Clear → reset to default
+          document.getElementById('sty2-clear').addEventListener('click', () => {
+            mode = 'default'; render();
+          });
+          // T → deactivate back to default
+          document.getElementById('sty2-t').addEventListener('click', () => {
+            mode = 'default'; render();
+          });
+          // Link toggle (only when slot on)
+          if (on) {
+            document.getElementById('sty2-link').addEventListener('click', () => {
+              linked = !linked; render();
+            });
+          }
+        }
+      }
+
+      render();
+    })();
+
+    // ── SLOT SWITCH LIVE ROW ────────────────────────
+    (function () {
+      const slotLive = document.getElementById('slot-live');
+      const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+      // State
+      let subjects = [{ letter: 'A', on: true }];
+      let selected = 0; // index of selected tab
+
+      function render() {
+        const sub = subjects[selected];
+        const isOff = !sub.on;
+
+        // Apply slot-is-off class on the row
+        slotLive.classList.toggle('slot-is-off', isOff);
+
+        let html = '';
+
+        // Subject tabs
+        html += `<div class="subject-switch">`;
+        subjects.forEach((s, i) => {
+          const isSelected = i === selected;
+          let cls = 'btn-subject-a';
+          if (!s.on)           cls += ' off'; // OFF → always grey
+          else if (isSelected) cls += ' on';  // selected + ON → highlighted
+          html += `<div class="${cls}" data-tab="${i}">${s.letter}</div>`;
+        });
+        // Add subject button (max 7)
+        if (subjects.length < 7) {
+          html += `<div class="btn-add-slot" id="slot2-add"><img src="../assets/icon-add-subject.svg" alt="+"></div>`;
+        }
+        html += `</div>`;
+
+        // ON / OFF switch
+        html += `<div class="on-off-switch">`;
+        html += `<div class="btn-on" id="slot2-on">ON</div>`;
+        html += `<div class="btn-off" id="slot2-off">OFF</div>`;
+        html += `</div>`;
+
+        slotLive.innerHTML = html;
+
+        // Attach events
+
+        // Tab clicks → select that subject
+        slotLive.querySelectorAll('[data-tab]').forEach(tab => {
+          tab.addEventListener('click', () => {
+            selected = parseInt(tab.dataset.tab);
+            render();
+          });
+        });
+
+        // Add subject
+        const addBtn = document.getElementById('slot2-add');
+        if (addBtn) {
+          addBtn.addEventListener('click', () => {
+            const nextLetter = ABC[subjects.length] || '?';
+            subjects.push({ letter: nextLetter, on: true });
+            selected = subjects.length - 1; // auto-select new tab
+            render();
+          });
+        }
+
+        // ON button
+        document.getElementById('slot2-on').addEventListener('click', () => {
+          subjects[selected].on = true;
+          render();
+        });
+
+        // OFF button
+        document.getElementById('slot2-off').addEventListener('click', () => {
+          subjects[selected].on = false;
+          render();
+        });
+      }
+
+      render();
+    })();
+
+    // ── MODULE PANEL LIVE ─────────────────────────────
+    (function () {
+      const LABELS = 'ABCDEFG';
+
+      function truncate(text, max) {
+        max = max || 16;
+        return text.length > max ? text.slice(0, max) + '\u2026' : text;
+      }
+
+      function makeComposeHTML(promptText) {
+        const val = (promptText || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        return `<div class="compose-row">
+          <div class="compose-row-bar">
+            <div class="clr-x" data-compose-x><img src="../assets/icon-close.svg" alt="x"></div>
+            <div class="compose-row-label">COMPOSE</div>
+          </div>
+          <div class="compose-row-input">
+            <textarea class="compose-row-textarea" placeholder="Describe what to generate...">${val}</textarea>
+          </div>
+          <div class="compose-row-actions">
+            <button class="compose-row-btn generate" data-compose-gen>GENERATE</button>
+            <button class="compose-row-btn save" data-compose-save>SAVE</button>
+          </div>
+        </div>`;
+      }
+
+      function makeClrHTML() {
+        return `<div class="clr">
+          <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+          <div class="clr-main load"><img src="../assets/icon-load.svg" alt="LOAD"></div>
+          <div class="clr-t blue">T</div>
+        </div>`;
+      }
+
+      function makeGroupHTML(name) {
+        return `<div class="layer-group">
+          <div class="plr">
+            <div class="plr-x blue"><img src="../assets/icon-x-active.svg" alt="x"></div>
+            <div class="plr-exp orange"></div>
+            <div class="plr-name blue">${name}</div>
+            <div class="plr-link linked"><img src="../assets/icon-link.svg" alt="link"></div>
+            <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="eye"></div>
+          </div>
+          <div class="layer-children">
+            ${makeClrHTML()}
+            <div class="add-child-row">
+              <div class="btn-add-child"><img src="../assets/icon-add-child.svg" alt="+"></div>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      // Unified section factory — ties slots + layers together
+      function makeSection(slotRowId, layersId, defaultLayerName) {
+        const slotRow   = document.getElementById(slotRowId);
+        const container = document.getElementById(layersId);
+        if (!slotRow || !container) return;
+        const newLayerBtn = container.parentElement.querySelector('.btn-new-layer');
+
+        let selected = 0;
+        // Each slot stores its layers HTML snapshot — first slot uses existing HTML
+        const slotStates = [{ on: true, html: container.innerHTML }];
+
+        function saveSlot() {
+          slotStates[selected].html = container.innerHTML;
+        }
+
+        function loadSlot() {
+          container.innerHTML = slotStates[selected].html;
+        }
+
+        // Sync child image rows (edit + eye) when parent goes off/on
+        function applyChildImageState(group, isOff) {
+          group.querySelectorAll('.layer-children .clr').forEach(clr => {
+            const childEye = clr.querySelector('.plr-eye');
+            const edit     = clr.querySelector('.clr-edit');
+            if (isOff) {
+              if (childEye && childEye.classList.contains('on')) {
+                childEye.classList.replace('on', 'off');
+                childEye.querySelector('img').src = '../assets/icon-eye-off.svg';
+                childEye.dataset.parentOff = '1';
+              }
+              if (edit && edit.classList.contains('a')) {
+                edit.classList.replace('a', 'i');
+                edit.querySelector('img').src = '../assets/icon-edit-inactive.svg';
+                edit.dataset.parentOff = '1';
+              }
+            } else {
+              if (childEye && childEye.dataset.parentOff) {
+                childEye.classList.replace('off', 'on');
+                childEye.querySelector('img').src = '../assets/icon-eye-on.svg';
+                delete childEye.dataset.parentOff;
+              }
+              if (edit && edit.dataset.parentOff) {
+                edit.classList.replace('i', 'a');
+                edit.querySelector('img').src = '../assets/icon-edit-active.svg';
+                delete edit.dataset.parentOff;
+              }
+            }
+          });
+        }
+
+        function setSlotLayerState(isOff) {
+          container.querySelectorAll('.layer-group').forEach(group => {
+            const plr  = group.querySelector('.plr');
+            const eye  = plr.querySelector('.plr-eye');
+            const x    = plr.querySelector('.plr-x');
+            if (isOff) {
+              eye.classList.replace('on', 'off');
+              eye.querySelector('img').src = '../assets/icon-eye-off.svg';
+              x.classList.replace('blue', 'off');
+              x.querySelector('img').src = '../assets/icon-x-inactive.svg';
+              plr.classList.add('layer-off');
+              group.classList.add('parent-off');
+              group.querySelectorAll('.clr-x img').forEach(img => img.src = '../assets/icon-x-inactive.svg');
+              applyChildImageState(group, true);
+            } else {
+              eye.classList.replace('off', 'on');
+              eye.querySelector('img').src = '../assets/icon-eye-on.svg';
+              x.classList.replace('off', 'blue');
+              x.querySelector('img').src = '../assets/icon-x-active.svg';
+              plr.classList.remove('layer-off');
+              group.classList.remove('parent-off');
+              group.querySelectorAll('.clr-x img').forEach(img => img.src = '../assets/icon-close.svg');
+              applyChildImageState(group, false);
+            }
+          });
+        }
+
+        function renderSlotRow() {
+          const isOff = !slotStates[selected].on;
+          slotRow.className = 'subject-row' + (isOff ? ' slot-is-off' : '');
+          // Dim + lock new-layer button when slot is off
+          const section = slotRow.closest('.mod-section');
+          if (section) section.classList.toggle('slot-off', isOff);
+          let html = '<div class="subject-switch">';
+          slotStates.forEach((s, i) => {
+            let cls = 'btn-subject-a';
+            if (!s.on)               cls += ' off';
+            else if (i === selected) cls += ' on';
+            html += `<div class="${cls}" data-tab="${i}">${LABELS[i]}</div>`;
+          });
+          if (slotStates.length < 7)
+            html += `<div class="btn-add-slot" data-add><img src="../assets/icon-add-subject.svg" alt="+"></div>`;
+          html += '</div>';
+          html += '<div class="on-off-switch">';
+          html += '<div class="btn-on" data-on>ON</div>';
+          html += '<div class="btn-off" data-off>OFF</div>';
+          html += '</div>';
+          slotRow.innerHTML = html;
+
+          slotRow.querySelectorAll('[data-tab]').forEach(tab =>
+            tab.addEventListener('click', () => {
+              saveSlot();
+              selected = +tab.dataset.tab;
+              loadSlot();
+              setSlotLayerState(!slotStates[selected].on);
+              renderSlotRow();
+            })
+          );
+          const addBtn = slotRow.querySelector('[data-add]');
+          if (addBtn) addBtn.addEventListener('click', () => {
+            saveSlot();
+            slotStates.push({ on: true, html: makeGroupHTML(defaultLayerName) });
+            selected = slotStates.length - 1;
+            loadSlot();
+            setSlotLayerState(false);
+            renderSlotRow();
+          });
+          slotRow.querySelector('[data-on]').addEventListener('click', () => {
+            slotStates[selected].on = true;
+            setSlotLayerState(false);
+            renderSlotRow();
+          });
+          slotRow.querySelector('[data-off]').addEventListener('click', () => {
+            slotStates[selected].on = false;
+            setSlotLayerState(true);
+            renderSlotRow();
+          });
+        }
+
+        // Layer interactions via event delegation
+        container.addEventListener('click', e => {
+          const exp = e.target.closest('.plr-exp');
+          if (exp) {
+            const group = exp.closest('.layer-group');
+            group.classList.toggle('collapsed');
+            exp.classList.toggle('collapsed');
+            return;
+          }
+
+          const eye = e.target.closest('.plr-eye');
+          if (eye) {
+            const plr = eye.closest('.plr');
+            if (plr) {
+              const group = eye.closest('.layer-group');
+              const x     = plr.querySelector('.plr-x');
+              const isOn  = eye.classList.contains('on');
+              if (isOn) {
+                eye.classList.replace('on', 'off');
+                eye.querySelector('img').src = '../assets/icon-eye-off.svg';
+                x.classList.replace('blue', 'off');
+                x.querySelector('img').src = '../assets/icon-x-inactive.svg';
+                plr.classList.add('layer-off');
+                group.classList.add('parent-off');
+                group.querySelectorAll('.clr-x img').forEach(img => img.src = '../assets/icon-x-inactive.svg');
+                applyChildImageState(group, true);
+              } else {
+                eye.classList.replace('off', 'on');
+                eye.querySelector('img').src = '../assets/icon-eye-on.svg';
+                x.classList.replace('off', 'blue');
+                x.querySelector('img').src = '../assets/icon-x-active.svg';
+                plr.classList.remove('layer-off');
+                group.classList.remove('parent-off');
+                group.querySelectorAll('.clr-x img').forEach(img => img.src = '../assets/icon-close.svg');
+                applyChildImageState(group, false);
+                if (slotStates[selected].on === false) {
+                  slotStates[selected].on = true;
+                  renderSlotRow();
+                }
+              }
+              return;
+            }
+            // no .plr ancestor → child row eye, falls through to childEye handler below
+          }
+
+          const link = e.target.closest('.plr-link');
+          if (link) {
+            if (link.classList.contains('linked')) {
+              link.classList.replace('linked', 'unlinked');
+              link.querySelector('img').src = '../assets/icon-unlink-small.svg';
+            } else {
+              link.classList.replace('unlinked', 'linked');
+              link.querySelector('img').src = '../assets/icon-link.svg';
+            }
+            return;
+          }
+
+          // Edit parent layer name
+          const name = e.target.closest('.plr-name');
+          if (name) {
+            name.contentEditable = 'true';
+            name.style.borderColor = '#ea5823';
+            name.style.outline = 'none';
+            name.focus();
+            const range = document.createRange();
+            range.selectNodeContents(name);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            name.addEventListener('blur', function commit() {
+              name.contentEditable = 'false';
+              name.style.borderColor = '';
+              if (!name.textContent.trim()) name.textContent = 'NEW LAYER';
+              name.removeEventListener('blur', commit);
+            });
+            name.addEventListener('keydown', function onKey(e) {
+              if (e.key === 'Enter') { e.preventDefault(); name.blur(); }
+              if (e.key === 'Escape') { name.textContent = name.dataset.prev || 'NEW LAYER'; name.blur(); }
+              name.removeEventListener('keydown', onKey);
+            });
+            name.dataset.prev = name.textContent;
+            return;
+          }
+
+          const addChild = e.target.closest('.btn-add-child');
+          if (addChild) {
+            const addChildRow = addChild.closest('.add-child-row');
+            const temp = document.createElement('div');
+            temp.innerHTML = makeClrHTML();
+            addChildRow.parentElement.insertBefore(temp.firstElementChild, addChildRow);
+            return;
+          }
+
+          // Remove parent layer (X on .plr)
+          const plrX = e.target.closest('.plr-x');
+          if (plrX && plrX.closest('.plr')) {
+            const group = plrX.closest('.layer-group');
+            const groups = container.querySelectorAll('.layer-group');
+            if (groups.length > 1) {
+              group.remove();
+            } else {
+              // Last group — reset to default active state
+              const temp = document.createElement('div');
+              temp.innerHTML = makeGroupHTML(defaultLayerName);
+              group.replaceWith(temp.firstElementChild);
+              // If slot is OFF, flip it back to ON
+              if (slotStates[selected].on === false) {
+                slotStates[selected].on = true;
+                setSlotLayerState(false);
+                renderSlotRow();
+              }
+            }
+            return;
+          }
+
+          // T button on .clr → open compose, store reference to original .clr
+          const clrT = e.target.closest('.clr-t');
+          if (clrT && clrT.closest('.clr')) {
+            const clr = clrT.closest('.clr');
+            const savedPrompt = clrT.classList.contains('orange') ? (clr.dataset.savedPrompt || '') : '';
+            const composeEl = document.createElement('div');
+            composeEl.innerHTML = makeComposeHTML(savedPrompt);
+            const compose = composeEl.firstElementChild;
+            compose._originalClr = clr;
+            clr.replaceWith(compose);
+            return;
+          }
+
+          // X on compose-row → restore original .clr (load state, unchanged)
+          const composeX = e.target.closest('[data-compose-x]');
+          if (composeX) {
+            const compose = composeX.closest('.compose-row');
+            compose.replaceWith(compose._originalClr);
+            return;
+          }
+
+          // SAVE on compose-row → restore original .clr, mutate to prompt state
+          const composeSave = e.target.closest('[data-compose-save]');
+          if (composeSave) {
+            const compose = composeSave.closest('.compose-row');
+            const text = compose.querySelector('.compose-row-textarea').value.trim();
+            if (!text) return;
+            const clr = compose._originalClr;
+            clr.dataset.savedPrompt = text;
+            clr.innerHTML = `
+              <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+              <div class="clr-t orange">T</div>
+              <div class="clr-main prompt-a">${truncate(text)}</div>
+              <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="on"></div>`;
+            compose.replaceWith(clr);
+            return;
+          }
+
+          // GENERATE on compose-row → restore original .clr, mutate to image state
+          const composeGen = e.target.closest('[data-compose-gen]');
+          if (composeGen) {
+            const compose = composeGen.closest('.compose-row');
+            const clr = compose._originalClr;
+            clr.innerHTML = `
+              <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+              <div class="clr-main img-a"></div>
+              <div class="clr-edit a"><img src="../assets/icon-edit-active.svg" alt="edit"></div>
+              <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="on"></div>`;
+            compose.replaceWith(clr);
+            return;
+          }
+
+          // Eye toggle on child row (.clr) — image or prompt state
+          const childEye = e.target.closest('.plr-eye');
+          if (childEye && childEye.closest('.clr')) {
+            const clr  = childEye.closest('.clr');
+            const main = clr.querySelector('.clr-main');
+            const edit = clr.querySelector('.clr-edit');
+            const x    = clr.querySelector('.clr-x');
+            const t    = clr.querySelector('.clr-t');
+            const isOn = childEye.classList.contains('on');
+            if (isOn) {
+              childEye.classList.replace('on', 'off');
+              childEye.querySelector('img').src = '../assets/icon-eye-off.svg';
+              if (main) {
+                if (main.classList.contains('img-a'))    main.classList.replace('img-a', 'img-i');
+                if (main.classList.contains('prompt-a')) main.classList.replace('prompt-a', 'prompt-i');
+              }
+              if (edit) { edit.classList.replace('a', 'i'); edit.querySelector('img').src = '../assets/icon-edit-inactive.svg'; }
+              if (x)    { x.classList.add('off'); x.querySelector('img').src = '../assets/icon-x-inactive.svg'; }
+              if (t && t.classList.contains('orange')) t.classList.replace('orange', 'gray');
+            } else {
+              childEye.classList.replace('off', 'on');
+              childEye.querySelector('img').src = '../assets/icon-eye-on.svg';
+              if (main) {
+                if (main.classList.contains('img-i'))    main.classList.replace('img-i', 'img-a');
+                if (main.classList.contains('prompt-i')) main.classList.replace('prompt-i', 'prompt-a');
+              }
+              if (edit) { edit.classList.replace('i', 'a'); edit.querySelector('img').src = '../assets/icon-edit-active.svg'; }
+              if (x)    { x.classList.remove('off'); x.querySelector('img').src = '../assets/icon-close.svg'; }
+              if (t && t.classList.contains('gray')) t.classList.replace('gray', 'orange');
+            }
+            return;
+          }
+
+          // Remove child row (X on .clr)
+          const clrX = e.target.closest('.clr-x');
+          if (clrX && clrX.closest('.clr')) {
+            const clr      = clrX.closest('.clr');
+            const children = clr.closest('.layer-children');
+            const group    = clr.closest('.layer-group');
+            const clrs     = children.querySelectorAll('.clr');
+            if (clrs.length > 1) {
+              clr.remove();
+            } else {
+              // Last child — reset to default LOAD + flip slot ON if off
+              const temp = document.createElement('div');
+              temp.innerHTML = makeClrHTML();
+              clr.replaceWith(temp.firstElementChild);
+              if (slotStates[selected].on === false) {
+                slotStates[selected].on = true;
+                setSlotLayerState(false);
+                renderSlotRow();
+              }
+            }
+            // Unified bottom-up: if parent was individually eye-hidden, flip it back ON
+            // (setSlotLayerState above already clears parent-off for slot-off case, so this only fires for eye-off)
+            if (group.classList.contains('parent-off')) {
+              const plr       = group.querySelector('.plr');
+              const parentEye = plr.querySelector('.plr-eye');
+              const parentX   = plr.querySelector('.plr-x');
+              parentEye.classList.replace('off', 'on');
+              parentEye.querySelector('img').src = '../assets/icon-eye-on.svg';
+              parentX.classList.replace('off', 'blue');
+              parentX.querySelector('img').src = '../assets/icon-x-active.svg';
+              plr.classList.remove('layer-off');
+              group.classList.remove('parent-off');
+              applyChildImageState(group, false);
+              group.querySelectorAll('.clr-x img').forEach(img => img.src = '../assets/icon-close.svg');
+            }
+            return;
+          }
+        });
+
+        if (newLayerBtn) {
+          newLayerBtn.addEventListener('click', () => {
+            const temp = document.createElement('div');
+            temp.innerHTML = makeGroupHTML('NEW LAYER');
+            container.appendChild(temp.firstElementChild);
+            // If slot is OFF, new layer starts inactive
+            if (slotStates[selected].on === false) {
+              const newGroup = container.lastElementChild;
+              const plr = newGroup.querySelector('.plr');
+              const eye = plr.querySelector('.plr-eye');
+              const x   = plr.querySelector('.plr-x');
+              eye.classList.replace('on', 'off');
+              eye.querySelector('img').src = '../assets/icon-eye-off.svg';
+              x.classList.replace('blue', 'off');
+              x.querySelector('img').src = '../assets/icon-x-inactive.svg';
+              plr.classList.add('layer-off');
+              newGroup.classList.add('parent-off');
+            }
+          });
+        }
+
+        // Init
+        loadSlot();
+        renderSlotRow();
+      }
+
+      makeSection('mp-slot-subj',  'mp-layers-subj',  'NEW SUBJECT');
+      makeSection('mp-slot-stage', 'mp-layers-stage', 'NEW STAGE');
+
+      // Style slot — full per-slot state machine
+      (function () {
+        const slotRow = document.getElementById('mp-slot-sty');
+        const styRow  = document.getElementById('mp-sty-row');
+        if (!slotRow || !styRow) return;
+
+        let selected = 0;
+        // Each slot carries its own mode/linked/imgUrl — no HTML snapshots needed
+        const slotStates = [{ on: true, mode: 'default', linked: true, imgUrl: null, promptText: '' }];
+
+        const mpStyInput = document.createElement('input');
+        mpStyInput.type = 'file'; mpStyInput.accept = 'image/*'; mpStyInput.style.display = 'none';
+        document.body.appendChild(mpStyInput);
+
+        mpStyInput.addEventListener('change', () => {
+          const file = mpStyInput.files[0];
+          if (!file) return;
+          const s = slotStates[selected];
+          s.mode   = 'image';
+          s.imgUrl = URL.createObjectURL(file);
+          s.linked = true;
+          renderStyle();
+        });
+
+        function renderStyle() {
+          const s  = slotStates[selected];
+          const on = s.on;
+          let html = '';
+
+          if (s.mode === 'default') {
+            if (on) {
+              html += `<div class="sty-load a" data-sty-load><img src="../assets/icon-load-style.svg" alt="LOAD"></div>`;
+              html += `<div class="sty-t blue" data-sty-t>T</div>`;
+            } else {
+              html += `<div class="sty-load i"><img src="../assets/icon-load-style.svg" alt="LOAD"></div>`;
+              html += `<div class="sty-t off">T</div>`;
+            }
+
+          } else if (s.mode === 'image') {
+            html += `<div class="sty-clear ${on ? 'a' : 'i'}" data-sty-clear><img src="../assets/${on ? 'icon-close.svg' : 'icon-x-inactive.svg'}" alt="clear"></div>`;
+            html += `<div class="sty-load ${on ? 'img-a' : 'img-i'}">${s.imgUrl ? `<img src="${s.imgUrl}" style="width:100%;height:100%;object-fit:cover;" alt="image">` : ''}</div>`;
+            html += `<div class="sty-edit ${on ? 'a' : 'i'}"><img src="../assets/${on ? 'icon-edit-large-active.svg' : 'icon-edit-large-inactive.svg'}" alt="edit"></div>`;
+            const lCls  = on ? (s.linked ? 'linked' : 'unlinked') : 'inactive';
+            const lIcon = on ? (s.linked ? 'icon-link-ref.svg' : 'icon-unlink-ref.svg') : 'icon-unlink-ref.svg';
+            html += `<div class="sty-link ${lCls}" data-sty-link><img src="../assets/${lIcon}" alt="link"></div>`;
+
+          } else if (s.mode === 'prompt') {
+            const label = s.promptText ? truncate(s.promptText, 14) : 'PROMPT';
+            html += `<div class="sty-clear ${on ? 'a' : 'i'}" data-sty-clear><img src="../assets/${on ? 'icon-close.svg' : 'icon-x-inactive.svg'}" alt="clear"></div>`;
+            html += `<div class="sty-t ${on ? 'orange' : 'gray'}" data-sty-t>T</div>`;
+            html += `<div class="sty-prompt ${on ? 'a' : 'i'}">${label}</div>`;
+            const lCls  = on ? (s.linked ? 'linked' : 'unlinked') : 'inactive';
+            const lIcon = on ? (s.linked ? 'icon-link-ref.svg' : 'icon-unlink-ref.svg') : 'icon-unlink-ref.svg';
+            html += `<div class="sty-link ${lCls}" data-sty-link><img src="../assets/${lIcon}" alt="link"></div>`;
+
+          } else if (s.mode === 'compose') {
+            html = makeComposeHTML(s.promptText || '');
+          }
+
+          styRow.innerHTML = html;
+
+          // Compose mode event wiring
+          const composeXEl    = styRow.querySelector('[data-compose-x]');
+          const composeSaveEl = styRow.querySelector('[data-compose-save]');
+          const composeGenEl  = styRow.querySelector('[data-compose-gen]');
+          if (composeXEl) composeXEl.addEventListener('click', () => {
+            slotStates[selected].mode = 'default';
+            renderStyle();
+          });
+          if (composeSaveEl) composeSaveEl.addEventListener('click', () => {
+            const text = styRow.querySelector('.compose-row-textarea').value.trim();
+            if (!text) return;
+            slotStates[selected].promptText = text;
+            slotStates[selected].mode = 'prompt';
+            slotStates[selected].linked = true;
+            renderStyle();
+          });
+          if (composeGenEl) composeGenEl.addEventListener('click', () => {
+            slotStates[selected].mode = 'image';
+            slotStates[selected].linked = true;
+            renderStyle();
+          });
+
+          // Attach events to freshly rendered elements
+          const loadEl  = styRow.querySelector('[data-sty-load]');
+          const tEl     = styRow.querySelector('[data-sty-t]');
+          const clearEl = styRow.querySelector('[data-sty-clear]');
+          const linkEl  = styRow.querySelector('[data-sty-link]');
+
+          if (loadEl) loadEl.addEventListener('click', () => { mpStyInput.value = ''; mpStyInput.click(); });
+          if (tEl) tEl.addEventListener('click', () => {
+            slotStates[selected].mode = 'compose';
+            renderStyle();
+          });
+          if (clearEl) clearEl.addEventListener('click', () => {
+            slotStates[selected].mode   = 'default';
+            slotStates[selected].imgUrl = null;
+            renderStyle();
+          });
+          if (linkEl && on) linkEl.addEventListener('click', () => {
+            slotStates[selected].linked = !slotStates[selected].linked;
+            renderStyle();
+          });
+          // T in prompt mode → reopen compose with saved text
+          if (s.mode === 'prompt' && tEl) {
+            tEl.addEventListener('click', () => {
+              slotStates[selected].mode = 'compose';
+              renderStyle();
+            });
+          }
+        }
+
+        function renderSlotRow() {
+          const isOff = !slotStates[selected].on;
+          slotRow.className = 'subject-row' + (isOff ? ' slot-is-off' : '');
+          let html = '<div class="subject-switch">';
+          slotStates.forEach((s, i) => {
+            let cls = 'btn-subject-a';
+            if (!s.on)               cls += ' off';
+            else if (i === selected) cls += ' on';
+            html += `<div class="${cls}" data-tab="${i}">${LABELS[i]}</div>`;
+          });
+          if (slotStates.length < 7)
+            html += `<div class="btn-add-slot" data-add><img src="../assets/icon-add-subject.svg" alt="+"></div>`;
+          html += '</div><div class="on-off-switch"><div class="btn-on" data-on>ON</div><div class="btn-off" data-off>OFF</div></div>';
+          slotRow.innerHTML = html;
+
+          slotRow.querySelectorAll('[data-tab]').forEach(tab =>
+            tab.addEventListener('click', () => {
+              selected = +tab.dataset.tab;
+              renderStyle();
+              renderSlotRow();
+            })
+          );
+          const addBtn = slotRow.querySelector('[data-add]');
+          if (addBtn) addBtn.addEventListener('click', () => {
+            slotStates.push({ on: true, mode: 'default', linked: true, imgUrl: null, promptText: '' });
+            selected = slotStates.length - 1;
+            renderStyle();
+            renderSlotRow();
+          });
+          slotRow.querySelector('[data-on]').addEventListener('click', () => {
+            slotStates[selected].on = true;
+            renderStyle();
+            renderSlotRow();
+          });
+          slotRow.querySelector('[data-off]').addEventListener('click', () => {
+            slotStates[selected].on = false;
+            renderStyle();
+            renderSlotRow();
+          });
+        }
+
+        renderStyle();
+        renderSlotRow();
+      })();
+
+      // ── IMAGE UPLOAD for .clr-main.load in module panel ──
+      const mpFileInput = document.getElementById('mp-file-input');
+      let activeClrMain = null;
+
+      document.querySelector('.mod-btn-dd').addEventListener('click', function () {
+        this.closest('.mod-panel-wrap').classList.toggle('collapsed');
+      });
+
+      document.getElementById('module-panel-live').addEventListener('click', e => {
+        const loadBtn = e.target.closest('.clr-main.load');
+        if (loadBtn) {
+          activeClrMain = loadBtn;
+          mpFileInput.value = '';
+          mpFileInput.click();
+        }
+      });
+
+      mpFileInput.addEventListener('change', () => {
+        const file = mpFileInput.files[0];
+        if (!file || !activeClrMain) return;
+        const url = URL.createObjectURL(file);
+        const clr = activeClrMain.closest('.clr');
+
+        // Swap to image-active mode — same layout as Image Loaded · Visible
+        clr.innerHTML = `
+          <div class="clr-x"><img src="../assets/icon-close.svg" alt="x"></div>
+          <div class="clr-main img-a"><img src="${url}" style="width:100%;height:100%;object-fit:cover;" alt="image"></div>
+          <div class="clr-edit a"><img src="../assets/icon-edit-active.svg" alt="edit"></div>
+          <div class="plr-eye on"><img src="../assets/icon-eye-on.svg" alt="eye"></div>`;
+
+        // Eye toggle on child image row
+        clr.querySelector('.plr-eye').addEventListener('click', function () {
+          const isOn = this.classList.contains('on');
+          const main = clr.querySelector('.clr-main');
+          const edit = clr.querySelector('.clr-edit');
+          const x    = clr.querySelector('.clr-x');
+          if (isOn) {
+            this.classList.replace('on', 'off');
+            this.querySelector('img').src = '../assets/icon-eye-off.svg';
+            main.classList.replace('img-a', 'img-i');
+            edit.classList.replace('a', 'i');
+            edit.querySelector('img').src = '../assets/icon-edit-inactive.svg';
+            x.classList.add('off');
+            x.querySelector('img').src = '../assets/icon-x-inactive.svg';
+          } else {
+            this.classList.replace('off', 'on');
+            this.querySelector('img').src = '../assets/icon-eye-on.svg';
+            main.classList.replace('img-i', 'img-a');
+            edit.classList.replace('i', 'a');
+            edit.querySelector('img').src = '../assets/icon-edit-active.svg';
+            x.classList.remove('off');
+            x.querySelector('img').src = '../assets/icon-close.svg';
+          }
+        });
+
+        activeClrMain = null;
+      });
+    })();
+  </script>
+
+</body>
+
+</html>
