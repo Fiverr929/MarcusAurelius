@@ -6,11 +6,10 @@ Client-side rendering pipeline with modular prompt composition, multi-modal infe
 
 ## Current Build
 
-Single-file architecture (`MarcusAurelius.html`) backed by a `logic/` module layer. Settings and state are managed client-side via `localStorage`. All inference calls are routed through a keyed endpoint configured at runtime.
+Single-file architecture backed by a `logic/` module layer. Settings and state are managed client-side via `localStorage`. All inference calls are routed through a keyed endpoint configured at runtime.
 
 ```
-MarcusAurelius.html
-│
+/
 ├── logic/
 │   ├── api.js            — inference routing + retry logic
 │   ├── enhancer.js       — pre-processing pipeline
@@ -58,7 +57,7 @@ Input
 
 ## Setup
 
-1. Open `MarcusAurelius.html` in any modern browser
+1. Open the `.html` file in any modern browser
 2. Go to Settings and enter your endpoint key
 3. No install, no server, no build
 
