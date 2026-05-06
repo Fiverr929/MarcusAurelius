@@ -443,7 +443,7 @@
     }
 
     .sd-entry-lbl::placeholder {
-      color: #666666;
+      color: #999997;
     }
 
     .sd-entry-lbl:focus::placeholder,
@@ -452,42 +452,9 @@
     }
 
     .sd-entry-lbl.active {
-      background: #c3c3c2;
+      background: #c7c7c7;
       border-color: var(--accent);
       color: var(--accent);
-    }
-
-    /* Output Type */
-    .sd-output-label {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #c7c7c7;
-      font-family: 'Times New Roman', serif;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .sd-output-label strong {
-      font-weight: bold;
-    }
-
-    .sd-output-btn {
-      flex: 1;
-      height: 32px;
-      background: #999997;
-      border: 0.756px solid #c7c7c7;
-      cursor: pointer;
-      font-size: 18px;
-      color: #c7c7c7;
-      font-family: 'Times New Roman', serif;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .sd-output-btn.active {
-      background: var(--accent);
     }
 
     /* Info button + tooltip */
@@ -536,14 +503,6 @@
     .sd-info-wrap:hover .sd-tooltip,
     .sd-info-wrap.open .sd-tooltip {
       display: block;
-    }
-
-    #settingsDropdown[data-active-output="PRECISE"] .tip-creative {
-      display: none;
-    }
-
-    #settingsDropdown[data-active-output="CREATIVE"] .tip-precise {
-      display: none;
     }
 
     /* Seed */
@@ -1139,7 +1098,6 @@
       display: flex;
       flex-direction: column;
       font-family: 'Times New Roman', serif;
-      position: relative;
     }
 
     .csm-header {
@@ -1148,6 +1106,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
 
     .csm-title {
@@ -1168,32 +1127,94 @@
       font-family: 'Times New Roman', serif;
     }
 
-    .csm-body {
-      padding: 20px 18px;
+    .csm-inner {
+      display: flex;
+      flex: 1;
+    }
+
+    .csm-nav {
+      width: 80px;
+      flex-shrink: 0;
+      background: #888886;
+      border-right: 0.756px solid #c7c7c7;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      padding: 8px 0;
+    }
+
+    .csm-nav-btn {
+      background: transparent;
+      border: none;
+      border-left: 2px solid transparent;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 9px 10px;
+      text-align: left;
+      width: 100%;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .csm-nav-btn:hover {
+      color: #e8e6e6;
+      background: rgba(255,255,255,0.06);
+      border-left-color: #c7c7c7;
+    }
+
+    .csm-nav-btn.active {
+      background: #ea5823;
+      color: #e8e6e6;
+      border-left-color: transparent;
+    }
+
+    .csm-body {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .csm-body::-webkit-scrollbar { display: none; }
+
+    .csm-page {
+      grid-area: 1 / 1;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      visibility: hidden;
+    }
+
+    .csm-page.active { visibility: visible; }
+
+    .csm-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .csm-section-label {
-      color: #c7c7c7;
-      font-size: 9px;
-      letter-spacing: 0.14em;
+      font-size: 10px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      opacity: 0.6;
-      margin-bottom: 8px;
+      color: #c7c7c7;
     }
 
     .csm-key-row {
       display: flex;
-      gap: 8px;
+      gap: 0;
     }
 
     .csm-google-input {
       flex: 1;
-      background: #c7c7c7;
-      border: 1px solid rgba(82,113,255,0.5);
-      color: #1a1a1a;
+      background: #888886;
+      border: 0.756px solid #c7c7c7;
+      border-right: none;
+      color: #e8e6e6;
       font-family: 'Times New Roman', serif;
       font-size: 12px;
       padding: 7px 10px;
@@ -1201,35 +1222,42 @@
       letter-spacing: 0.04em;
     }
 
+    .csm-google-input::placeholder { color: #c7c7c7; opacity: 0.5; }
     .csm-google-input:focus { border-color: #ea5823; }
 
     .csm-google-save {
-      background: #5271ff;
-      border: none;
-      color: #e8e6e6;
+      background: #c7c7c7;
+      border: 0.756px solid #c7c7c7;
+      color: #999997;
       font-family: 'Times New Roman', serif;
       font-size: 11px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       padding: 0 14px;
       cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
     }
 
-    .csm-google-save:hover { background: #ea5823; }
-
+    .csm-google-save:hover {
+      background: #ea5823;
+      border-color: #ea5823;
+      color: #e8e6e6;
+    }
 
     .csm-model-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
 
     .csm-model-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
-      border: 1.5px solid #5271ff;
+      padding: 9px 12px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
       cursor: pointer;
       transition: border-color 0.15s;
     }
@@ -1237,12 +1265,15 @@
     .csm-model-row:hover { border-color: #e8e6e6; }
 
     .csm-model-row.active {
+      background: #ea5823;
       border-color: #ea5823;
-      background: rgba(234,88,35,0.08);
     }
 
+    .csm-model-row.active .csm-model-label { color: #e8e6e6; }
+    .csm-model-row.active .csm-model-cost  { color: rgba(232,230,230,0.75); }
+
     .csm-model-label {
-      color: #e8e6e6;
+      color: #c7c7c7;
       font-size: 12px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -1250,16 +1281,14 @@
 
     .csm-model-cost {
       color: #c7c7c7;
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 0.04em;
-      opacity: 0.75;
+      opacity: 0.6;
     }
-
 
     .csm-resolution-list {
       display: flex;
-      flex-direction: row;
-      gap: 6px;
+      gap: 5px;
     }
 
     .csm-resolution-row {
@@ -1267,34 +1296,34 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 9px 10px;
-      border: 1.5px solid #5271ff;
+      gap: 5px;
+      padding: 8px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
       cursor: pointer;
       color: #c7c7c7;
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       transition: border-color 0.15s;
     }
 
-    .csm-resolution-row:hover { border-color: #e8e6e6; }
+    .csm-resolution-row:hover { border-color: #e8e6e6; color: #e8e6e6; }
 
     .csm-resolution-row.active {
+      background: #ea5823;
       border-color: #ea5823;
-      background: rgba(234,88,35,0.08);
       color: #e8e6e6;
     }
 
     .csm-resolution-check {
-      color: #ea5823;
-      font-size: 10px;
-      line-height: 1;
+      font-size: 9px;
+      opacity: 0.85;
     }
 
     .csm-cost-display {
-      border-top: 1px solid rgba(199,199,199,0.2);
-      padding-top: 14px;
+      border-top: 0.756px solid rgba(199,199,199,0.3);
+      padding-top: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1303,15 +1332,108 @@
     .csm-cost-label {
       color: #c7c7c7;
       font-size: 10px;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      opacity: 0.6;
     }
 
     .csm-cost-value {
       color: #ea5823;
       font-size: 14px;
       letter-spacing: 0.04em;
+    }
+
+    .csm-setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .csm-setting-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .csm-setting-label {
+      color: #c7c7c7;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .csm-setting-hint {
+      color: #c7c7c7;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      opacity: 0.5;
+    }
+
+    .csm-opts {
+      display: flex;
+      flex-shrink: 0;
+    }
+
+    .csm-opt {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      border-right: none;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .csm-opt:last-child { border-right: 0.756px solid #c7c7c7; }
+    .csm-opt:hover { color: #e8e6e6; border-color: #e8e6e6; }
+    .csm-opt:hover + .csm-opt { border-left-color: #e8e6e6; }
+
+    .csm-opt.active {
+      background: #ea5823;
+      border-color: #ea5823;
+      color: #e8e6e6;
+    }
+
+    .csm-opt.active + .csm-opt {
+      border-left-color: #ea5823;
+    }
+
+    .csm-timeout-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .csm-timeout-input {
+      width: 52px;
+      background: #888886;
+      border: 0.756px solid #c7c7c7;
+      color: #e8e6e6;
+      font-family: 'Times New Roman', serif;
+      font-size: 12px;
+      padding: 6px 8px;
+      outline: none;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    .csm-timeout-input::-webkit-inner-spin-button,
+    .csm-timeout-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .csm-timeout-input:focus { border-color: #ea5823; }
+
+    .csm-timeout-unit {
+      color: #c7c7c7;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     /* ── RIGHT SIDEBAR ── */
@@ -1724,7 +1846,7 @@
     .plr-name.gray {
       background: #999997;
       color: #c7c7c7;
-      border: 0.756px solid #c3c3c2;
+      border: 0.756px solid #c7c7c7;
     }
 
     .plr-name.editing {
@@ -1777,7 +1899,7 @@
 
     .plr-eye.off {
       background: #999997;
-      border: 1.134px solid #c3c3c2;
+      border: 1.134px solid #c7c7c7;
     }
 
     .plr-eye.on img {
@@ -2085,7 +2207,7 @@
     .plr.layer-off .plr-name.blue {
       background: #999997;
       color: #c7c7c7;
-      border-color: #c3c3c2;
+      border-color: #c7c7c7;
     }
 
     .plr.layer-off .plr-link.linked,
@@ -2187,7 +2309,7 @@
 
     .sty-load.img-i {
       background: #c7c7c7;
-      border: 0.756px solid #c3c3c2;
+      border: 0.756px solid #c7c7c7;
     }
 
     .sty-load {
@@ -2790,6 +2912,11 @@
     }
 
     .cell-inner.cafe-loading {
+      animation: cafe-pulse 1.4s ease-in-out infinite;
+    }
+
+    .clr-main.generating {
+      background: #ea5823;
       animation: cafe-pulse 1.4s ease-in-out infinite;
     }
 
@@ -3432,6 +3559,212 @@
       user-select: none;
     }
 
+  /* ── REFINE OVERLAY ───────────────────────────────── */
+  #refine-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    display: none; background: #c7c7c7;
+    font-family: 'Times New Roman', serif;
+  }
+  #refine-overlay.open { display: flex; }
+
+  #refine-close {
+    position: fixed;
+    top: 18px; left: 18px;
+    z-index: 10;
+    background: none;
+    border: none;
+    color: #999997;
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  #refine-close:hover { color: #ea5823; }
+
+  #refine-overlay .refine-history {
+    position: fixed;
+    left: 20px; top: 50%;
+    transform: translateY(-50%);
+    z-index: 20; width: 140px; max-height: 80vh;
+    display: flex; flex-direction: column;
+    background: #999997;
+  }
+  #refine-overlay .history-header {
+    height: 28px; display: flex; align-items: center; justify-content: center;
+    color: #c7c7c7; font-size: 13px; letter-spacing: 0.1em; flex-shrink: 0;
+  }
+  #refine-overlay .history-frames {
+    display: flex; flex-direction: column; gap: 3px; padding: 3px;
+    overflow-y: auto; flex: 1;
+  }
+  #refine-overlay .history-frames::-webkit-scrollbar { display: none; }
+  #refine-overlay .history-thumb {
+    width: 100%; aspect-ratio: 1; background: transparent;
+    border: 1.5px solid #c7c7c7; flex-shrink: 0; cursor: pointer; overflow: hidden; position: relative;
+  }
+  #refine-overlay .history-placeholder { opacity: 0.3; cursor: default; pointer-events: none; }
+  #refine-overlay .history-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #refine-overlay .history-thumb.active { border: 2.5px solid #5271ff; opacity: 1; }
+  #refine-overlay .history-thumb.active::after {
+    content: 'ACTIVE'; position: absolute; bottom: 0; left: 0; right: 0;
+    background: #5271ff; color: #c7c7c7; font-size: 8px; letter-spacing: 0.12em;
+    text-align: center; padding: 2px 0; font-family: 'Times New Roman', serif;
+  }
+
+  #refine-overlay .refine-main {
+    flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 28px;
+  }
+  #refine-overlay .refine-center { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 820px; }
+  #refine-overlay .refine-canvas-wrap {
+    width: 100%; height: 513px; display: flex; align-items: center; justify-content: center;
+  }
+  #refine-overlay .refine-canvas {
+    height: 100%; width: auto; max-width: 100%; aspect-ratio: 874 / 547;
+    background: #999997; border: 3px solid #5271ff; position: relative; overflow: hidden;
+  }
+  #refine-overlay .refine-canvas.drag-over { border-color: #c7c7c7; opacity: 0.85; }
+  #refine-overlay .refine-canvas img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+
+  #refine-overlay .canvas-group { display: inline-flex; align-items: stretch; height: 100%; }
+
+  #refine-overlay .tool-submenu {
+    width: 0; overflow: hidden; transition: width 0.18s ease; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; background: #5271ff;
+  }
+  #refine-overlay .tool-submenu.open { width: 52px; }
+  #refine-overlay .submenu-panel {
+    display: none; flex-direction: column; align-items: center; gap: 10px;
+    padding: 14px 8px; min-width: 52px; background: #5271ff;
+  }
+  #refine-overlay .submenu-panel.visible { display: flex; }
+  #refine-overlay .sub-divider { width: 22px; height: 1px; background: rgba(255,255,255,0.25); }
+
+  #refine-overlay .size-options { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  #refine-overlay .size-dot {
+    width: 30px; height: 30px; background: none; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+  }
+  #refine-overlay .size-dot::after { content: ''; border-radius: 50%; background: rgba(255,255,255,0.5); display: block; transition: background 0.15s; }
+  #refine-overlay .size-dot[data-size="3"]::after  { width: 5px;  height: 5px; }
+  #refine-overlay .size-dot[data-size="8"]::after  { width: 10px; height: 10px; }
+  #refine-overlay .size-dot[data-size="16"]::after { width: 17px; height: 17px; }
+  #refine-overlay .size-dot.active::after { background: #ffffff; }
+
+  #refine-overlay .color-options { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  #refine-overlay .color-swatch { width: 16px; height: 16px; border: 1.5px solid rgba(255,255,255,0.3); cursor: pointer; flex-shrink: 0; }
+  #refine-overlay .color-swatch.active { border-color: #ffffff; }
+
+  #refine-overlay .edit-options { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  #refine-overlay .edit-btn {
+    width: 28px; height: 28px; background: none; border: none; padding: 0; cursor: pointer;
+    color: #ffffff; display: flex; align-items: center; justify-content: center;
+  }
+  #refine-overlay .edit-btn:hover { color: rgba(255,255,255,0.6); }
+  #refine-overlay .edit-btn svg { width: 16px; height: 16px; }
+
+  #refine-overlay .crop-options { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #refine-overlay .crop-btn {
+    width: 36px; height: 28px; background: none; border: none; padding: 3px;
+    cursor: pointer; color: rgba(255,255,255,0.65); display: flex; align-items: center; justify-content: center;
+  }
+  #refine-overlay .crop-btn svg { width: 100%; height: 100%; }
+  #refine-overlay .crop-btn.active { color: #ffffff; }
+  #refine-overlay .apply-btn {
+    width: 32px; height: 22px; background: rgba(255,255,255,0.2); border: none;
+    color: #ffffff; font-family: 'Times New Roman', serif; font-size: 8px; letter-spacing: 0.08em; cursor: pointer;
+  }
+
+  #refine-overlay .refine-toolbar {
+    width: 52px; flex-shrink: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px; background: #999997;
+  }
+  #refine-overlay .tool-btn {
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; padding: 6px; color: #c7c7c7; cursor: pointer;
+    position: relative; overflow: hidden; transition: color 0.15s, background 0.15s;
+  }
+  #refine-overlay .tool-btn svg { width: 100%; height: 100%; }
+  #refine-overlay .tool-btn.active { color: #c7c7c7; background: #5271ff; }
+
+  #refine-overlay #refineDrawLayer {
+    position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;
+  }
+  #refine-overlay #refineCropOverlay {
+    position: absolute; inset: 0; display: none; z-index: 3; overflow: hidden;
+  }
+  #refine-overlay #refineCropOverlay.active { display: block; }
+  #refine-overlay .crop-box {
+    position: absolute; border: 2px solid #c7c7c7;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); cursor: move;
+  }
+  #refine-overlay .crop-handle { position: absolute; width: 10px; height: 10px; background: #c7c7c7; }
+
+  #refine-overlay .prompt-wrap { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  #refine-overlay .ref-chips-row { position: static; display: flex; gap: 4px; align-items: center; padding: 0; }
+  #refine-overlay .ref-chip { display: flex; align-items: center; cursor: default; }
+  #refine-overlay .ref-chip-remove {
+    width: 20px; height: 20px; flex-shrink: 0; cursor: pointer; position: relative; background: #5271ff;
+  }
+  #refine-overlay .ref-chip-remove::before,
+  #refine-overlay .ref-chip-remove::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 10px; height: 1.5px; border-radius: 1px; background: #c7c7c7;
+  }
+  #refine-overlay .ref-chip-remove::before { transform: translate(-50%,-50%) rotate(45deg); }
+  #refine-overlay .ref-chip-remove::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+  #refine-overlay .ref-chip-thumb {
+    width: 52px; height: 20px; position: relative; overflow: hidden;
+    border: 0.756px solid #5271ff; background: #999997; flex-shrink: 0;
+  }
+  #refine-overlay .ref-chip-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #refine-overlay .ref-chip-overlay { position: absolute; inset: 0; opacity: 0.45; background: #5271ff; pointer-events: none; }
+  #refine-overlay .ref-chip-label {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-family: 'Times New Roman', serif; color: #c7c7c7; pointer-events: none;
+  }
+
+  #refine-overlay .refine-prompt { display: flex; align-items: stretch; height: 47px; width: 100%; }
+  #refine-overlay .prompt-ref-btn {
+    width: 47px; flex-shrink: 0; background: #5271ff; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  #refine-overlay .prompt-ref-btn.disabled { opacity: 1; pointer-events: none; background: #999997; box-shadow: inset 0 0 0 2px #5271ff; }
+  #refine-overlay .prompt-ref-btn.disabled svg line { stroke: #5271ff; }
+  #refine-overlay .prompt-input {
+    flex: 1; background: #999997; border: none; color: #c7c7c7;
+    font-family: 'Times New Roman', serif; font-size: 18px; padding: 0 14px; outline: none;
+  }
+  #refine-overlay .prompt-input::placeholder { color: #c7c7c7; opacity: 0.65; }
+  #refine-overlay .prompt-refine-btn {
+    width: 160px; flex-shrink: 0; background: #5271ff; border: 3px solid #999997; border-left: none;
+    color: #c7c7c7; font-family: 'Times New Roman', serif; font-size: 24px; letter-spacing: 0.06em;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  #refine-overlay .prompt-refine-btn:hover { opacity: 0.85; }
+  #refine-overlay .prompt-refine-btn.loading { opacity: 0.5; cursor: default; pointer-events: none; }
+
+  #refine-overlay .history-thumb.loading {
+    background: #5271ff;
+    border-color: #5271ff;
+    cursor: default;
+    pointer-events: none;
+  }
+  #refine-overlay .history-thumb.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: refine-shimmer 1.2s infinite;
+  }
+  @keyframes refine-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
   </style>
 </head>
 
@@ -3447,8 +3780,7 @@
       <div class="btn-settings" id="settingsBtn">
         <img src="assets/icon-settings.svg" alt="settings" />
       </div>
-      <div class="settings-dropdown" id="settingsDropdown" data-open="false" data-seed="locked"
-        data-active-output="PRECISE">
+      <div class="settings-dropdown" id="settingsDropdown" data-open="false" data-seed="locked">
         <!-- ── FRAME ONLY: 4 aspect ratios + Variation ── -->
         <div class="sd-frame-only sd-section">
           <div class="sd-label">ASPECT RATIO</div>
@@ -3490,24 +3822,6 @@
               <button class="sd-custom-lbl" data-value="CUSTOM">CUSTOM</button>
               <input class="sd-entry-lbl" id="frameEntry" type="number" min="1" max="99" placeholder="−">
             </div>
-          </div>
-        </div>
-        <!-- Output Type -->
-        <div class="sd-section">
-          <div class="sd-output-label">OUTPUT TYPE: <strong id="outputType">CONTROLLED</strong>
-            <span class="sd-info-wrap" id="infoWrap">
-              <span class="sd-info">i</span>
-              <div class="sd-tooltip">
-                <div class="tip-precise">Precise mode uses your uploaded image directly to generate more
-                  accurate results.</div>
-                <div class="tip-creative">Creative mode analyzes and interprets your image, producing a
-                  more imaginative and expressive output.</div>
-              </div>
-            </span>
-          </div>
-          <div class="sd-row">
-            <button class="sd-output-btn active" data-value="PRECISE">PRECISE</button>
-            <button class="sd-output-btn" data-value="CREATIVE">CREATIVE</button>
           </div>
         </div>
         <!-- Seed -->
@@ -4088,17 +4402,6 @@
         });
       });
 
-      /* ── Output Type ── */
-      drop.querySelectorAll('.sd-output-btn').forEach(function (b) {
-        b.addEventListener('click', function () {
-          drop.querySelectorAll('.sd-output-btn').forEach(function (x) { x.classList.remove('active'); });
-          this.classList.add('active');
-          document.getElementById('outputType').textContent =
-            this.dataset.value === 'PRECISE' ? 'CONTROLLED' : 'REMIX';
-          drop.dataset.activeOutput = this.dataset.value;
-        });
-      });
-
       /* ── Seed Lock Toggle ── */
       document.getElementById('seedLock').addEventListener('click', function () {
         var locked = drop.dataset.seed === 'locked';
@@ -4126,12 +4429,6 @@
         }, 2000);
       });
 
-      /* ── Info Tooltip (click toggle) ── */
-      document.getElementById('infoWrap').addEventListener('click', function (e) {
-        e.stopPropagation();
-        this.classList.toggle('open');
-      });
-
       /* ── Custom Variation Entry ── */
       var customEntry = document.getElementById('customEntry');
       customEntry.addEventListener('focus', function () {
@@ -4148,7 +4445,6 @@
     // ── Reference Upload State ─────────────────────
     window.refState = { FRAME: [], SCENE: [] };
     var refState = window.refState;
-    window.refVisionCache = {};
 
     function renderChips() {
       var mode = document.getElementById('promptBar').dataset.state;
@@ -4180,7 +4476,7 @@
           var idx = parseInt(chip.dataset.index, 10);
           refState[mode].splice(idx, 1);
           renderChips();
-          if (window.Workspace) window.Workspace.autosave();
+          window.Workspace.autosave();
         });
       });
     }
@@ -4204,22 +4500,21 @@
             var _refUrl = evt.target.result;
             refState[mode].push(_refUrl);
             renderChips();
-            if (window.Workspace) window.Workspace.autosave();
+            window.Workspace.autosave();
             var _chipIdx = refState[mode].length - 1;
-            var _chipThumb = document.querySelector('#liveRefChips .ref-chip[data-index="' + _chipIdx + '"] .ref-chip-thumb');
-            if (_chipThumb) _chipThumb.classList.add('scanning');
-            var _outputType = (window.CafeSettings && window.CafeSettings.getOutputType) ? window.CafeSettings.getOutputType() : 'PRECISE';
-            window.VisionScan.describeRef(_refUrl, _outputType)
-              .then(function (desc) {
-                window.refVisionCache[_refUrl] = desc;
-                var el = document.querySelector('#liveRefChips .ref-chip[data-index="' + _chipIdx + '"] .ref-chip-thumb');
-                if (el) el.classList.remove('scanning');
-              })
-              .catch(function () {
-                window.refVisionCache[_refUrl] = '';
-                var el = document.querySelector('#liveRefChips .ref-chip[data-index="' + _chipIdx + '"] .ref-chip-thumb');
-                if (el) el.classList.remove('scanning');
-              });
+            if (window.CafeSettings && window.CafeSettings.getScanTiming() === 'load') {
+              var _chipThumb = document.querySelector('#liveRefChips .ref-chip[data-index="' + _chipIdx + '"] .ref-chip-thumb');
+              if (_chipThumb) _chipThumb.classList.add('scanning');
+              window.VisionScan.describeRef(_refUrl)
+                .then(function () {
+                  var el = document.querySelector('#liveRefChips .ref-chip[data-index="' + _chipIdx + '"] .ref-chip-thumb');
+                  if (el) el.classList.remove('scanning');
+                })
+                .catch(function () {
+                  var el = document.querySelector('#liveRefChips .ref-chip[data-index="' + _chipIdx + '"] .ref-chip-thumb');
+                  if (el) el.classList.remove('scanning');
+                });
+            }
           }
         };
         reader.readAsDataURL(file);
@@ -4257,7 +4552,7 @@
         cafeMenu.classList.remove('open');
         var label = item.textContent.trim();
         if (label === 'PROJECTS') window.ProjectsPanel.open();
-        if (label === 'SETTING' && window.CafeSettings) window.CafeSettings.openModal();
+        if (label === 'SETTING') window.CafeSettings.openModal();
       });
     });
 
@@ -4281,15 +4576,15 @@
           var name = window.prompt('Project name:', 'Project');
           if (!name) return;
           DB.projects.create({ name: name.trim() }).then(function (id) {
-            if (window.Workspace) window.Workspace.loadProject(id);
+            window.Workspace.loadProject(id);
             loadAndRender();
           });
         });
         document.getElementById('pm-export').addEventListener('click', function () {
-          if (window.Workspace) window.Workspace.exportCafe();
+          window.Workspace.exportCafe();
         });
         document.getElementById('pm-import').addEventListener('click', function () {
-          if (window.Workspace) window.Workspace.importCafe();
+          window.Workspace.importCafe();
         });
         _ready = true;
       }
@@ -4321,7 +4616,7 @@
             } else {
               clearTimeout(timer); clicks = 0;
               var id = parseInt(el.dataset.id);
-              if (window.Workspace) window.Workspace.loadProject(id);
+              window.Workspace.loadProject(id);
               modal.classList.remove('open');
             }
           });
@@ -4716,13 +5011,35 @@
           const composeGen = e.target.closest('[data-compose-gen]');
           if (composeGen) {
             const compose = composeGen.closest('.compose-row');
+            const text = compose.querySelector('.compose-row-textarea').value.trim();
+            if (!text) return;
+
             const clr = compose._originalClr;
             clr.innerHTML = `
                   <div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>
-                  <div class="clr-main img-a"></div>
-                  <div class="clr-edit a"><img src="assets/icon-edit-active.svg" alt="edit"></div>
-                  <div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="on"></div>`;
+                  <div class="clr-main generating"></div>
+                  <div class="clr-t blue">T</div>`;
             compose.replaceWith(clr);
+
+            if (window.CafeAPI && window.CafeAPI.generateLayerImage) {
+              window.CafeAPI.generateLayerImage(text).then(function(dataUrl) {
+                clr.innerHTML = `
+                    <div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>
+                    <div class="clr-main img-a"><img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt="image"></div>
+                    <div class="clr-edit a"><img src="assets/icon-edit-active.svg" alt="edit"></div>
+                    <div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="on"></div>`;
+                clr.dataset.visionDesc = text; // Optimization: bypass future vision scans!
+                saveSlot();
+                syncModuleState();
+              }).catch(function(err) {
+                console.error('[Layer Gen Error]', err);
+                alert('Layer image generation failed: ' + err.message);
+                clr.replaceWith(compose); // revert back to text box on failure
+              });
+            } else {
+              alert('API not ready. Please make sure api.js is loaded.');
+              clr.replaceWith(compose);
+            }
             return;
           }
 
@@ -4795,6 +5112,23 @@
             syncModuleState();
             return;
           }
+
+          const clrEdit = e.target.closest('.clr-edit');
+          if (clrEdit && clrEdit.classList.contains('a') && clrEdit.closest('.clr')) {
+            const clr = clrEdit.closest('.clr');
+            const img = clr.querySelector('.clr-main img');
+            if (!img || !img.src || img.src === window.location.href) return;
+            const owningContainer = container;
+            window.RefineArea.open(img.src, null, function (refinedUrl) {
+              if (!refinedUrl) return;
+              img.src = refinedUrl;
+              clr.dataset.visionDesc = '';
+              saveSlot();
+              syncModuleState();
+            });
+            return;
+          }
+
           saveSlot();
           syncModuleState();
         });
@@ -4877,11 +5211,11 @@
               <div class="clr-edit a"><img src="assets/icon-edit-active.svg" alt="edit"></div>
               <div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="eye"></div>`;
           activeClrMain = null;
+          clr.dataset.visionDesc = '';
           const owningContainer = clr.closest('.mod-layers');
           if (owningContainer && owningContainer._saveAndSync) owningContainer._saveAndSync();
 
-          // Vision scan — runs quietly in background after image is saved
-          if (window.VisionScan) {
+          if (window.CafeSettings.getScanTiming() === 'load') {
             const group = clr.closest('.layer-group');
             const nameEl = group ? group.querySelector('.plr-name') : null;
             const layerName = nameEl ? nameEl.textContent.trim() : 'LAYER';
@@ -4889,10 +5223,9 @@
             const section = modLayers ? modLayers.dataset.section : '';
             const clrMain = clr.querySelector('.clr-main');
             if (clrMain) clrMain.classList.add('scanning');
-            const _outputType = document.getElementById('settingsDropdown') ? document.getElementById('settingsDropdown').dataset.activeOutput || 'PRECISE' : 'PRECISE';
             var scanPromise = section === 'style'
-              ? window.VisionScan.describeStyle(url, _outputType)
-              : window.VisionScan.describe(url, layerName, section, _outputType);
+              ? window.VisionScan.describeStyle(url)
+              : window.VisionScan.describe(url, layerName, section);
             scanPromise
               .then(function (desc) {
                 clr.dataset.visionDesc = desc;
@@ -4901,7 +5234,7 @@
               })
               .catch(function (err) {
                 if (clrMain) clrMain.classList.remove('scanning');
-                console.warn('[VisionScan] Scan failed:', err.message);
+                console.warn('[VisionScan] On-load scan failed:', err.message);
               });
           }
         };
@@ -5370,7 +5703,7 @@ const $hudInfo = document.getElementById('hud-info');
       if (idx === -1) return;
       CELLS.splice(idx, 1);
       buildGrid();
-      if (window.Workspace) window.Workspace.autosave();
+      window.Workspace.autosave();
     }
 
     function duplicateCell(id) {
@@ -5379,7 +5712,7 @@ const $hudInfo = document.getElementById('hud-info');
       const copy = Object.assign({}, cell, { id: Date.now() });
       CELLS.unshift(copy);
       buildGrid();
-      if (window.Workspace) window.Workspace.autosave();
+      window.Workspace.autosave();
     }
 
     /* ── Gallery 3-dot actions (multi-select) ── */
@@ -5418,7 +5751,7 @@ const $hudInfo = document.getElementById('hud-info');
       setSelectMode(false);
       buildGrid();
       closeDropdown($tdropdown);
-      if (window.Workspace) window.Workspace.autosave();
+      window.Workspace.autosave();
     });
 
     /* ── HUD 3-dot actions ── */
@@ -5440,9 +5773,9 @@ const $hudInfo = document.getElementById('hud-info');
       const cell = CELLS[hudIndex];
       if (!cell || !cell.imgUrl) return;
       const mode = document.getElementById('promptBar').dataset.state;
-      if (window.refState && window.refState[mode].length < 5) {
+      if (window.refState[mode].length < 5) {
         window.refState[mode].push(cell.imgUrl);
-        if (typeof renderChips === 'function') renderChips();
+        renderChips();
       }
       closeDropdown($hudThreedotDrop);
       closeHUD();
@@ -5476,6 +5809,33 @@ const $hudInfo = document.getElementById('hud-info');
       const orig = btn.textContent;
       btn.textContent = 'COMING SOON';
       setTimeout(() => { btn.textContent = orig; }, 1800);
+    });
+
+    // HUD — Refine
+    document.getElementById('hud-edit').addEventListener('click', () => {
+      const cell = window.getHudCell ? window.getHudCell() : CELLS[hudIndex];
+      if (!cell || !cell.imgUrl) return;
+      closeHUD();
+      window.RefineArea.open(cell.imgUrl, cell.ratio, function (refinedUrl) {
+        if (!refinedUrl) return;
+        var newCell = {
+          id:             Date.now() + Math.random(),
+          ratio:          cell.ratio,
+          imgUrl:         refinedUrl,
+          date:           cell.date,
+          type:           'Image',
+          dims:           '—',
+          prompt:         cell.prompt,
+          manifest:       cell.manifest || null,
+          model:          window.CafeSettings.getActiveModel().label,
+          cost:           window.CafeSettings.getCostPerImage(),
+          generated:      true,
+          moduleSnapshot: cell.moduleSnapshot || null,
+          usedImages:     cell.usedImages || []
+        };
+        window.Gallery.addGenerated(newCell);
+        window.Workspace.autosave();
+      });
     });
 
     /* ═══════════════════════════════════════════════════════════
@@ -5593,13 +5953,13 @@ const $hudInfo = document.getElementById('hud-info');
         var idx = seqSlots.indexOf(slotData);
         if (idx !== -1) seqSlots.splice(idx, 1);
         wrap.remove();
-        if (window.Workspace) window.Workspace.autosave();
+        window.Workspace.autosave();
       });
 
       slot.append(thumb, btnX);
       wrap.appendChild(slot);
       $seqImages.appendChild(wrap);
-      if (window.Workspace) window.Workspace.autosave();
+      window.Workspace.autosave();
     }
 
     window.addSeqSlot  = addSeqSlot;
@@ -5613,7 +5973,7 @@ const $hudInfo = document.getElementById('hud-info');
       const cell = window.getHudCell ? window.getHudCell() : null;
       if (cell) {
         addSeqSlot(cell);
-        if (window.closeHUD) window.closeHUD();
+        window.closeHUD();
       }
     }
 
@@ -5624,9 +5984,684 @@ const $hudInfo = document.getElementById('hud-info');
     });
 
   })();
+
+  // ── REFINE AREA ───────────────────────────────────────────────────────────
+  window.RefineArea = (function () {
+
+    var _onDone    = null;
+    var _latestUrl = null;
+    var _refs      = [];
+    var _ratio     = '1:1';
+
+    var RATIO_MAP = [
+      { key: '1:1',  w: 1, h: 1  },
+      { key: '16:9', w: 16, h: 9 },
+      { key: '9:16', w: 9, h: 16 },
+      { key: '4:3',  w: 4, h: 3  },
+      { key: '3:4',  w: 3, h: 4  }
+    ];
+
+    function nearestRatio(w, h) {
+      var best = '1:1', bestDiff = Infinity;
+      RATIO_MAP.forEach(function (r) {
+        var diff = Math.abs((w / h) - (r.w / r.h));
+        if (diff < bestDiff) { bestDiff = diff; best = r.key; }
+      });
+      return best;
+    }
+
+    var overlay, refineCanvas, drawLayer, cropOverlay, historyFrames,
+        promptInput, refineBtn, toolSubmenu;
+
+    var undoStack = [], redoStack = [];
+    var activeTool = null;
+    var isDrawing  = false;
+    var currentStroke = null;
+    var strokeColor = '#ea5823';
+    var strokeSize  = 3;
+    var ctx;
+
+    var cropBox = null, cropRatio = 16 / 9, cropIsFree = false;
+    var cropDrag = null, cropResize = null;
+
+    function mimeFrom(url) {
+      var m = url.match(/^data:([^;]+);/);
+      return m ? m[1] : 'image/png';
+    }
+    function base64From(url) {
+      var i = url.indexOf(',');
+      return i !== -1 ? url.slice(i + 1) : url;
+    }
+
+    // ── History ────────────────────────────────────────────────────────────
+
+    function addPlaceholders() {
+      for (var i = 0; i < 3; i++) {
+        var p = document.createElement('div');
+        p.className = 'history-thumb history-placeholder';
+        historyFrames.appendChild(p);
+      }
+    }
+
+    function clearHistory() {
+      historyFrames.innerHTML = '';
+      addPlaceholders();
+    }
+
+    function setActiveVersion(url, thumb) {
+      var probe = new Image();
+      probe.onload = function () {
+        refineCanvas.style.aspectRatio = probe.naturalWidth + ' / ' + probe.naturalHeight;
+      };
+      probe.src = url;
+      var existing = refineCanvas.querySelector('img');
+      if (existing) existing.remove();
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = 'refine image';
+      refineCanvas.insertBefore(img, refineCanvas.firstChild);
+      overlay.querySelectorAll('.history-thumb').forEach(function (t) { t.classList.remove('active'); });
+      thumb.classList.add('active');
+      syncDrawLayer();
+    }
+
+    function addToHistory(url) {
+      var placeholder = historyFrames.querySelector('.history-placeholder');
+      if (placeholder) placeholder.remove();
+      var thumb = document.createElement('div');
+      thumb.className = 'history-thumb';
+      thumb.innerHTML = '<img src="' + url + '" alt="version">';
+      thumb.addEventListener('click', function () { setActiveVersion(url, thumb); });
+      historyFrames.prepend(thumb);
+      setActiveVersion(url, thumb);
+    }
+
+    function addLoadingThumb() {
+      var placeholder = historyFrames.querySelector('.history-placeholder');
+      if (placeholder) placeholder.remove();
+      var thumb = document.createElement('div');
+      thumb.className = 'history-thumb loading';
+      historyFrames.prepend(thumb);
+      return thumb;
+    }
+
+    function resolveLoadingThumb(thumb, url) {
+      thumb.className = 'history-thumb';
+      thumb.innerHTML = '<img src="' + url + '" alt="version">';
+      thumb.addEventListener('click', function () { setActiveVersion(url, thumb); });
+      setActiveVersion(url, thumb);
+    }
+
+    function removeLoadingThumb(thumb) {
+      thumb.remove();
+      if (!historyFrames.querySelector('.history-thumb')) addPlaceholders();
+    }
+
+    // ── Draw layer ─────────────────────────────────────────────────────────
+
+    function syncDrawLayer() {
+      drawLayer.width  = refineCanvas.offsetWidth;
+      drawLayer.height = refineCanvas.offsetHeight;
+      redrawStrokes();
+    }
+
+    function redrawStrokes() {
+      ctx.clearRect(0, 0, drawLayer.width, drawLayer.height);
+      undoStack.forEach(function (stroke) {
+        if (stroke.points.length < 2) return;
+        ctx.beginPath();
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth   = stroke.size;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        stroke.points.slice(1).forEach(function (p) { ctx.lineTo(p.x, p.y); });
+        ctx.stroke();
+      });
+    }
+
+    function pencilMouseDown(e) {
+      isDrawing = true;
+      var r = drawLayer.getBoundingClientRect();
+      var sx = drawLayer.width  / drawLayer.offsetWidth;
+      var sy = drawLayer.height / drawLayer.offsetHeight;
+      currentStroke = { color: strokeColor, size: strokeSize, points: [{ x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy }] };
+      redoStack = [];
+    }
+
+    function pencilMouseMove(e) {
+      if (!isDrawing) return;
+      var r  = drawLayer.getBoundingClientRect();
+      var sx = drawLayer.width  / drawLayer.offsetWidth;
+      var sy = drawLayer.height / drawLayer.offsetHeight;
+      var pt = { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+      currentStroke.points.push(pt);
+      ctx.beginPath();
+      ctx.strokeStyle = currentStroke.color;
+      ctx.lineWidth   = currentStroke.size;
+      ctx.lineCap     = 'round';
+      ctx.lineJoin    = 'round';
+      var pts = currentStroke.points;
+      ctx.moveTo(pts[pts.length - 2].x, pts[pts.length - 2].y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+    }
+
+    function pencilMouseUp() {
+      if (!isDrawing || !currentStroke) return;
+      isDrawing = false;
+      undoStack.push(currentStroke);
+      currentStroke = null;
+      updatePromptPlaceholder();
+    }
+
+    function enablePencil() {
+      syncDrawLayer();
+      drawLayer.style.pointerEvents = 'all';
+      drawLayer.style.cursor = 'crosshair';
+      drawLayer.addEventListener('mousedown',  pencilMouseDown);
+      drawLayer.addEventListener('mousemove',  pencilMouseMove);
+      drawLayer.addEventListener('mouseup',    pencilMouseUp);
+      drawLayer.addEventListener('mouseleave', pencilMouseUp);
+    }
+
+    function disablePencil() {
+      drawLayer.style.pointerEvents = 'none';
+      drawLayer.style.cursor = '';
+      drawLayer.removeEventListener('mousedown',  pencilMouseDown);
+      drawLayer.removeEventListener('mousemove',  pencilMouseMove);
+      drawLayer.removeEventListener('mouseup',    pencilMouseUp);
+      drawLayer.removeEventListener('mouseleave', pencilMouseUp);
+    }
+
+    function updatePromptPlaceholder() {
+      promptInput.placeholder = undoStack.length > 0
+        ? 'Describe what to do in the marked area...'
+        : 'What do you want me to do now?';
+    }
+
+    // ── Crop tool ──────────────────────────────────────────────────────────
+
+    function enableCrop() {
+      cropOverlay.classList.add('active');
+      buildCropBox();
+    }
+
+    function disableCrop() {
+      cropOverlay.classList.remove('active');
+      cropOverlay.innerHTML = '';
+      cropBox = null;
+      document.removeEventListener('mousemove', onCropMouseMove);
+      document.removeEventListener('mouseup',   onCropMouseUp);
+    }
+
+    function buildCropBox() {
+      cropOverlay.innerHTML = '';
+      var cw = refineCanvas.offsetWidth;
+      var ch = refineCanvas.offsetHeight;
+      var bw, bh;
+      if (cropIsFree) {
+        bw = cw * 0.7; bh = ch * 0.7;
+      } else {
+        bw = Math.min(cw * 0.8, ch * 0.8 * cropRatio);
+        bh = bw / cropRatio;
+        if (bh > ch * 0.8) { bh = ch * 0.8; bw = bh * cropRatio; }
+      }
+      var bx = (cw - bw) / 2;
+      var by = (ch - bh) / 2;
+
+      cropBox = document.createElement('div');
+      cropBox.className = 'crop-box';
+      cropBox.style.left   = bx + 'px';
+      cropBox.style.top    = by + 'px';
+      cropBox.style.width  = bw + 'px';
+      cropBox.style.height = bh + 'px';
+
+      var handles = [
+        { pos: 'tl', cursor: 'nw-resize', top: '-5px', left: '-5px' },
+        { pos: 'tr', cursor: 'ne-resize', top: '-5px', right: '-5px' },
+        { pos: 'bl', cursor: 'sw-resize', bottom: '-5px', left: '-5px' },
+        { pos: 'br', cursor: 'se-resize', bottom: '-5px', right: '-5px' }
+      ];
+      handles.forEach(function (h) {
+        var el = document.createElement('div');
+        el.className = 'crop-handle';
+        el.dataset.pos = h.pos;
+        el.style.cursor = h.cursor;
+        if (h.top    != null) el.style.top    = h.top;
+        if (h.bottom != null) el.style.bottom = h.bottom;
+        if (h.left   != null) el.style.left   = h.left;
+        if (h.right  != null) el.style.right  = h.right;
+        el.addEventListener('mousedown', startCropResize);
+        cropBox.appendChild(el);
+      });
+
+      cropBox.addEventListener('mousedown', startCropDrag);
+      cropOverlay.appendChild(cropBox);
+      document.addEventListener('mousemove', onCropMouseMove);
+      document.addEventListener('mouseup',   onCropMouseUp);
+    }
+
+    function startCropDrag(e) {
+      if (e.target !== cropBox) return;
+      e.preventDefault();
+      cropDrag = { startX: e.clientX, startY: e.clientY, origLeft: parseInt(cropBox.style.left), origTop: parseInt(cropBox.style.top) };
+    }
+
+    function startCropResize(e) {
+      e.preventDefault(); e.stopPropagation();
+      cropResize = {
+        pos: e.target.dataset.pos,
+        startX: e.clientX, startY: e.clientY,
+        origLeft: parseInt(cropBox.style.left), origTop: parseInt(cropBox.style.top),
+        origW: parseInt(cropBox.style.width),   origH: parseInt(cropBox.style.height)
+      };
+    }
+
+    function onCropMouseMove(e) {
+      var cw = refineCanvas.offsetWidth;
+      var ch = refineCanvas.offsetHeight;
+      if (cropDrag) {
+        var dx = e.clientX - cropDrag.startX;
+        var dy = e.clientY - cropDrag.startY;
+        var bw = parseInt(cropBox.style.width);
+        var bh = parseInt(cropBox.style.height);
+        var nx = Math.max(0, Math.min(cropDrag.origLeft + dx, cw - bw));
+        var ny = Math.max(0, Math.min(cropDrag.origTop  + dy, ch - bh));
+        cropBox.style.left = nx + 'px';
+        cropBox.style.top  = ny + 'px';
+      }
+      if (cropResize) {
+        var dx2 = e.clientX - cropResize.startX;
+        var dy2 = e.clientY - cropResize.startY;
+        var l = cropResize.origLeft, t = cropResize.origTop, w = cropResize.origW, h = cropResize.origH;
+        var pos = cropResize.pos;
+        var nl = l, nt = t, nw = w, nh = h;
+        if (pos === 'br') { nw = Math.max(40, w + dx2); nh = cropIsFree ? Math.max(40, h + dy2) : nw / cropRatio; }
+        if (pos === 'bl') { nw = Math.max(40, w - dx2); nl = l + w - nw; nh = cropIsFree ? Math.max(40, h + dy2) : nw / cropRatio; }
+        if (pos === 'tr') { nw = Math.max(40, w + dx2); nh = cropIsFree ? Math.max(40, h - dy2) : nw / cropRatio; nt = cropIsFree ? t + h - nh : t + h - nw / cropRatio; }
+        if (pos === 'tl') { nw = Math.max(40, w - dx2); nl = l + w - nw; nh = cropIsFree ? Math.max(40, h - dy2) : nw / cropRatio; nt = t + h - nh; }
+        nl = Math.max(0, nl); nt = Math.max(0, nt);
+        nw = Math.min(nw, cw - nl); nh = Math.min(nh, ch - nt);
+        cropBox.style.left   = nl + 'px';
+        cropBox.style.top    = nt + 'px';
+        cropBox.style.width  = nw + 'px';
+        cropBox.style.height = nh + 'px';
+      }
+    }
+
+    function onCropMouseUp() { cropDrag = null; cropResize = null; }
+
+    // ── Tool system ────────────────────────────────────────────────────────
+
+    function activateTool(tool, btn) {
+      deactivateTool();
+      activeTool = tool;
+      btn.classList.add('active');
+      toolSubmenu.classList.add('open');
+      overlay.querySelectorAll('.submenu-panel').forEach(function (p) { p.classList.remove('visible'); });
+      overlay.querySelector('.submenu-panel[data-tool="' + tool + '"]').classList.add('visible');
+      if (tool === 'pencil') enablePencil();
+      if (tool === 'crop')   enableCrop();
+    }
+
+    function deactivateTool() {
+      if (!activeTool) return;
+      overlay.querySelectorAll('.tool-btn').forEach(function (b) { b.classList.remove('active'); });
+      toolSubmenu.classList.remove('open');
+      overlay.querySelectorAll('.submenu-panel').forEach(function (p) { p.classList.remove('visible'); });
+      if (activeTool === 'pencil') disablePencil();
+      if (activeTool === 'crop')   disableCrop();
+      activeTool = null;
+    }
+
+    // ── Ref chips ──────────────────────────────────────────────────────────
+
+    function renderRefChips() {
+      var refChipsRow  = overlay.querySelector('#refineRefChipsRow');
+      var refUploadBtn = overlay.querySelector('#refineRefUploadBtn');
+      refChipsRow.innerHTML = _refs.map(function (url, i) {
+        return '<div class="ref-chip" data-index="' + i + '">'
+          + '<div class="ref-chip-remove"></div>'
+          + '<div class="ref-chip-thumb"><img src="' + url + '" alt=""><div class="ref-chip-overlay"></div><span class="ref-chip-label">R' + (i + 1) + '</span></div>'
+          + '</div>';
+      }).join('');
+      refChipsRow.querySelectorAll('.ref-chip').forEach(function (chip) {
+        chip.querySelector('.ref-chip-remove').addEventListener('click', function () {
+          var idx = parseInt(chip.dataset.index, 10);
+          _refs.splice(idx, 1);
+          renderRefChips();
+        });
+      });
+      if (_refs.length >= 3) refUploadBtn.classList.add('disabled');
+      else refUploadBtn.classList.remove('disabled');
+    }
+
+    // ── API call ───────────────────────────────────────────────────────────
+
+    function callRefineAPI(canvasImgUrl, annotationDataUrl, prompt) {
+      var apiKey = window.CafeSettings.getGoogleApiKey();
+      var model  = window.CafeSettings.getActiveModel();
+      if (!apiKey) { window.CafeSettings.openModal(); return Promise.reject(new Error('No API key')); }
+
+      var fullPrompt = prompt + (undoStack.length > 0 ? ' Focus on the annotated area.' : '');
+      var parts = [{ text: fullPrompt }];
+      parts.push({ inline_data: { mime_type: mimeFrom(canvasImgUrl), data: base64From(canvasImgUrl) } });
+      if (undoStack.length > 0) {
+        parts.push({ inline_data: { mime_type: 'image/png', data: base64From(annotationDataUrl) } });
+      }
+      _refs.forEach(function (r) {
+        parts.push({ inline_data: { mime_type: mimeFrom(r), data: base64From(r) } });
+      });
+
+      var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model.id + ':generateContent?key=' + apiKey;
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: parts }],
+          generationConfig: {
+            responseModalities: ['IMAGE'],
+            imageConfig: { aspectRatio: _ratio, imageOutputOptions: { mimeType: 'image/png' } }
+          }
+        })
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var candidate = data.candidates && data.candidates[0];
+        var part = candidate && candidate.content && candidate.content.parts &&
+          candidate.content.parts.find(function (p) { return p.inlineData || p.inline_data; });
+        if (!part) throw new Error('No image in response');
+        var id = part.inlineData || part.inline_data;
+        return 'data:' + (id.mimeType || id.mime_type || 'image/png') + ';base64,' + id.data;
+      });
+    }
+
+    // ── Init (lazy) ────────────────────────────────────────────────────────
+
+    function init() {
+      overlay       = document.getElementById('refine-overlay');
+      refineCanvas  = document.getElementById('refineCanvas');
+      drawLayer     = document.getElementById('refineDrawLayer');
+      cropOverlay   = document.getElementById('refineCropOverlay');
+      historyFrames = document.getElementById('refineHistoryFrames');
+      promptInput   = document.getElementById('refinePromptInput');
+      refineBtn     = document.getElementById('refineBtn');
+      toolSubmenu   = document.getElementById('refineToolSubmenu');
+      ctx           = drawLayer.getContext('2d');
+
+      // Close
+      document.getElementById('refine-close').addEventListener('click', close);
+
+      // Tool buttons
+      overlay.querySelectorAll('.tool-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var tool = btn.dataset.tool;
+          if (activeTool === tool) deactivateTool();
+          else activateTool(tool, btn);
+        });
+      });
+
+      // Size dots
+      overlay.querySelectorAll('.size-dot').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          overlay.querySelectorAll('.size-dot').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          strokeSize = parseInt(btn.dataset.size);
+        });
+      });
+
+      // Color swatches
+      overlay.querySelectorAll('.color-swatch').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          overlay.querySelectorAll('.color-swatch').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          strokeColor = btn.dataset.color;
+        });
+      });
+
+      // Undo / Redo
+      document.getElementById('refineUndoBtn').addEventListener('click', function () {
+        if (!undoStack.length) return;
+        redoStack.push(undoStack.pop());
+        redrawStrokes();
+        updatePromptPlaceholder();
+      });
+      document.getElementById('refineRedoBtn').addEventListener('click', function () {
+        if (!redoStack.length) return;
+        undoStack.push(redoStack.pop());
+        redrawStrokes();
+        updatePromptPlaceholder();
+      });
+
+      // Crop ratio buttons
+      overlay.querySelectorAll('.crop-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          overlay.querySelectorAll('.crop-btn').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          var r = btn.dataset.ratio;
+          if (r === 'free') {
+            cropIsFree = true;
+          } else {
+            cropIsFree = false;
+            var parts = r.split('/');
+            cropRatio = parseFloat(parts[0]) / parseFloat(parts[1]);
+          }
+          if (activeTool === 'crop') buildCropBox();
+        });
+      });
+
+      // Apply crop
+      document.getElementById('refineApplyCropBtn').addEventListener('click', function () {
+        var img = refineCanvas.querySelector('img');
+        if (!img || !cropBox) return;
+        var scaleX = img.naturalWidth  / refineCanvas.offsetWidth;
+        var scaleY = img.naturalHeight / refineCanvas.offsetHeight;
+        var bx = parseInt(cropBox.style.left)   * scaleX;
+        var by = parseInt(cropBox.style.top)    * scaleY;
+        var bw = parseInt(cropBox.style.width)  * scaleX;
+        var bh = parseInt(cropBox.style.height) * scaleY;
+        var offscreen = document.createElement('canvas');
+        offscreen.width  = bw;
+        offscreen.height = bh;
+        offscreen.getContext('2d').drawImage(img, bx, by, bw, bh, 0, 0, bw, bh);
+        offscreen.toBlob(function (blob) {
+          var url = URL.createObjectURL(blob);
+          disableCrop();
+          deactivateTool();
+          addToHistory(url);
+        });
+      });
+
+      // Ref upload
+      var refFileInput  = document.getElementById('refineRefFileInput');
+      var refUploadBtn  = document.getElementById('refineRefUploadBtn');
+      refUploadBtn.addEventListener('click', function () {
+        if (_refs.length >= 3) return;
+        refFileInput.value = '';
+        refFileInput.click();
+      });
+      refFileInput.addEventListener('change', function () {
+        var file = refFileInput.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        if (_refs.length >= 3) return;
+        var reader = new FileReader();
+        reader.onload = function (e) { _refs.push(e.target.result); renderRefChips(); };
+        reader.readAsDataURL(file);
+      });
+
+      // Refine button — fire-and-forget, non-blocking
+      refineBtn.addEventListener('click', function () {
+        var prompt = promptInput.value.trim();
+        if (!prompt) return;
+        var canvasImg = refineCanvas.querySelector('img');
+        if (!canvasImg) return;
+
+        var srcUrl           = canvasImg.src;
+        var annotationDataUrl = drawLayer.toDataURL('image/png');
+        var capturedPrompt   = prompt;
+
+        // Clear strokes for the next annotation round immediately
+        undoStack = []; redoStack = [];
+        promptInput.value = '';
+        syncDrawLayer();
+        updatePromptPlaceholder();
+
+        var loadingThumb = addLoadingThumb();
+
+        callRefineAPI(srcUrl, annotationDataUrl, capturedPrompt)
+          .then(function (resultUrl) {
+            _latestUrl = resultUrl;
+            resolveLoadingThumb(loadingThumb, resultUrl);
+          })
+          .catch(function (err) {
+            console.error('[RefineArea] API failed:', err);
+            removeLoadingThumb(loadingThumb);
+          });
+      });
+    }
+
+    // ── Public ─────────────────────────────────────────────────────────────
+
+    function open(imgUrl, ratio, onDone) {
+      if (!overlay) init();
+      _onDone    = onDone || null;
+      _latestUrl = null;
+      _refs      = [];
+      undoStack  = []; redoStack = [];
+      activeTool = null;
+      strokeColor = '#ea5823'; strokeSize = 3;
+      cropRatio = 16 / 9; cropIsFree = false;
+
+      if (ratio) {
+        _ratio = ratio;
+      } else {
+        // Detect ratio from the image's natural dimensions
+        var probe = new Image();
+        probe.onload = function () { _ratio = nearestRatio(probe.naturalWidth, probe.naturalHeight); };
+        probe.src = imgUrl;
+        _ratio = '1:1'; // fallback until probe loads
+      }
+
+      overlay.querySelectorAll('.size-dot').forEach(function (b) { b.classList.toggle('active', b.dataset.size === '3'); });
+      overlay.querySelectorAll('.color-swatch').forEach(function (b) { b.classList.toggle('active', b.dataset.color === '#ea5823'); });
+      overlay.querySelectorAll('.crop-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.ratio === '16/9'); });
+      overlay.querySelectorAll('.tool-btn').forEach(function (b) { b.classList.remove('active'); });
+      if (toolSubmenu) toolSubmenu.classList.remove('open');
+      overlay.querySelectorAll('.submenu-panel').forEach(function (p) { p.classList.remove('visible'); });
+      clearHistory();
+      renderRefChips();
+      updatePromptPlaceholder();
+      promptInput.value = '';
+      addToHistory(imgUrl);
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      if (!overlay) return;
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      deactivateTool();
+      if (_onDone) _onDone(_latestUrl);
+      _onDone = null;
+    }
+
+    return { open: open };
+
+  })();
+
   </script>
 
   <!-- ── IMAGE HUD ── -->
+
+  <!-- ── REFINE OVERLAY ── -->
+  <div id="refine-overlay">
+    <button id="refine-close">&#8592; BACK</button>
+
+    <div class="refine-history">
+      <div class="history-header">HISTORY</div>
+      <div class="history-frames" id="refineHistoryFrames"></div>
+    </div>
+
+    <div class="refine-main">
+      <div class="refine-center">
+        <div class="refine-canvas-wrap">
+          <div class="canvas-group">
+            <div class="refine-canvas" id="refineCanvas">
+              <canvas id="refineDrawLayer"></canvas>
+              <div id="refineCropOverlay"></div>
+            </div>
+
+            <div class="tool-submenu" id="refineToolSubmenu">
+              <div class="submenu-panel" data-tool="pencil">
+                <div class="size-options">
+                  <button class="size-dot active" data-size="3"></button>
+                  <button class="size-dot" data-size="8"></button>
+                  <button class="size-dot" data-size="16"></button>
+                </div>
+                <div class="sub-divider"></div>
+                <div class="color-options">
+                  <button class="color-swatch active" data-color="#ea5823" style="background:#ea5823"></button>
+                  <button class="color-swatch" data-color="#c7c7c7" style="background:#c7c7c7"></button>
+                  <button class="color-swatch" data-color="#22c55e" style="background:#22c55e"></button>
+                </div>
+                <div class="sub-divider"></div>
+                <div class="edit-options">
+                  <button class="edit-btn" id="refineUndoBtn">
+                    <svg viewBox="0 0 18 18" fill="none"><path d="M3 7H11C13.2 7 15 8.8 15 11C15 13.2 13.2 15 11 15H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 4L3 7L6 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <button class="edit-btn" id="refineRedoBtn">
+                    <svg viewBox="0 0 18 18" fill="none"><path d="M15 7H7C4.8 7 3 8.8 3 11C3 13.2 4.8 15 7 15H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 4L15 7L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="submenu-panel" data-tool="crop">
+                <div class="crop-options">
+                  <button class="crop-btn active" data-ratio="16/9">
+                    <svg viewBox="0 0 36 28" fill="none"><rect x="2" y="7" width="32" height="14" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </button>
+                  <button class="crop-btn" data-ratio="9/16">
+                    <svg viewBox="0 0 36 28" fill="none"><rect x="12" y="1" width="12" height="26" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </button>
+                  <button class="crop-btn" data-ratio="1/1">
+                    <svg viewBox="0 0 36 28" fill="none"><rect x="8" y="2" width="20" height="24" stroke="currentColor" stroke-width="1.5"/></svg>
+                  </button>
+                  <button class="crop-btn" data-ratio="free">
+                    <svg viewBox="0 0 36 28" fill="none"><rect x="3" y="3" width="30" height="22" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><rect x="1" y="1" width="5" height="5" fill="currentColor"/><rect x="30" y="1" width="5" height="5" fill="currentColor"/><rect x="1" y="22" width="5" height="5" fill="currentColor"/><rect x="30" y="22" width="5" height="5" fill="currentColor"/></svg>
+                  </button>
+                </div>
+                <div class="sub-divider"></div>
+                <button class="apply-btn" id="refineApplyCropBtn">APPLY</button>
+              </div>
+            </div>
+
+            <div class="refine-toolbar">
+              <button class="tool-btn" data-tool="pencil">
+                <svg viewBox="0 0 40 40" fill="none"><path d="M7 33L10.5 22L28 7L35 14L16.5 30.5L7 33Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M25.5 9.5L32 16" stroke="currentColor" stroke-width="2"/><path d="M7 33L11 29.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+              <button class="tool-btn" data-tool="crop">
+                <svg viewBox="0 0 40 40" fill="none"><line x1="8" y1="4" x2="8" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="32" x2="36" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="8" x2="32" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="14" y="8" width="18" height="18" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="prompt-wrap" id="refinePromptWrap">
+          <div class="ref-chips-row" id="refineRefChipsRow"></div>
+          <div class="refine-prompt">
+            <button class="prompt-ref-btn" id="refineRefUploadBtn">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><line x1="10" y1="2" x2="10" y2="18" stroke="#c7c7c7" stroke-width="2.5" stroke-linecap="round"/><line x1="2" y1="10" x2="18" y2="10" stroke="#c7c7c7" stroke-width="2.5" stroke-linecap="round"/></svg>
+            </button>
+            <input class="prompt-input" id="refinePromptInput" type="text" placeholder="What do you want me to do now?" />
+            <button class="prompt-refine-btn" id="refineBtn">REFINE</button>
+          </div>
+        </div>
+        <input type="file" id="refineRefFileInput" accept="image/*" style="display:none">
+      </div>
+    </div>
+  </div>
 
   <!-- ── PROJECTS MODAL ── -->
   <div id="projects-modal">
@@ -5649,35 +6684,93 @@ const $hudInfo = document.getElementById('hud-info');
   <!-- ── SETTINGS MODAL ── -->
   <div id="cafe-settings-modal">
     <div class="csm-panel">
+
       <div class="csm-header">
         <span class="csm-title">Settings</span>
         <button class="csm-close">&#215;</button>
       </div>
-      <div class="csm-body">
 
-        <div>
-          <div class="csm-section-label">Vertex AI API Key</div>
-          <div class="csm-key-row">
-            <input type="password" class="csm-google-input" placeholder="Enter Vertex AI API key..." autocomplete="new-password">
-            <button type="button" class="csm-google-save">SAVE</button>
+      <div class="csm-inner">
+
+        <div class="csm-nav">
+          <button class="csm-nav-btn active" data-page="api">API</button>
+          <button class="csm-nav-btn" data-page="image">Image</button>
+        </div>
+
+        <div class="csm-body">
+
+          <!-- API page -->
+          <div class="csm-page active" data-page="api">
+
+            <div class="csm-section">
+              <div class="csm-section-label">Vertex AI API Key</div>
+              <div class="csm-key-row">
+                <input type="password" class="csm-google-input" placeholder="Enter Vertex AI API key..." autocomplete="new-password">
+                <button type="button" class="csm-google-save">Save</button>
+              </div>
+            </div>
+
+            <div class="csm-section">
+              <div class="csm-section-label">Model</div>
+              <div class="csm-model-list"></div>
+            </div>
+
+            <div class="csm-section">
+              <div class="csm-section-label">Resolution</div>
+              <div class="csm-resolution-list"></div>
+            </div>
+
+            <div class="csm-cost-display">
+              <span class="csm-cost-label">Estimated Cost</span>
+              <span class="csm-cost-value">$0.035 per image</span>
+            </div>
+
           </div>
-        </div>
 
-        <div>
-          <div class="csm-section-label">Model</div>
-          <div class="csm-model-list"></div>
-        </div>
+          <!-- Image page -->
+          <div class="csm-page" data-page="image">
 
-        <div>
-          <div class="csm-section-label">Resolution</div>
-          <div class="csm-resolution-list"></div>
-        </div>
+            <div class="csm-section">
+              <div class="csm-section-label">Vision Scan</div>
 
-        <div class="csm-cost-display">
-          <span class="csm-cost-label">Estimated Cost</span>
-          <span class="csm-cost-value">$0.035 per image</span>
-        </div>
+              <div class="csm-setting-row">
+                <div class="csm-setting-info">
+                  <span class="csm-setting-label">Scan Timing</span>
+                  <span class="csm-setting-hint">When to scan unlinked layer images</span>
+                </div>
+                <div class="csm-opts">
+                  <button class="csm-opt" data-group="scan" data-val="load">On Load</button>
+                  <button class="csm-opt active" data-group="scan" data-val="generate">On Generate</button>
+                </div>
+              </div>
 
+              <div class="csm-setting-row">
+                <div class="csm-setting-info">
+                  <span class="csm-setting-label">Keep Descriptions</span>
+                  <span class="csm-setting-hint">Reuse cached descriptions between generations</span>
+                </div>
+                <div class="csm-opts">
+                  <button class="csm-opt active" data-group="cache" data-val="on">On</button>
+                  <button class="csm-opt" data-group="cache" data-val="off">Off</button>
+                </div>
+              </div>
+
+              <div class="csm-setting-row">
+                <div class="csm-setting-info">
+                  <span class="csm-setting-label">Scan Timeout</span>
+                  <span class="csm-setting-hint">Seconds before a scan is aborted</span>
+                </div>
+                <div class="csm-timeout-row">
+                  <input type="number" class="csm-timeout-input" value="20" min="5" max="120">
+                  <span class="csm-timeout-unit">s</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
       </div>
     </div>
   </div>

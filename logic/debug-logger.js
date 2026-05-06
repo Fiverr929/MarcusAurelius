@@ -8,12 +8,10 @@ window.CafeDebug = (function () {
   var _entries = [];
 
   function stripBase64(obj) {
-    return JSON.parse(
-      JSON.stringify(obj).replace(
-        /"data:image\/[^;]+;base64,[A-Za-z0-9+/=]{20,}"/g,
-        '"[base64-image]"'
-      )
-    );
+    return JSON.parse(JSON.stringify(obj, function (key, value) {
+      if (typeof value === 'string' && value.startsWith('data:')) return '[base64-image]';
+      return value;
+    }));
   }
 
   function summarizeManifest(manifest) {

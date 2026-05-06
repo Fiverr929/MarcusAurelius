@@ -41,7 +41,10 @@ window.CafeSettings = (function () {
   var state = {
     googleApiKey: '',
     activeModel: 'google-nano-banana',
-    activeResolution: '1K'
+    activeResolution: '1K',
+    scanTiming: 'generate',
+    keepDescriptions: true,
+    scanTimeout: 20
   };
 
   function loadState() {
@@ -52,6 +55,9 @@ window.CafeSettings = (function () {
         if (saved.googleApiKey) state.googleApiKey = saved.googleApiKey;
         if (saved.activeModel && MODELS[saved.activeModel]) state.activeModel = saved.activeModel;
         if (saved.activeResolution) state.activeResolution = saved.activeResolution;
+        if (saved.scanTiming) state.scanTiming = saved.scanTiming;
+        if (typeof saved.keepDescriptions === 'boolean') state.keepDescriptions = saved.keepDescriptions;
+        if (typeof saved.scanTimeout === 'number' && saved.scanTimeout >= 5) state.scanTimeout = saved.scanTimeout;
       }
     } catch (e) {}
   }
@@ -61,7 +67,10 @@ window.CafeSettings = (function () {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         googleApiKey: state.googleApiKey,
         activeModel: state.activeModel,
-        activeResolution: state.activeResolution
+        activeResolution: state.activeResolution,
+        scanTiming: state.scanTiming,
+        keepDescriptions: state.keepDescriptions,
+        scanTimeout: state.scanTimeout
       }));
     } catch (e) { console.error('[CafeSettings] save failed:', e); }
   }
@@ -149,6 +158,15 @@ window.CafeSettings = (function () {
       inp.placeholder = state.googleApiKey ? '••••••••••••••••' : 'Enter Vertex AI API key...';
     }
 
+    modal.querySelectorAll('.csm-opt[data-group="scan"]').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.val === state.scanTiming);
+    });
+    modal.querySelectorAll('.csm-opt[data-group="cache"]').forEach(function (b) {
+      b.classList.toggle('active', (b.dataset.val === 'on') === state.keepDescriptions);
+    });
+    var timeoutInput = modal.querySelector('.csm-timeout-input');
+    if (timeoutInput) timeoutInput.value = state.scanTimeout;
+
     renderModal();
     modal.classList.add('open');
   }
@@ -184,9 +202,39 @@ window.CafeSettings = (function () {
       if (inp) { inp.value = ''; inp.placeholder = key ? '••••••••••••••••' : 'Enter Vertex AI API key...'; }
       renderModal();
       var orig = this.textContent;
-      this.textContent = 'SAVED';
+      this.textContent = 'Saved';
       setTimeout(function (b, t) { b.textContent = t; }.bind(null, this, orig), 1400);
     });
+
+    modal.querySelectorAll('.csm-nav-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var page = this.dataset.page;
+        modal.querySelectorAll('.csm-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+        modal.querySelectorAll('.csm-page').forEach(function (p) { p.classList.remove('active'); });
+        this.classList.add('active');
+        modal.querySelector('.csm-page[data-page="' + page + '"]').classList.add('active');
+      });
+    });
+
+    modal.querySelectorAll('.csm-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var group = this.dataset.group;
+        var val = this.dataset.val;
+        modal.querySelectorAll('.csm-opt[data-group="' + group + '"]').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        if (group === 'scan') { state.scanTiming = val; saveState(); }
+        if (group === 'cache') { state.keepDescriptions = val === 'on'; saveState(); }
+      });
+    });
+
+    var timeoutInput = modal.querySelector('.csm-timeout-input');
+    if (timeoutInput) {
+      timeoutInput.addEventListener('change', function () {
+        var v = parseInt(this.value, 10);
+        if (v >= 5 && v <= 120) { state.scanTimeout = v; saveState(); }
+        else this.value = state.scanTimeout;
+      });
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -203,12 +251,11 @@ window.CafeSettings = (function () {
     getActiveResolution: getActiveResolution,
     setActiveResolution: setActiveResolution,
     getCostPerImage: getCostPerImage,
+    getScanTiming: function () { return state.scanTiming; },
+    getKeepDescriptions: function () { return state.keepDescriptions; },
+    getScanTimeout: function () { return state.scanTimeout; },
     openModal: openModal,
-    closeModal: closeModal,
-    getOutputType: function () {
-      var drop = document.getElementById('settingsDropdown');
-      return drop ? (drop.dataset.activeOutput || 'PRECISE') : 'PRECISE';
-    }
+    closeModal: closeModal
   };
 
 })();

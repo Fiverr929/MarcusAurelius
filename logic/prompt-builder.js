@@ -24,8 +24,8 @@ window.PromptBuilder = (function () {
       var layers = [];
       tmp.querySelectorAll('.layer-group').forEach(function (group) {
         var nameEl = group.querySelector('.plr-name');
-        var eyeEl  = group.querySelector('.plr > .plr-eye');
-        var layerName    = nameEl ? nameEl.textContent.trim() : 'LAYER';
+        var eyeEl = group.querySelector('.plr > .plr-eye');
+        var layerName = nameEl ? nameEl.textContent.trim() : 'LAYER';
         var layerVisible = eyeEl ? eyeEl.classList.contains('on') : true;
 
         var children = [];
@@ -36,7 +36,8 @@ window.PromptBuilder = (function () {
           if (!main) return;
           if (main.classList.contains('img-a') || main.classList.contains('img-i')) {
             var img = main.querySelector('img');
-            children.push({ type: 'image', visible: childVisible, imgUrl: img ? img.src : null, visionDesc: clr.dataset.visionDesc || null });
+            var keepDesc = window.CafeSettings ? window.CafeSettings.getKeepDescriptions() : true;
+            children.push({ type: 'image', visible: childVisible, imgUrl: img ? img.src : null, visionDesc: (keepDesc ? clr.dataset.visionDesc : null) || null });
           } else if (main.classList.contains('prompt-a') || main.classList.contains('prompt-i')) {
             children.push({ type: 'prompt', text: clr.dataset.savedPrompt || '', visible: childVisible });
           }
@@ -56,7 +57,6 @@ window.PromptBuilder = (function () {
 
   function collectSettings() {
     var drop = document.getElementById('settingsDropdown');
-    if (!drop) return {};
 
     var ratioBtn = drop.querySelector('.sd-ratio-btn.active');
     var aspectRatio = ratioBtn ? ratioBtn.textContent.trim() : null;
@@ -73,8 +73,6 @@ window.PromptBuilder = (function () {
     var fcBtn = drop.querySelector('.sd-fc-btn.active');
     var frameCount = fcBtn ? (parseInt(fcBtn.textContent.trim(), 10) || null) : null;
 
-    var outputType = drop.dataset.activeOutput || null;
-
     var seedInput = document.getElementById('seedNum');
     var seedLocked = drop.dataset.seed === 'locked';
     var seed = seedInput ? (parseInt(seedInput.value, 10) || null) : null;
@@ -83,7 +81,6 @@ window.PromptBuilder = (function () {
       aspectRatio: aspectRatio,
       variation: variation,
       frameCount: frameCount,
-      outputType: outputType,
       seed: seed,
       seedLocked: seedLocked
     };
@@ -94,19 +91,19 @@ window.PromptBuilder = (function () {
   function collect() {
     var promptBar = document.getElementById('promptBar');
     var promptText = document.getElementById('promptText');
-    var mode = promptBar ? promptBar.dataset.state : 'FRAME';
+    var mode = promptBar.dataset.state;
 
-    var rawPrompt = promptText ? promptText.textContent.trim() : '';
+    var rawPrompt = promptText.textContent.trim();
 
-    var refs = (window.refState && window.refState[mode]) ? window.refState[mode].slice() : [];
+    var refs = window.refState[mode].slice();
 
     return {
-      mode:     mode,
-      prompt:   rawPrompt,
-      refs:     refs,
-      subject:  collectSection('subject'),
-      stage:    collectSection('stage'),
-      style:    collectSection('style'),
+      mode: mode,
+      prompt: rawPrompt,
+      refs: refs,
+      subject: collectSection('subject'),
+      stage: collectSection('stage'),
+      style: collectSection('style'),
       settings: collectSettings()
     };
   }

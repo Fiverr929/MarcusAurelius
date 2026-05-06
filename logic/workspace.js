@@ -30,7 +30,7 @@ window.Workspace = (function () {
     var pid = window.activeProjectId;
     if (!pid) return;
 
-    var payload = window.PromptBuilder ? window.PromptBuilder.collect() : {};
+    var payload = window.PromptBuilder.collect();
     var s = payload.settings || {};
 
     Promise.all([
@@ -41,13 +41,11 @@ window.Workspace = (function () {
         variation  : s.variation,
         seed       : s.seed,
         seedLocked : s.seedLocked,
-        outputType : s.outputType,
-        frameCount : s.frameCount,
-        visionCache: window.refVisionCache || {}
+        frameCount : s.frameCount
       }),
       DB.moduleState.save(pid, window.ModuleState || {}),
       DB.references.clear(pid).then(function () {
-        var rs = window.refState || { FRAME: [], SCENE: [] };
+        var rs = window.refState;
         var all = rs.FRAME.map(function (src) { return { mode: 'FRAME', src: src }; })
                     .concat(rs.SCENE.map(function (src) { return { mode: 'SCENE', src: src }; }));
         return Promise.all(all.map(function (r) { return DB.references.add(pid, r); }));
@@ -107,14 +105,6 @@ window.Workspace = (function () {
           ? '*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS'
           : '*SEED IS UNLOCKED TO GIVE MORE VARIETY';
       }
-      if (s.outputType) {
-        drop.dataset.activeOutput = s.outputType;
-        drop.querySelectorAll('.sd-output-btn').forEach(function (btn) {
-          btn.classList.toggle('active', btn.dataset.value === s.outputType);
-        });
-        var outEl = document.getElementById('outputType');
-        if (outEl) outEl.textContent = s.outputType === 'PRECISE' ? 'CONTROLLED' : 'REMIX';
-      }
       if (s.frameCount) {
         drop.querySelectorAll('.sd-fc-btn').forEach(function (btn) {
           btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === s.frameCount);
@@ -126,14 +116,13 @@ window.Workspace = (function () {
   // ── Apply module state ────────────────────────────────────────────────────────
 
   function restoreModuleState(moduleState) {
-    if (!window.ModuleState) return;
     window.ModuleState = { subject: null, stage: null, style: null };
     if (moduleState) {
       ['subject', 'stage', 'style'].forEach(function (key) {
         if (moduleState[key]) window.ModuleState[key] = moduleState[key];
       });
     }
-    if (window.applyModuleState) window.applyModuleState();
+    window.applyModuleState();
   }
 
   // ── Load project ──────────────────────────────────────────────────────────────
@@ -156,22 +145,16 @@ window.Workspace = (function () {
       var seqItems     = results[4];
 
       applySettings(settings);
-      window.refVisionCache = (settings && settings.visionCache) || {};
-
       restoreModuleState(moduleState);
 
-      if (window.refState) {
-        window.refState.FRAME = refs.filter(function (r) { return r.mode === 'FRAME'; }).map(function (r) { return r.src; });
-        window.refState.SCENE = refs.filter(function (r) { return r.mode === 'SCENE'; }).map(function (r) { return r.src; });
-        if (window.renderChips) window.renderChips();
-      }
+      window.refState.FRAME = refs.filter(function (r) { return r.mode === 'FRAME'; }).map(function (r) { return r.src; });
+      window.refState.SCENE = refs.filter(function (r) { return r.mode === 'SCENE'; }).map(function (r) { return r.src; });
+      window.renderChips();
 
-      if (window.Gallery) {
-        window.Gallery.clearGenerated();
-        galleryItems.slice().reverse().forEach(function (item) {
-          window.Gallery.addGenerated(item);
-        });
-      }
+      window.Gallery.clearGenerated();
+      galleryItems.slice().reverse().forEach(function (item) {
+        window.Gallery.addGenerated(item);
+      });
 
       if (window.clearSeqSlots) window.clearSeqSlots();
       if (window.addSeqSlot) seqItems.forEach(function (slot) { window.addSeqSlot(slot); });
@@ -184,7 +167,6 @@ window.Workspace = (function () {
   // ── Gallery hook — save each new image to DB on generation ───────────────────
 
   function hookGallery() {
-    if (!window.Gallery) return;
     var _orig = window.Gallery.resolveLoading.bind(window.Gallery);
     window.Gallery.resolveLoading = function (loadingId, cell) {
       _orig(loadingId, cell);
@@ -267,16 +249,16 @@ window.Workspace = (function () {
   }
 
   function _doExport(name) {
-    var payload = window.PromptBuilder ? window.PromptBuilder.collect() : {};
+    var payload = window.PromptBuilder.collect();
     var snapshot = {
       version    : 1,
       savedAt    : new Date().toISOString(),
       mode       : payload.mode    || 'FRAME',
       prompt     : payload.prompt  || '',
       settings   : payload.settings || {},
-      gallery    : window.Gallery  ? window.Gallery.getGeneratedCells() : [],
+      gallery    : window.Gallery.getGeneratedCells(),
       moduleState: window.ModuleState || null,
-      refs       : window.refState ? { FRAME: window.refState.FRAME.slice(), SCENE: window.refState.SCENE.slice() } : null,
+      refs       : { FRAME: window.refState.FRAME.slice(), SCENE: window.refState.SCENE.slice() },
       sequence   : window.getSeqSlots ? window.getSeqSlots() : []
       // visionCache intentionally excluded — URL-keyed descriptions don't survive environment changes
     };
@@ -301,16 +283,16 @@ window.Workspace = (function () {
           var snap = JSON.parse(e.target.result);
           if (!snap || snap.version !== 1) throw new Error('Invalid .cafe file');
 
-          if (snap.gallery && snap.gallery.length && window.Gallery) {
+          if (snap.gallery && snap.gallery.length) {
             window.Gallery.clearGenerated();
             snap.gallery.slice().reverse().forEach(function (cell) { window.Gallery.addGenerated(cell); });
           }
           applySettings(Object.assign({ mode: snap.mode, prompt: snap.prompt }, snap.settings));
           if (snap.moduleState) restoreModuleState(snap.moduleState);
-          if (snap.refs && window.refState) {
+          if (snap.refs) {
             window.refState.FRAME = snap.refs.FRAME || [];
             window.refState.SCENE = snap.refs.SCENE || [];
-            if (window.renderChips) window.renderChips();
+            window.renderChips();
           }
           if (snap.sequence && snap.sequence.length && window.addSeqSlot) {
             if (window.clearSeqSlots) window.clearSeqSlots();

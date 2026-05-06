@@ -19,56 +19,18 @@ window.CafeAPI = (function () {
     return DIMS[ratio] || DIMS['1:1'];
   }
 
-  // ── Image collectors ──────────────────────────────────────────────────────
-
-  function collectLayerImageUrls(payload) {
-    var urls = [];
-
-    function fromSection(section) {
-      if (!section || !section.slots) return;
-      section.slots.forEach(function (slot) {
-        if (!slot.active) return;
-        slot.layers.forEach(function (layer) {
-          if (!layer.visible) return;
-          layer.children.forEach(function (child) {
-            if (!child.visible) return;
-            if (child.type === 'image' && child.imgUrl) urls.push(child.imgUrl);
-          });
-        });
+  function collectUsedImagesFromManifest(manifest) {
+    return (manifest || [])
+      .filter(function (item) { return item.kind === 'image' && item.imgUrl; })
+      .map(function (item) {
+        return {
+          role: item.role || item.layerName || 'REFERENCE',
+          slot: item.slot || null,
+          section: item.section || null,
+          position: item.position || null,
+          imgUrl: item.imgUrl
+        };
       });
-    }
-
-    fromSection(payload.subject);
-    fromSection(payload.stage);
-    fromSection(payload.style);
-
-    return urls;
-  }
-
-  function collectUsedImages(payload) {
-    var images = [];
-
-    function fromSection(section, sectionName) {
-      if (!section || !section.slots) return;
-      section.slots.forEach(function (slot) {
-        if (!slot.active) return;
-        slot.layers.forEach(function (layer) {
-          if (!layer.visible) return;
-          layer.children.forEach(function (child) {
-            if (!child.visible) return;
-            if (child.type === 'image' && child.imgUrl) {
-              images.push({ role: layer.name || 'LAYER', slot: slot.label, section: sectionName, imgUrl: child.imgUrl });
-            }
-          });
-        });
-      });
-    }
-
-    fromSection(payload.subject, 'subject');
-    fromSection(payload.stage, 'stage');
-    fromSection(payload.style, 'style');
-
-    return images;
   }
 
   function hasModuleImages(payload) {
@@ -114,7 +76,7 @@ window.CafeAPI = (function () {
     return match ? match[1] : 'image/jpeg';
   }
 
-  function googleGenerate(modelId, apiKey, prompt, numImages, aspectRatio, imageRefs, imageSize, thinkingLevel) {
+  function googleGenerate(modelId, apiKey, prompt, numImages, aspectRatio, imageRefs, imageSize, thinkingLevel, seed) {
     var arMap = { '1:1': '1:1', '16:9': '16:9', '9:16': '9:16', '4:3': '4:3', '3:4': '3:4' };
     var ar = arMap[aspectRatio] || '1:1';
 
@@ -130,6 +92,7 @@ window.CafeAPI = (function () {
       }
 
       var generationConfig = {
+        seed: seed,
         responseModalities: ['IMAGE'],
         imageConfig: {
           aspectRatio: ar,
@@ -149,8 +112,27 @@ window.CafeAPI = (function () {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: [
+                'Follow the user brief as an ordered visual reference manifest.',
+                'The inline images are supplied in the same Image N order named in the brief.',
+                'Use the brief to decide whether an image is a subject source, wardrobe source, scene source, style source, or base composition.',
+                'When an image is the base or main reference, preserve its camera, framing, perspective, lighting, colour grade, environment, and atmosphere.',
+                'When subjects or garments are replaced or inserted, integrate them physically into that base scene with matching scale, occlusion, shadows, reflections, and light response.',
+                'Do not create a collage, pasted cutout, side-by-side composite, contact sheet, or flat overlay.',
+                'Preserve concrete identifying details from referenced images only according to their assigned role in the brief; avoid generic substitutions.'
+              ].join(' ')
+            }]
+          },
           contents: [{ role: 'user', parts: parts }],
-          generationConfig: generationConfig
+          generationConfig: generationConfig,
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' }
+          ]
         })
       })
         .then(function (res) {
@@ -200,30 +182,45 @@ window.CafeAPI = (function () {
       return { predictions: predictions };
     });
   }
-
-  // ── Main generate ─────────────────────────────────────────────────────────
-
-  var REQUEST_LIMIT = 3;
-  var _activeRequests = 0;
-
-  function generate() {
-    if (!window.PromptBuilder || !window.CafeSettings) return;
-
-    if (_activeRequests >= REQUEST_LIMIT) {
-      console.warn('[CafeAPI] Request limit reached (' + REQUEST_LIMIT + '). Please wait for current generations to finish.');
-      return;
-    }
-
+  function generateLayerImage(promptText) {
     var model = window.CafeSettings.getActiveModel();
     var apiKey = window.CafeSettings.getGoogleApiKey();
     if (!apiKey) {
+      return Promise.reject(new Error('Please set your Google API Key in Settings first.'));
+    }
+
+    _activeRequests++;
+    var ratio = '1:1';
+    var imageSize = model.defaultResolution || '1K';
+    var thinkingLevel = model.thinkingLevel || null;
+    var activeSeed = Math.floor(Math.random() * 999999) + 1;
+
+    return googleGenerate(model.id, apiKey, promptText, 1, ratio, [], imageSize, thinkingLevel, activeSeed)
+      .then(function (result) {
+        var predictions = result.predictions || [];
+        var p = predictions[0];
+        if (!p || !p.bytesBase64Encoded) throw new Error('No image returned');
+        return 'data:' + (p.mimeType || 'image/png') + ';base64,' + p.bytesBase64Encoded;
+      })
+      .finally(function() {
+        _activeRequests--;
+      });
+  }
+
+  // ── Main generate ─────────────────────────────────────────────────────────
+
+  var _activeRequests = 0;
+
+  function generate() {
+    var model = window.CafeSettings.getActiveModel();
+    var apiKey = window.CafeSettings.getGoogleApiKey();
+    if (!window.CafeSettings.getGoogleApiKey()) {
       window.CafeSettings.openModal();
       return;
     }
 
     var payload = window.PromptBuilder.collect();
     var moduleSnapshot = snapshotModuleState();
-    var usedImages = collectUsedImages(payload);
     var ratio = payload.settings.aspectRatio || '1:1';
     var dims = dimsFromRatio(ratio);
     var now = new Date();
@@ -240,12 +237,11 @@ window.CafeAPI = (function () {
     if (genBtn) genBtn.classList.add('cafe-loading');
 
     var t0 = Date.now();
-    var debugEntry = window.CafeDebug ? {
+    var debugEntry = {
       timestamp:      new Date().toISOString(),
       runId:          t0,
       mode:           mode,
       model:          model.label,
-      outputType:     (payload.settings && payload.settings.outputType) || 'PRECISE',
       aspectRatio:    ratio,
       numImages:      numImages,
       rawPrompt:      rawPrompt,
@@ -253,30 +249,27 @@ window.CafeAPI = (function () {
       payload:        payload,
       enhancerInput:  null,
       enhancerOutput: null,
+      directorPlan:   null,
       imageManifest:  null,
       imagesSent:     null,
       timingMs:       null,
       result:         null,
       error:          null
-    } : null;
+    };
 
-    var enhancePromise = window.PromptEnhancer
-      ? window.PromptEnhancer.enhance(payload).catch(function (err) {
-          if (debugEntry) debugEntry.error = 'Enhancer failed: ' + err.message;
-          return { prompt: rawPrompt, manifest: [], enhancerInput: null };
-        })
-      : Promise.resolve({ prompt: rawPrompt, manifest: [], enhancerInput: null });
+    _activeRequests++;
+    console.log('[CafeAPI] Pipeline start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);
 
-    enhancePromise.then(function (enhanced) {
+    window.PromptEnhancer.enhance(payload).then(function (enhanced) {
       var t1 = Date.now();
       var finalPrompt = enhanced.prompt;
       var manifest = enhanced.manifest;
 
-      if (debugEntry) {
-        debugEntry.enhancerInput  = enhanced.enhancerInput || null;
-        debugEntry.enhancerOutput = finalPrompt;
-        debugEntry.imageManifest  = manifest || null;
-      }
+      debugEntry.enhancerInput  = enhanced.enhancerInput || null;
+      debugEntry.enhancerOutput = finalPrompt;
+      debugEntry.directorPlan   = enhanced.directorPlan || null;
+      debugEntry.imageManifest  = manifest || null;
+
 
       var loadingIds = [];
       for (var li = 0; li < numImages; li++) {
@@ -285,24 +278,25 @@ window.CafeAPI = (function () {
         window.Gallery.addLoading(lid, ratio, mode);
       }
 
-      var isCreative = (payload.settings && payload.settings.outputType) === 'CREATIVE';
-      var imageRefs = (payload.refs || []).concat(isCreative ? [] : collectLayerImageUrls(payload));
+      var imageRefs = (manifest || [])
+        .filter(function (item) { return item.kind === 'image' && item.imgUrl; })
+        .map(function (item) { return item.imgUrl; });
       var imageSize = window.CafeSettings.getActiveResolution();
       var thinkingLevel = model.thinkingLevel || null;
+      var seedLocked = payload.settings.seedLocked;
+      var activeSeed = (seedLocked && payload.settings.seed) ? payload.settings.seed : Math.floor(Math.random() * 999999) + 1;
+      var seedInput = document.getElementById('seedNum');
+      if (seedInput) seedInput.value = activeSeed;
 
-      if (debugEntry) {
-        debugEntry.imagesSent = {
-          total:       imageRefs.length,
-          refs:        (payload.refs || []).length,
-          layerImages: imageRefs.length - (payload.refs || []).length,
-          isCreative:  isCreative
-        };
-      }
+      debugEntry.imagesSent = {
+        total:       imageRefs.length,
+        refs:        (payload.refs || []).length,
+        layerImages: imageRefs.length - (payload.refs || []).length
+      };
 
-      _activeRequests++;
       var tGen = Date.now();
-      console.log('[CafeAPI] Generation start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| CREATIVE:', isCreative, '| active requests:', _activeRequests);
-      googleGenerate(model.id, apiKey, finalPrompt, numImages, ratio, imageRefs, imageSize, thinkingLevel)
+      console.log('[CafeAPI] Generation start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);
+      return googleGenerate(model.id, apiKey, finalPrompt, numImages, ratio, imageRefs, imageSize, thinkingLevel, activeSeed)
         .then(function (result) {
           var predictions = result.predictions || [];
           var imgUrls = predictions
@@ -315,12 +309,10 @@ window.CafeAPI = (function () {
           }
           console.log('[CafeAPI] ✓ Generation complete | ' + (Date.now() - tGen) + 'ms | images received:', imgUrls.length);
 
-          if (debugEntry) {
-            var t2 = Date.now();
-            debugEntry.timingMs = { enhancer: t1 - t0, generation: t2 - t1, total: t2 - t0 };
-            debugEntry.result   = { success: true, imagesReceived: imgUrls.length };
-            window.CafeDebug.record(debugEntry);
-          }
+          var t2 = Date.now();
+          debugEntry.timingMs = { enhancer: t1 - t0, generation: t2 - t1, total: t2 - t0 };
+          debugEntry.result   = { success: true, imagesReceived: imgUrls.length };
+          window.CafeDebug.record(debugEntry);
 
           try {
             imgUrls.forEach(function (dataUrl, i) {
@@ -337,43 +329,50 @@ window.CafeAPI = (function () {
                 cost: window.CafeSettings.getCostPerImage(),
                 generated: true,
                 moduleSnapshot: moduleSnapshot,
-                usedImages: usedImages
+                usedImages: collectUsedImagesFromManifest(manifest)
               };
               var img = new Image();
               img.onload = function () {
                 cell.dims = img.naturalWidth + ' × ' + img.naturalHeight;
-                if (window.Workspace) window.Workspace.autosave();
+                window.Workspace.autosave();
               };
               img.src = dataUrl;
               window.Gallery.resolveLoading(loadingIds[i] || loadingIds[0], cell);
-              if (window.Workspace) window.Workspace.autosave();
+              window.Workspace.autosave();
             });
           } finally {
             for (var ri = imgUrls.length; ri < loadingIds.length; ri++) {
-              if (window.Gallery) window.Gallery.removeLoading(loadingIds[ri]);
+              window.Gallery.removeLoading(loadingIds[ri]);
             }
           }
         })
         .catch(function (err) {
           console.error('[CafeAPI] Generation failed:', err.message);
-          if (debugEntry) {
-            var t2 = Date.now();
-            debugEntry.timingMs = { enhancer: t1 - t0, generation: t2 - t1, total: t2 - t0 };
-            debugEntry.result   = { success: false };
-            debugEntry.error    = (debugEntry.error ? debugEntry.error + ' | ' : '') + err.message;
-            window.CafeDebug.record(debugEntry);
-          }
+          var t2 = Date.now();
+          debugEntry.timingMs = { enhancer: t1 - t0, generation: t2 - t1, total: t2 - t0 };
+          debugEntry.result   = { success: false };
+          debugEntry.error    = (debugEntry.error ? debugEntry.error + ' | ' : '') + err.message;
+          window.CafeDebug.record(debugEntry);
           loadingIds.forEach(function (lid) {
-            if (window.Gallery) window.Gallery.removeLoading(lid);
+            window.Gallery.removeLoading(lid);
           });
-        })
-        .then(function () {
-          _activeRequests--;
-          if (_activeRequests === 0 && genBtn) genBtn.classList.remove('cafe-loading');
         });
+    }).catch(function (err) {
+      console.error('[CafeAPI] Pipeline failed:', err.message);
+      var tFail = Date.now();
+      debugEntry.timingMs = { enhancer: tFail - t0, generation: 0, total: tFail - t0 };
+      debugEntry.result   = { success: false };
+      debugEntry.error    = (debugEntry.error ? debugEntry.error + ' | ' : '') + err.message;
+      window.CafeDebug.record(debugEntry);
+    }).then(function () {
+      _activeRequests--;
+      if (_activeRequests === 0 && genBtn) genBtn.classList.remove('cafe-loading');
+      if (!window.CafeSettings.getKeepDescriptions()) {
+        window.VisionScan.clearCache();
+      }
     });
   }
 
-  return { generate: generate };
+  return { generate: generate, generateLayerImage: generateLayerImage };
 
 })();

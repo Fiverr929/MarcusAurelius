@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings Modal — Component</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Times New Roman', serif;
+    }
+
+    /* ── Panel ── */
+    .csm-panel {
+      background: #999997;
+      border: 1.89px solid #ea5823;
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Times New Roman', serif;
+    }
+
+    /* ── Header ── */
+    .csm-header {
+      background: #ea5823;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .csm-title {
+      color: #e8e6e6;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .csm-close {
+      background: none;
+      border: none;
+      color: #e8e6e6;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      font-family: 'Times New Roman', serif;
+    }
+
+    /* ── Inner layout ── */
+    .csm-inner {
+      display: flex;
+      flex: 1;
+    }
+
+    /* ── Left nav strip ── */
+    .csm-nav {
+      width: 80px;
+      flex-shrink: 0;
+      background: #888886;
+      border-right: 0.756px solid #c7c7c7;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+    }
+
+    .csm-nav-btn {
+      background: transparent;
+      border: none;
+      border-left: 2px solid transparent;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 9px 10px;
+      text-align: left;
+      width: 100%;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .csm-nav-btn:hover {
+      color: #e8e6e6;
+      background: rgba(255,255,255,0.06);
+      border-left-color: #c7c7c7;
+    }
+
+    .csm-nav-btn.active {
+      background: #ea5823;
+      color: #e8e6e6;
+      border-left-color: transparent;
+    }
+
+    /* ── Body ── */
+    .csm-body {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .csm-body::-webkit-scrollbar { display: none; }
+
+    /* ── Pages — all stacked in same grid cell ── */
+    .csm-page {
+      grid-area: 1 / 1;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      visibility: hidden;
+    }
+
+    .csm-page.active {
+      visibility: visible;
+    }
+
+    /* ── Section ── */
+    .csm-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .csm-section-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #c7c7c7;
+    }
+
+    /* ── API key ── */
+    .csm-key-row {
+      display: flex;
+      gap: 0;
+    }
+
+    .csm-google-input {
+      flex: 1;
+      background: #888886;
+      border: 0.756px solid #c7c7c7;
+      border-right: none;
+      color: #e8e6e6;
+      font-family: 'Times New Roman', serif;
+      font-size: 12px;
+      padding: 7px 10px;
+      outline: none;
+      letter-spacing: 0.04em;
+    }
+
+    .csm-google-input::placeholder { color: #c7c7c7; opacity: 0.5; }
+    .csm-google-input:focus { border-color: #ea5823; }
+
+    .csm-google-save {
+      background: #c7c7c7;
+      border: 0.756px solid #c7c7c7;
+      color: #999997;
+      font-family: 'Times New Roman', serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 14px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .csm-google-save:hover {
+      background: #ea5823;
+      border-color: #ea5823;
+      color: #e8e6e6;
+    }
+
+    /* ── Model list ── */
+    .csm-model-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .csm-model-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .csm-model-row:hover { border-color: #e8e6e6; }
+
+    .csm-model-row.active {
+      background: #ea5823;
+      border-color: #ea5823;
+    }
+
+    .csm-model-row.active .csm-model-label { color: #e8e6e6; }
+    .csm-model-row.active .csm-model-cost  { color: rgba(232,230,230,0.75); }
+
+    .csm-model-label {
+      color: #c7c7c7;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .csm-model-cost {
+      color: #c7c7c7;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      opacity: 0.6;
+    }
+
+    /* ── Resolution ── */
+    .csm-resolution-list {
+      display: flex;
+      gap: 5px;
+    }
+
+    .csm-resolution-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 8px;
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      cursor: pointer;
+      color: #c7c7c7;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: border-color 0.15s;
+    }
+
+    .csm-resolution-row:hover { border-color: #e8e6e6; color: #e8e6e6; }
+
+    .csm-resolution-row.active {
+      background: #ea5823;
+      border-color: #ea5823;
+      color: #e8e6e6;
+    }
+
+    .csm-resolution-check {
+      font-size: 9px;
+      opacity: 0.85;
+    }
+
+    /* ── Cost ── */
+    .csm-cost-display {
+      border-top: 0.756px solid rgba(199,199,199,0.3);
+      padding-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .csm-cost-label {
+      color: #c7c7c7;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .csm-cost-value {
+      color: #ea5823;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Image page: setting rows ── */
+    .csm-setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .csm-setting-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .csm-setting-label {
+      color: #c7c7c7;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .csm-setting-hint {
+      color: #c7c7c7;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      opacity: 0.5;
+    }
+
+    .csm-opts {
+      display: flex;
+      flex-shrink: 0;
+    }
+
+    .csm-opt {
+      background: #999997;
+      border: 0.756px solid #c7c7c7;
+      border-right: none;
+      color: #c7c7c7;
+      font-family: 'Times New Roman', serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .csm-opt:last-child { border-right: 0.756px solid #c7c7c7; }
+    .csm-opt:hover { color: #e8e6e6; border-color: #e8e6e6; }
+    .csm-opt:hover + .csm-opt { border-left-color: #e8e6e6; }
+
+    .csm-opt.active {
+      background: #ea5823;
+      border-color: #ea5823;
+      color: #e8e6e6;
+    }
+
+    .csm-opt.active + .csm-opt {
+      border-left-color: #ea5823;
+    }
+
+    .csm-timeout-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .csm-timeout-input {
+      width: 52px;
+      background: #888886;
+      border: 0.756px solid #c7c7c7;
+      color: #e8e6e6;
+      font-family: 'Times New Roman', serif;
+      font-size: 12px;
+      padding: 6px 8px;
+      outline: none;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    .csm-timeout-input::-webkit-inner-spin-button,
+    .csm-timeout-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .csm-timeout-input:focus { border-color: #ea5823; }
+
+    .csm-timeout-unit {
+      color: #c7c7c7;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<div id="cafe-settings-modal">
+  <div class="csm-panel">
+
+    <div class="csm-header">
+      <span class="csm-title">Settings</span>
+      <button class="csm-close">&#215;</button>
+    </div>
+
+    <div class="csm-inner">
+
+      <div class="csm-nav">
+        <button class="csm-nav-btn active" data-page="api">API</button>
+        <button class="csm-nav-btn" data-page="image">Image</button>
+      </div>
+
+      <div class="csm-body">
+
+        <!-- API page -->
+        <div class="csm-page active" data-page="api">
+
+          <div class="csm-section">
+            <div class="csm-section-label">Vertex AI API Key</div>
+            <div class="csm-key-row">
+              <input type="password" class="csm-google-input" placeholder="Enter API key..." autocomplete="new-password">
+              <button type="button" class="csm-google-save">Save</button>
+            </div>
+          </div>
+
+          <div class="csm-section">
+            <div class="csm-section-label">Model</div>
+            <div class="csm-model-list">
+              <div class="csm-model-row active">
+                <span class="csm-model-label">Nano Banana</span>
+                <span class="csm-model-cost">from $0.039</span>
+              </div>
+              <div class="csm-model-row">
+                <span class="csm-model-label">Nano Banana 2</span>
+                <span class="csm-model-cost">from $0.067</span>
+              </div>
+              <div class="csm-model-row">
+                <span class="csm-model-label">Nano Banana Pro</span>
+                <span class="csm-model-cost">from $0.134</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="csm-section">
+            <div class="csm-section-label">Resolution</div>
+            <div class="csm-resolution-list">
+              <div class="csm-resolution-row active"><span class="csm-resolution-check">✓</span>1K</div>
+              <div class="csm-resolution-row">2K</div>
+              <div class="csm-resolution-row">4K</div>
+            </div>
+          </div>
+
+          <div class="csm-cost-display">
+            <span class="csm-cost-label">Estimated Cost</span>
+            <span class="csm-cost-value">$0.067 per image</span>
+          </div>
+
+        </div>
+
+        <!-- Image page -->
+        <div class="csm-page" data-page="image">
+
+          <div class="csm-section">
+            <div class="csm-section-label">Vision Scan</div>
+
+            <div class="csm-setting-row">
+              <div class="csm-setting-info">
+                <span class="csm-setting-label">Scan Timing</span>
+                <span class="csm-setting-hint">When to scan unlinked layer images</span>
+              </div>
+              <div class="csm-opts">
+                <button class="csm-opt" data-group="scan" data-val="load">On Load</button>
+                <button class="csm-opt active" data-group="scan" data-val="generate">On Generate</button>
+              </div>
+            </div>
+
+            <div class="csm-setting-row">
+              <div class="csm-setting-info">
+                <span class="csm-setting-label">Keep Descriptions</span>
+                <span class="csm-setting-hint">Reuse cached descriptions between generations</span>
+              </div>
+              <div class="csm-opts">
+                <button class="csm-opt active" data-group="cache" data-val="on">On</button>
+                <button class="csm-opt" data-group="cache" data-val="off">Off</button>
+              </div>
+            </div>
+
+            <div class="csm-setting-row">
+              <div class="csm-setting-info">
+                <span class="csm-setting-label">Scan Timeout</span>
+                <span class="csm-setting-hint">Seconds before a scan is aborted</span>
+              </div>
+              <div class="csm-timeout-row">
+                <input type="number" class="csm-timeout-input" value="20" min="5" max="120">
+                <span class="csm-timeout-unit">s</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.csm-nav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var page = this.dataset.page;
+      document.querySelectorAll('.csm-nav-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.csm-page').forEach(function (p) { p.classList.remove('active'); });
+      this.classList.add('active');
+      document.querySelector('.csm-page[data-page="' + page + '"]').classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.csm-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var group = this.dataset.group;
+      document.querySelectorAll('.csm-opt[data-group="' + group + '"]').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
