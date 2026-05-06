@@ -1,4 +1,4 @@
-# CafeHTML
+# MarcusAurelius
 
 Client-side rendering pipeline with modular prompt composition, multi-modal inference routing, and async token stream handling. No build step. No dependencies. Opens in browser.
 
@@ -6,10 +6,10 @@ Client-side rendering pipeline with modular prompt composition, multi-modal infe
 
 ## Current Build
 
-Single-file architecture (`CafeHTML-v2.html`) backed by a `logic/` module layer. Settings and state are managed client-side via `localStorage`. All inference calls are routed through a keyed endpoint configured at runtime.
+Single-file architecture (`MarcusAurelius.html`) backed by a `logic/` module layer. Settings and state are managed client-side via `localStorage`. All inference calls are routed through a keyed endpoint configured at runtime.
 
 ```
-CafeHTML-v2.html
+MarcusAurelius.html
 │
 ├── logic/
 │   ├── api.js            — inference routing + retry logic
@@ -58,7 +58,7 @@ Input
 
 ## Setup
 
-1. Open `CafeHTML-v2.html` in any modern browser
+1. Open `MarcusAurelius.html` in any modern browser
 2. Go to Settings and enter your endpoint key
 3. No install, no server, no build
 
