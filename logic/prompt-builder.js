@@ -10,6 +10,36 @@ window.PromptBuilder = (function () {
   // Reads from window.ModuleState[sectionKey] — all slots, not just the active one.
   // Parses each slot's HTML snapshot in a detached element to extract layer data.
 
+  function parseLayersFromHTML(html) {
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html || '';
+    var layers = [];
+    tmp.querySelectorAll('.layer-group').forEach(function (group) {
+      var nameEl = group.querySelector('.plr-name');
+      var eyeEl = group.querySelector('.plr > .plr-eye');
+      var layerName = nameEl ? nameEl.textContent.trim() : 'LAYER';
+      var layerVisible = eyeEl ? eyeEl.classList.contains('on') : true;
+
+      var children = [];
+      group.querySelectorAll('.layer-children .clr').forEach(function (clr) {
+        var main = clr.querySelector('.clr-main');
+        var childEye = clr.querySelector('.plr-eye');
+        var childVisible = childEye ? childEye.classList.contains('on') : true;
+        if (!main) return;
+        if (main.classList.contains('img-a') || main.classList.contains('img-i')) {
+          var img = main.querySelector('img');
+          var keepDesc = window.CafeSettings ? window.CafeSettings.getKeepDescriptions() : true;
+          children.push({ type: 'image', visible: childVisible, imgUrl: img ? img.src : null, visionDesc: (keepDesc ? clr.dataset.visionDesc : null) || null, uuid: clr.dataset.uuid || null });
+        } else if (main.classList.contains('prompt-a') || main.classList.contains('prompt-i')) {
+          children.push({ type: 'prompt', text: clr.dataset.savedPrompt || '', visible: childVisible });
+        }
+      });
+
+      layers.push({ name: layerName, visible: layerVisible, children: children });
+    });
+    return layers;
+  }
+
   function collectSection(sectionKey) {
     var ms = window.ModuleState;
     if (!ms || !ms[sectionKey]) return { slots: [] };
@@ -17,37 +47,14 @@ window.PromptBuilder = (function () {
     var data = ms[sectionKey];
     var slots = [];
 
+    if (data.html) {
+      // STAGE / STYLE — flat shape, single always-active slot
+      slots.push({ label: 'A', active: true, layers: parseLayersFromHTML(data.html), section: sectionKey });
+      return { slots: slots, selected: 0 };
+    }
+
     data.slots.forEach(function (s, i) {
-      var tmp = document.createElement('div');
-      tmp.innerHTML = s.html || '';
-
-      var layers = [];
-      tmp.querySelectorAll('.layer-group').forEach(function (group) {
-        var nameEl = group.querySelector('.plr-name');
-        var eyeEl = group.querySelector('.plr > .plr-eye');
-        var layerName = nameEl ? nameEl.textContent.trim() : 'LAYER';
-        var layerVisible = eyeEl ? eyeEl.classList.contains('on') : true;
-
-        var children = [];
-        group.querySelectorAll('.layer-children .clr').forEach(function (clr) {
-          var main = clr.querySelector('.clr-main');
-          var childEye = clr.querySelector('.plr-eye');
-          var childVisible = childEye ? childEye.classList.contains('on') : true;
-          if (!main) return;
-          if (main.classList.contains('img-a') || main.classList.contains('img-i')) {
-            var img = main.querySelector('img');
-            var keepDesc = window.CafeSettings ? window.CafeSettings.getKeepDescriptions() : true;
-            children.push({ type: 'image', visible: childVisible, imgUrl: img ? img.src : null, visionDesc: (keepDesc ? clr.dataset.visionDesc : null) || null });
-          } else if (main.classList.contains('prompt-a') || main.classList.contains('prompt-i')) {
-            children.push({ type: 'prompt', text: clr.dataset.savedPrompt || '', visible: childVisible });
-          }
-          // load state = empty slot, skip
-        });
-
-        layers.push({ name: layerName, visible: layerVisible, children: children });
-      });
-
-      slots.push({ label: LABELS[i], active: s.on, layers: layers, section: sectionKey });
+      slots.push({ label: LABELS[i], active: s.on, layers: parseLayersFromHTML(s.html), section: sectionKey });
     });
 
     return { slots: slots, selected: data.selected };
@@ -95,7 +102,12 @@ window.PromptBuilder = (function () {
 
     var rawPrompt = promptText.textContent.trim();
 
-    var refs = window.refState[mode].slice();
+    var keepDesc = window.CafeSettings ? window.CafeSettings.getKeepDescriptions() : true;
+    var refs = window.refState[mode].slice().map(function (ref) {
+      return typeof ref === 'string'
+        ? { url: ref, desc: null }
+        : { url: ref.url, desc: keepDesc ? (ref.desc || null) : null };
+    });
 
     return {
       mode: mode,
