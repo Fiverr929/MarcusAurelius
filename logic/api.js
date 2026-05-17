@@ -47,7 +47,22 @@ window.CafeAPI = (function () {
     return checkSection(payload.subject) || checkSection(payload.stage) || checkSection(payload.style);
   }
 
-  // Snapshot ModuleState without base64 image data — images are already captured in usedImages
+  function snapshotHTML(html) {
+    if (!html) return html;
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('.clr').forEach(function (clr) {
+      var uuid = clr.dataset.uuid;
+      if (!uuid) return;
+      var img = clr.querySelector('.clr-main img');
+      if (img && img.src && img.src.startsWith('data:')) {
+        img.removeAttribute('src');
+        img.dataset.uuid = uuid;
+      }
+    });
+    return tmp.innerHTML;
+  }
+
   function snapshotModuleState() {
     var ms = window.ModuleState;
     if (!ms) return {};
@@ -55,14 +70,12 @@ window.CafeAPI = (function () {
     ['subject', 'stage', 'style'].forEach(function (key) {
       if (!ms[key]) { snap[key] = null; return; }
       if (ms[key].html) {
-        // STAGE / STYLE — flat shape
-        snap[key] = { html: ms[key].html.replace(/src="data:[^"]*"/g, 'src=""') };
+        snap[key] = { html: snapshotHTML(ms[key].html) };
       } else {
-        // SUBJECT — has slots
         snap[key] = {
           selected: ms[key].selected,
           slots: ms[key].slots.map(function (s) {
-            return { on: s.on, html: (s.html || '').replace(/src="data:[^"]*"/g, 'src=""') };
+            return { on: s.on, html: snapshotHTML(s.html || '') };
           })
         };
       }

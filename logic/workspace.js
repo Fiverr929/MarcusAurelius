@@ -46,8 +46,11 @@ window.Workspace = (function () {
       DB.moduleState.save(pid, window.ModuleState || {}),
       DB.references.clear(pid).then(function () {
         var rs = window.refState;
-        var all = rs.FRAME.map(function (src) { return { mode: 'FRAME', src: src }; })
-                    .concat(rs.SCENE.map(function (src) { return { mode: 'SCENE', src: src }; }));
+        var all = rs.FRAME.map(function (ref) {
+          return { mode: 'FRAME', src: typeof ref === 'string' ? ref : ref.url, desc: typeof ref === 'string' ? null : (ref.desc || null) };
+        }).concat(rs.SCENE.map(function (ref) {
+          return { mode: 'SCENE', src: typeof ref === 'string' ? ref : ref.url, desc: typeof ref === 'string' ? null : (ref.desc || null) };
+        }));
         return Promise.all(all.map(function (r) { return DB.references.add(pid, r); }));
       }),
       DB.sequence.save(pid, window.getSeqSlots ? window.getSeqSlots() : [])
@@ -115,14 +118,48 @@ window.Workspace = (function () {
 
   // ── Apply module state ────────────────────────────────────────────────────────
 
+  function restoreHTML(html) {
+    if (!html) return Promise.resolve(html);
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    var imgs = Array.from(tmp.querySelectorAll('img[data-uuid]'));
+    if (!imgs.length) return Promise.resolve(html);
+    return Promise.all(imgs.map(function (img) {
+      var uuid = img.dataset.uuid;
+      return DB.images.get(uuid).then(function (record) {
+        if (record && record.dataUrl) {
+          img.src = record.dataUrl;
+          img.removeAttribute('data-uuid');
+        }
+      }).catch(function () {});
+    })).then(function () { return tmp.innerHTML; });
+  }
+
   function restoreModuleState(moduleState) {
     window.ModuleState = { subject: null, stage: null, style: null };
-    if (moduleState) {
-      ['subject', 'stage', 'style'].forEach(function (key) {
-        if (moduleState[key]) window.ModuleState[key] = moduleState[key];
-      });
-    }
-    window.applyModuleState();
+    if (!moduleState) { window.applyModuleState(); return; }
+
+    Promise.all(['subject', 'stage', 'style'].map(function (key) {
+      var data = moduleState[key];
+      if (!data) return Promise.resolve();
+      if (data.html) {
+        return restoreHTML(data.html).then(function (html) {
+          window.ModuleState[key] = { html: html };
+        });
+      }
+      if (data.slots) {
+        return Promise.all(data.slots.map(function (s) {
+          return restoreHTML(s.html || '').then(function (html) {
+            return { on: s.on, html: html };
+          });
+        })).then(function (slots) {
+          window.ModuleState[key] = { selected: data.selected || 0, slots: slots };
+        });
+      }
+      return Promise.resolve();
+    })).then(function () {
+      window.applyModuleState();
+    });
   }
 
   // ── Load project ──────────────────────────────────────────────────────────────
@@ -147,8 +184,8 @@ window.Workspace = (function () {
       applySettings(settings);
       restoreModuleState(moduleState);
 
-      window.refState.FRAME = refs.filter(function (r) { return r.mode === 'FRAME'; }).map(function (r) { return r.src; });
-      window.refState.SCENE = refs.filter(function (r) { return r.mode === 'SCENE'; }).map(function (r) { return r.src; });
+      window.refState.FRAME = refs.filter(function (r) { return r.mode === 'FRAME'; }).map(function (r) { return { url: r.src, desc: r.desc || null }; });
+      window.refState.SCENE = refs.filter(function (r) { return r.mode === 'SCENE'; }).map(function (r) { return { url: r.src, desc: r.desc || null }; });
       window.renderChips();
 
       window.Gallery.clearGenerated();
@@ -258,7 +295,10 @@ window.Workspace = (function () {
       settings   : payload.settings || {},
       gallery    : window.Gallery.getGeneratedCells(),
       moduleState: window.ModuleState || null,
-      refs       : { FRAME: window.refState.FRAME.slice(), SCENE: window.refState.SCENE.slice() },
+      refs: {
+        FRAME: window.refState.FRAME.slice().map(function (ref) { return typeof ref === 'string' ? { url: ref, desc: null } : { url: ref.url, desc: ref.desc || null }; }),
+        SCENE: window.refState.SCENE.slice().map(function (ref) { return typeof ref === 'string' ? { url: ref, desc: null } : { url: ref.url, desc: ref.desc || null }; })
+      },
       sequence   : window.getSeqSlots ? window.getSeqSlots() : []
       // visionCache intentionally excluded — URL-keyed descriptions don't survive environment changes
     };
@@ -290,8 +330,8 @@ window.Workspace = (function () {
           applySettings(Object.assign({ mode: snap.mode, prompt: snap.prompt }, snap.settings));
           if (snap.moduleState) restoreModuleState(snap.moduleState);
           if (snap.refs) {
-            window.refState.FRAME = snap.refs.FRAME || [];
-            window.refState.SCENE = snap.refs.SCENE || [];
+            window.refState.FRAME = (snap.refs.FRAME || []).map(function (ref) { return typeof ref === 'string' ? { url: ref, desc: null } : { url: ref.url, desc: ref.desc || null }; });
+            window.refState.SCENE = (snap.refs.SCENE || []).map(function (ref) { return typeof ref === 'string' ? { url: ref, desc: null } : { url: ref.url, desc: ref.desc || null }; });
             window.renderChips();
           }
           if (snap.sequence && snap.sequence.length && window.addSeqSlot) {
