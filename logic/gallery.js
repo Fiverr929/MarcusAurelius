@@ -570,25 +570,32 @@ document.getElementById('hud-edit').addEventListener('click', function () {
   var cell = window.getHudCell ? window.getHudCell() : CELLS[hudIndex];
   if (!cell || !cell.imgUrl) return;
   closeHUD();
-  window.RefineArea.open(cell.imgUrl, cell.ratio, function (refinedUrl) {
-    if (!refinedUrl) return;
-    var newCell = {
-      id:             Date.now() + Math.random(),
-      ratio:          cell.ratio,
-      imgUrl:         refinedUrl,
-      date:           cell.date,
-      type:           'Image',
-      dims:           '—',
-      prompt:         cell.prompt,
-      manifest:       cell.manifest || null,
-      model:          window.CafeSettings.getActiveModel().label,
-      cost:           window.CafeSettings.getCostPerImage(),
-      generated:      true,
-      moduleSnapshot: cell.moduleSnapshot || null,
-      usedImages:     cell.usedImages || []
-    };
-    window.Gallery.addGenerated(newCell);
-    window.Workspace.autosave();
+  window.Studio.open({
+    imgUrl: cell.imgUrl,
+    uuid:   cell.uuid || null,
+    ratio:  cell.ratio,
+    caller: 'gallery',
+    onDone: function (refinedUrl) {
+      if (!refinedUrl) return;
+      var newCell = {
+        id:             Date.now() + Math.random(),
+        uuid:           crypto.randomUUID(),
+        ratio:          cell.ratio,
+        imgUrl:         refinedUrl,
+        date:           cell.date,
+        type:           'Image',
+        dims:           '—',
+        prompt:         cell.prompt,
+        manifest:       cell.manifest || null,
+        model:          window.CafeSettings.getActiveModel().label,
+        cost:           window.CafeSettings.getCostPerImage(),
+        generated:      true,
+        moduleSnapshot: cell.moduleSnapshot || null,
+        usedImages:     cell.usedImages || []
+      };
+      window.Gallery.addGenerated(newCell);
+      window.Workspace.autosave();
+    }
   });
 });
 

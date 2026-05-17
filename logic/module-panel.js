@@ -500,12 +500,21 @@
         var clr = clrEdit.closest('.clr');
         var img = clr.querySelector('.clr-main img');
         if (!img || !img.src || img.src === window.location.href) return;
-        window.RefineArea.open(img.src, null, function (refinedUrl) {
-          if (!refinedUrl) return;
-          img.src = refinedUrl;
-          clr.dataset.visionDesc = '';
-          saveSlot();
-          syncModuleState();
+        window.Studio.open({
+          imgUrl: img.src,
+          uuid:   clr.dataset.uuid || null,
+          ratio:  null,
+          caller: 'module',
+          onDone: function (refinedUrl) {
+            if (!refinedUrl) return;
+            img.src = refinedUrl;
+            clr.dataset.visionDesc = '';
+            var newUuid = crypto.randomUUID();
+            clr.dataset.uuid = newUuid;
+            DB.images.put(newUuid, refinedUrl);
+            saveSlot();
+            syncModuleState();
+          }
         });
         return;
       }
