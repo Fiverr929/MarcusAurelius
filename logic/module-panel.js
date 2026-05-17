@@ -52,23 +52,41 @@
 
   window.ModuleState = { subject: null, stage: null, style: null };
 
-  function makeSection(slotRowId, layersId, defaultLayerName, sectionKey, opts) {
-    var noSlots = opts && opts.noSlots;
-    var slotRow = slotRowId ? document.getElementById(slotRowId) : null;
-    var container = document.getElementById(layersId);
+  function makeSection(config) {
+    var noSlots = config.noSlots;
+    var slotRow = config.slotRowId ? document.getElementById(config.slotRowId) : null;
+    var container = document.getElementById(config.containerId);
     if (!container) return;
     if (!noSlots && !slotRow) return;
     var newLayerBtn = container.parentElement.querySelector('.btn-new-layer');
 
+    function localGroupHTML(name) {
+      return '<div class="layer-group">' +
+        '<div class="plr">' +
+          '<div class="plr-x blue"><img src="assets/icon-x-active.svg" alt="x"></div>' +
+          '<div class="plr-exp orange"></div>' +
+          '<div class="plr-name blue">' + name + '</div>' +
+          (!config.noLink ? '<div class="plr-link linked"><img src="assets/icon-link.svg" alt="link"></div>' : '') +
+          (!config.noEye  ? '<div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="eye"></div>' : '') +
+        '</div>' +
+        '<div class="layer-children">' +
+          makeClrHTML() +
+          '<div class="add-child-row">' +
+            '<div class="btn-add-child"><img src="assets/icon-add-child.svg" alt="+"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
     var selected = 0;
-    var initialHTML = container.innerHTML;
-    var slotStates = [{ on: true, html: container.innerHTML }];
+    var initialHTML = container.innerHTML || localGroupHTML(config.defaultLayerName);
+    var slotStates = [{ on: true, html: container.innerHTML || localGroupHTML(config.defaultLayerName) }];
 
     function syncModuleState() {
       if (noSlots) {
-        window.ModuleState[sectionKey] = { html: container.innerHTML };
+        config.stateTarget[config.stateKey] = { html: container.innerHTML };
       } else {
-        window.ModuleState[sectionKey] = {
+        config.stateTarget[config.stateKey] = {
           selected: selected,
           slots: slotStates.map(function(s) { return { on: s.on, html: s.html }; })
         };
@@ -116,7 +134,7 @@
         var childEye = clr.querySelector('.plr-eye');
         var edit = clr.querySelector('.clr-edit');
         if (isOff) {
-          if (childEye && childEye.classList.contains('on')) {
+          if (childEye && !config.noEye && childEye.classList.contains('on')) {
             childEye.classList.replace('on', 'off');
             childEye.querySelector('img').src = 'assets/icon-eye-off.svg';
             childEye.dataset.parentOff = '1';
@@ -127,7 +145,7 @@
             edit.dataset.parentOff = '1';
           }
         } else {
-          if (childEye && childEye.dataset.parentOff) {
+          if (childEye && !config.noEye && childEye.dataset.parentOff) {
             childEye.classList.replace('off', 'on');
             childEye.querySelector('img').src = 'assets/icon-eye-on.svg';
             delete childEye.dataset.parentOff;
@@ -172,7 +190,7 @@
       var addBtn = slotRow.querySelector('[data-add]');
       if (addBtn) addBtn.addEventListener('click', function () {
         saveSlot();
-        slotStates.push({ on: true, html: makeGroupHTML(defaultLayerName) });
+        slotStates.push({ on: true, html: localGroupHTML(config.defaultLayerName) });
         selected = slotStates.length - 1;
         loadSlot();
         setSlotLayerState(false);
@@ -199,8 +217,7 @@
         var eye = plr.querySelector('.plr-eye');
         var x = plr.querySelector('.plr-x');
         if (isOff) {
-          eye.classList.replace('on', 'off');
-          eye.querySelector('img').src = 'assets/icon-eye-off.svg';
+          if (eye) { eye.classList.replace('on', 'off'); eye.querySelector('img').src = 'assets/icon-eye-off.svg'; }
           x.classList.replace('blue', 'off');
           x.querySelector('img').src = 'assets/icon-x-inactive.svg';
           plr.classList.add('layer-off');
@@ -208,8 +225,7 @@
           group.querySelectorAll('.clr-x img').forEach(function (img) { img.src = 'assets/icon-x-inactive.svg'; });
           applyChildImageState(group, true);
         } else {
-          eye.classList.replace('off', 'on');
-          eye.querySelector('img').src = 'assets/icon-eye-on.svg';
+          if (eye) { eye.classList.replace('off', 'on'); eye.querySelector('img').src = 'assets/icon-eye-on.svg'; }
           x.classList.replace('off', 'blue');
           x.querySelector('img').src = 'assets/icon-x-active.svg';
           plr.classList.remove('layer-off');
@@ -230,7 +246,7 @@
       }
 
       var eye = e.target.closest('.plr-eye');
-      if (eye) {
+      if (eye && !config.noEye) {
         var plr = eye.closest('.plr');
         if (plr) {
           var group = eye.closest('.layer-group');
@@ -266,7 +282,7 @@
       }
 
       var link = e.target.closest('.plr-link');
-      if (link) {
+      if (link && !config.noLink) {
         if (link.classList.contains('linked')) {
           link.classList.replace('linked', 'unlinked');
           link.querySelector('img').src = 'assets/icon-unlink-small.svg';
@@ -321,7 +337,7 @@
           group.remove();
         } else {
           var temp = document.createElement('div');
-          temp.innerHTML = makeGroupHTML(defaultLayerName);
+          temp.innerHTML = localGroupHTML(config.defaultLayerName);
           group.replaceWith(temp.firstElementChild);
           if (slotStates[selected].on === false) {
             slotStates[selected].on = true;
@@ -501,15 +517,14 @@
     if (newLayerBtn) {
       newLayerBtn.addEventListener('click', function () {
         var temp = document.createElement('div');
-        temp.innerHTML = makeGroupHTML('NEW LAYER');
+        temp.innerHTML = localGroupHTML(config.defaultLayerName);
         container.appendChild(temp.firstElementChild);
         if (slotStates[selected].on === false) {
           var newGroup = container.lastElementChild;
           var plr = newGroup.querySelector('.plr');
           var eye = plr.querySelector('.plr-eye');
           var x = plr.querySelector('.plr-x');
-          eye.classList.replace('on', 'off');
-          eye.querySelector('img').src = 'assets/icon-eye-off.svg';
+          if (eye) { eye.classList.replace('on', 'off'); eye.querySelector('img').src = 'assets/icon-eye-off.svg'; }
           x.classList.replace('blue', 'off');
           x.querySelector('img').src = 'assets/icon-x-inactive.svg';
           plr.classList.add('layer-off');
@@ -530,9 +545,11 @@
     _sectionRegistry[key] = container;
   }
 
-  makeSection('mp-slot-subj', 'mp-layers-subj', 'NEW SUBJECT', 'subject');
-  makeSection(null, 'mp-layers-stage', 'NEW STAGE', 'stage', { noSlots: true });
-  makeSection(null, 'mp-layers-sty',   'NEW LAYER', 'style', { noSlots: true });
+  window.ModulePanel = { makeSection: makeSection };
+
+  makeSection({ slotRowId: 'mp-slot-subj', containerId: 'mp-layers-subj', defaultLayerName: 'NEW SUBJECT', stateKey: 'subject', stateTarget: window.ModuleState });
+  makeSection({ containerId: 'mp-layers-stage', defaultLayerName: 'NEW STAGE', stateKey: 'stage', stateTarget: window.ModuleState, noSlots: true });
+  makeSection({ containerId: 'mp-layers-sty',   defaultLayerName: 'NEW LAYER', stateKey: 'style', stateTarget: window.ModuleState, noSlots: true });
 
   registerSection('subject', document.getElementById('mp-layers-subj'));
   registerSection('stage',   document.getElementById('mp-layers-stage'));
