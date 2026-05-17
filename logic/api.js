@@ -54,12 +54,18 @@ window.CafeAPI = (function () {
     var snap = {};
     ['subject', 'stage', 'style'].forEach(function (key) {
       if (!ms[key]) { snap[key] = null; return; }
-      snap[key] = {
-        selected: ms[key].selected,
-        slots: ms[key].slots.map(function (s) {
-          return { on: s.on, html: (s.html || '').replace(/src="data:[^"]*"/g, 'src=""') };
-        })
-      };
+      if (ms[key].html) {
+        // STAGE / STYLE — flat shape
+        snap[key] = { html: ms[key].html.replace(/src="data:[^"]*"/g, 'src=""') };
+      } else {
+        // SUBJECT — has slots
+        snap[key] = {
+          selected: ms[key].selected,
+          slots: ms[key].slots.map(function (s) {
+            return { on: s.on, html: (s.html || '').replace(/src="data:[^"]*"/g, 'src=""') };
+          })
+        };
+      }
     });
     return snap;
   }
@@ -139,7 +145,7 @@ window.CafeAPI = (function () {
           return res.json().then(function (body) {
             if (!res.ok) {
               if (res.status === 429 && attempt < 2) {
-                var wait = (attempt + 1) * 20000;
+                var wait = (attempt + 1) * 5000;
                 console.warn('[CafeAPI] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
                 return new Promise(function (resolve) { setTimeout(resolve, wait); })
                   .then(function () { return runOne(attempt + 1); });
@@ -165,20 +171,42 @@ window.CafeAPI = (function () {
 
     return runSequential(numImages).then(function (results) {
       var predictions = [];
+      var blockReason = null;
+      var finishReasons = [];
+
       results.forEach(function (result) {
-        if (result.candidates && result.candidates.length) {
-          result.candidates.forEach(function (candidate) {
-            if (candidate.content && candidate.content.parts) {
-              candidate.content.parts.forEach(function (part) {
-                var id = part.inlineData || part.inline_data;
-                if (id && id.data) {
-                  predictions.push({ mimeType: id.mimeType || id.mime_type || 'image/png', bytesBase64Encoded: id.data });
-                }
-              });
-            }
-          });
+        if (result.promptFeedback && result.promptFeedback.blockReason) {
+          blockReason = result.promptFeedback.blockReason;
+          console.warn('[CafeAPI] Prompt blocked:', blockReason, result.promptFeedback);
         }
+        if (!result.candidates || !result.candidates.length) {
+          console.warn('[CafeAPI] No candidates in response — raw:', JSON.stringify(result).slice(0, 400));
+        }
+        (result.candidates || []).forEach(function (candidate) {
+          if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+            finishReasons.push(candidate.finishReason);
+            console.warn('[CafeAPI] Candidate finishReason:', candidate.finishReason, candidate.safetyRatings || '');
+          }
+          if (candidate.content && candidate.content.parts) {
+            candidate.content.parts.forEach(function (part) {
+              var id = part.inlineData || part.inline_data;
+              if (id && id.data) {
+                predictions.push({ mimeType: id.mimeType || id.mime_type || 'image/png', bytesBase64Encoded: id.data });
+              }
+            });
+          }
+        });
       });
+
+      if (!predictions.length) {
+        var reason = blockReason
+          ? 'Prompt blocked — ' + blockReason
+          : finishReasons.length
+            ? 'Generation stopped — ' + finishReasons.join(', ')
+            : 'Model returned no images — check console for raw response';
+        throw new Error(reason);
+      }
+
       return { predictions: predictions };
     });
   }
@@ -214,7 +242,7 @@ window.CafeAPI = (function () {
   function generate() {
     var model = window.CafeSettings.getActiveModel();
     var apiKey = window.CafeSettings.getGoogleApiKey();
-    if (!window.CafeSettings.getGoogleApiKey()) {
+    if (!apiKey) {
       window.CafeSettings.openModal();
       return;
     }
@@ -260,7 +288,34 @@ window.CafeAPI = (function () {
     _activeRequests++;
     console.log('[CafeAPI] Pipeline start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);
 
-    window.PromptEnhancer.enhance(payload).then(function (enhanced) {
+    // Catch-up scan — only for On Load. On Generate sends all images inline.
+    var catchUpPromise = Promise.resolve();
+    if (window.DescriptionRegistry && window.CafeSettings.getScanTiming() === 'load') {
+      var missingItems = window.DescriptionRegistry.collectMissing();
+      if (missingItems.length) {
+        console.log('[CafeAPI] Catch-up scan — ' + missingItems.length + ' image(s) missing descriptions');
+        catchUpPromise = window.DescriptionRegistry.ensureAll(missingItems).then(function () {
+          missingItems.forEach(function (item) {
+            var desc = window.DescriptionRegistry.get(item.url);
+            if (!desc) return;
+            if (item.domTarget) item.domTarget.dataset.visionDesc = desc;
+            if (item.refTarget) {
+              var m = item.refTarget.mode;
+              var idx = item.refTarget.index;
+              if (window.refState[m] && window.refState[m][idx]) {
+                window.refState[m][idx].desc = desc;
+              }
+            }
+          });
+          // Re-collect with fresh descriptions written to DOM and refState
+          payload = window.PromptBuilder.collect();
+        });
+      }
+    }
+
+    catchUpPromise.then(function () {
+      return window.PromptEnhancer.enhance(payload);
+    }).then(function (enhanced) {
       var t1 = Date.now();
       var finalPrompt = enhanced.prompt;
       var manifest = enhanced.manifest;
@@ -280,6 +335,12 @@ window.CafeAPI = (function () {
 
       var imageRefs = (manifest || [])
         .filter(function (item) { return item.kind === 'image' && item.imgUrl; })
+        .sort(function (a, b) {
+          if (a.position == null && b.position == null) return 0;
+          if (a.position == null) return 1;
+          if (b.position == null) return -1;
+          return a.position - b.position;
+        })
         .map(function (item) { return item.imgUrl; });
       var imageSize = window.CafeSettings.getActiveResolution();
       var thinkingLevel = model.thinkingLevel || null;
@@ -303,10 +364,6 @@ window.CafeAPI = (function () {
             .filter(function (p) { return p.bytesBase64Encoded; })
             .map(function (p) { return 'data:' + (p.mimeType || 'image/png') + ';base64,' + p.bytesBase64Encoded; });
 
-          if (!imgUrls.length) {
-            console.error('[CafeAPI] No images in Google response:', result);
-            throw new Error('No images in Google response');
-          }
           console.log('[CafeAPI] ✓ Generation complete | ' + (Date.now() - tGen) + 'ms | images received:', imgUrls.length);
 
           var t2 = Date.now();
@@ -318,6 +375,7 @@ window.CafeAPI = (function () {
             imgUrls.forEach(function (dataUrl, i) {
               var cell = {
                 id: Date.now() + Math.random(),
+                uuid: crypto.randomUUID(),
                 ratio: ratio,
                 imgUrl: dataUrl,
                 date: formatDate(now),
@@ -368,7 +426,7 @@ window.CafeAPI = (function () {
       _activeRequests--;
       if (_activeRequests === 0 && genBtn) genBtn.classList.remove('cafe-loading');
       if (!window.CafeSettings.getKeepDescriptions()) {
-        window.VisionScan.clearCache();
+        window.DescriptionRegistry.clear();
       }
     });
   }
