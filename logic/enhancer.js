@@ -40,7 +40,8 @@ window.PromptEnhancer = (function () {
                 section: slot.section || 'subject',
                 layerName: layer.name || 'LAYER',
                 desc: desc ? desc + angleNote : null,
-                imgUrl: child.imgUrl
+                imgUrl: child.imgUrl,
+                uuid: child.uuid || null
               });
             } else if (child.type === 'prompt' && child.text) {
               moduleItems.push({
@@ -62,15 +63,15 @@ window.PromptEnhancer = (function () {
     fromSection(payload.style);
 
     var refs = payload.refs || [];
-    refs.forEach(function (imgUrl, idx) {
-      refItems.push({ kind: 'image', role: 'R' + (idx + 1), slot: null, section: 'ref', layerName: 'REFERENCE', desc: null, imgUrl: imgUrl });
+    refs.forEach(function (ref, idx) {
+      refItems.push({ kind: 'image', role: 'R' + (idx + 1), slot: null, section: 'ref', layerName: 'REFERENCE', desc: ref.desc || null, imgUrl: ref.url });
     });
 
-    // Keep image positions stable across runs. R1 is always before module images,
-    // even when the prompt is empty or does not mention R1.
+    // Keep image positions stable across runs. R1 is always before module images.
+    // Only non-described images get a position — they are the ones sent inline.
     var items = refItems.concat(moduleItems);
     items.forEach(function (item) {
-      if (item.kind === 'image') item.position = position++;
+      if (item.kind === 'image' && !item.desc) item.position = position++;
     });
 
     return items;
@@ -85,9 +86,9 @@ window.PromptEnhancer = (function () {
     '- STYLE MODULE: visual treatment only — colour grade, lens, rendering, mood. Never a person or a location.',
     '',
     'Within a single slot, multiple images of the same layer are different angles or views of the same subject — treat them as one thing.',
-    'Your task: write a complete generation brief by analysing the attached images and their assigned roles.',
+    'Your task: write a complete generation brief by analysing the provided inputs — attached inline images and pre-scanned text descriptions — and their assigned roles.',
     'Before writing, act as a creative director: decide the final image, not a pile of assets.',
-    'Use specific, concrete language drawn directly from the attached images — never generic placeholders.',
+    'Use specific, concrete language drawn directly from the images and descriptions — never generic placeholders.',
     'Prompt-bar references R1-R5 are freeform references attached to the user intent. Infer their role from the prompt text; do not assign fixed subject, scene, or style roles to them.',
     'If the prompt is empty and modules are present, modules own subject, scene, and style details while R1-R5 provide overall look, composition, or mood support.',
     'If only R1-R5 are present, treat them as the primary prompt input.',
@@ -104,7 +105,8 @@ window.PromptEnhancer = (function () {
     '- When one image is the base scene or main reference, preserve its camera, framing, environment, lighting, colour grade, perspective, and atmosphere.',
     '- When replacing or inserting subjects, integrate them into that base scene with matching scale, occlusion, shadows, reflections, skin/clothing light response, and perspective.',
     '- Prefer language like "redraw the whole scene as one coherent image" over "place X on Y" when combining references.',
-    '- Every listed image is attached inline — study it directly and reference it by its Image N position.',
+    '- Module images with a pre-scanned description are provided as description text — use the description directly, no Image N needed.',
+    '- Inline images (refs and any module images without descriptions) are attached as Image N — reference them by position.',
     '- Place the subject in the scene using the SCENE MODULE. If no scene, derive from user intent or omit.',
     '- Close with the style treatment as visual rendering only — never as a location or character.',
     '- Every detail must come from the attached images or user intent. Do not invent anything.',
@@ -133,7 +135,10 @@ window.PromptEnhancer = (function () {
       goal: 'single_coherent_generated_image',
       userIntent: text || '(none)',
       defaultAction: 'synthesize_references_into_one_scene',
-      subjectSources: subjectItems.map(function (i) { return (i.role || i.layerName) + ' Slot ' + (i.slot || '-') + ' / Image ' + i.position; }),
+      subjectSources: subjectItems.map(function (i) {
+        var ref = (i.role || i.layerName) + ' Slot ' + (i.slot || '-');
+        return i.position ? ref + ' / Image ' + i.position : ref;
+      }),
       sceneSource: null,
       styleSource: null,
       compositionSource: null,
@@ -162,11 +167,13 @@ window.PromptEnhancer = (function () {
       plan.styleSource = activeRef.role + ' / Image ' + activeRef.position;
     }
     if (stageImage) {
-      plan.sceneSource = (stageImage.role || stageImage.layerName) + ' Slot ' + (stageImage.slot || '-') + ' / Image ' + stageImage.position;
+      var stageRef = (stageImage.role || stageImage.layerName) + ' Slot ' + (stageImage.slot || '-');
+      plan.sceneSource = stageImage.position ? stageRef + ' / Image ' + stageImage.position : stageRef;
       plan.compositionSource = plan.compositionSource || plan.sceneSource;
     }
     if (styleImage) {
-      plan.styleSource = (styleImage.role || styleImage.layerName) + ' Slot ' + (styleImage.slot || '-') + ' / Image ' + styleImage.position;
+      var styleRef = (styleImage.role || styleImage.layerName) + ' Slot ' + (styleImage.slot || '-');
+      plan.styleSource = styleImage.position ? styleRef + ' / Image ' + styleImage.position : styleRef;
     }
     if (activeRef && (wantsSameStyle || wantsPose || wantsReplace)) {
       plan.compositionSource = activeRef.role + ' / Image ' + activeRef.position;
@@ -251,10 +258,15 @@ window.PromptEnhancer = (function () {
           return;
         }
         var isIdentity = /CHARACTER|FACE|PERSON|MODEL|SUBJECT|HERO|IDENTITY|ACTOR/.test((img.layerName || '').toUpperCase());
-        var label = isIdentity
-          ? 'Identity anchor — Image ' + img.position
-          : (img.layerName || 'Layer') + ' — Image ' + img.position;
-        lines.push(indent + '[' + label + ']');
+        if (img.desc) {
+          var roleLabel = isIdentity ? 'Identity anchor' : (img.layerName || 'Layer');
+          lines.push(indent + '[' + roleLabel + '] ' + img.desc);
+        } else {
+          var label = isIdentity
+            ? 'Identity anchor — Image ' + img.position
+            : (img.layerName || 'Layer') + ' — Image ' + img.position;
+          lines.push(indent + '[' + label + ']');
+        }
       });
       if (multi) lines.push('');
     });
@@ -302,54 +314,97 @@ window.PromptEnhancer = (function () {
     return lines.join('\n');
   }
 
+  var _cache = {};
+
+  function cacheKey(userMessage, imageItems) {
+    return userMessage + '||' + imageItems.map(function (i) {
+      return i.uuid || ('blob:' + i.imgUrl.length);
+    }).join('|');
+  }
+
   function enhance(payload) {
     var apiKey = window.CafeSettings.getGoogleApiKey();
     if (!apiKey) return Promise.reject(new Error('[PromptEnhancer] No Google API key'));
+
+    var t0 = Date.now();
 
     var imageContext = collectImageContext(payload);
     var userIntent = payload.prompt || '';
     var userMessage = buildUserMessage(userIntent, imageContext);
     var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL + ':generateContent?key=' + apiKey;
-    var t0 = Date.now();
 
-    // Build multimodal parts: text message + inline images
-    var parts = [{ text: userMessage }];
     var imageItems = imageContext.filter(function (i) { return i.kind === 'image' && i.imgUrl; });
-    imageItems.sort(function (a, b) { return a.position - b.position; });
-    imageItems.forEach(function (item) {
+
+    var keepDescriptions = window.CafeSettings.getKeepDescriptions();
+    if (keepDescriptions) {
+      var key = cacheKey(userMessage, imageItems);
+      if (_cache[key]) {
+        console.log('[PromptEnhancer] ✓ cache hit — skipping Gemini call');
+        return Promise.resolve(_cache[key]);
+      }
+    }
+
+    var inlineItems = imageItems.filter(function (i) { return !i.desc; });
+    inlineItems.sort(function (a, b) { return a.position - b.position; });
+
+    var parts = [{ text: userMessage }];
+    inlineItems.forEach(function (item) {
       parts.push({ inline_data: { mime_type: mimeFromDataUrl(item.imgUrl), data: dataUrlToBase64(item.imgUrl) } });
     });
 
-    console.log('[PromptEnhancer] → POST', MODEL, '| images inline:', imageItems.length, '| prompt chars:', userMessage.length);
+    console.log('[PromptEnhancer] → POST', MODEL, '| images inline:', inlineItems.length, '| described:', imageItems.length - inlineItems.length, '| prompt chars:', userMessage.length);
     console.log('[PromptEnhancer] user message:\n' + userMessage);
 
-    return fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents: [{ role: 'user', parts: parts }],
-        generationConfig: { maxOutputTokens: 1024 }
+    function runOne(attempt) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+          contents: [{ role: 'user', parts: parts }],
+          generationConfig: { maxOutputTokens: 4999 },
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' }
+          ]
+        })
       })
-    })
-      .then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok) throw new Error('[PromptEnhancer] ' + res.status + ': ' + JSON.stringify(data));
-          return data;
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) {
+              if (res.status === 429 && attempt < 2) {
+                var wait = (attempt + 1) * 5000;
+                console.warn('[PromptEnhancer] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
+                return new Promise(function (resolve) { setTimeout(resolve, wait); })
+                  .then(function () { return runOne(attempt + 1); });
+              }
+              throw new Error('[PromptEnhancer] ' + res.status + ': ' + JSON.stringify(data));
+            }
+            return data;
+          });
+        })
+        .then(function (data) {
+          var candidateParts = data.candidates &&
+            data.candidates[0] &&
+            data.candidates[0].content &&
+            data.candidates[0].content.parts;
+          console.log('[PromptEnhancer] parts:', JSON.stringify((candidateParts || []).map(function(p) { return { thought: p.thought, len: (p.text || '').length, preview: (p.text || '').slice(0, 60) }; })));
+          var text = candidateParts
+            ? candidateParts.filter(function (p) { return !p.thought; }).map(function (p) { return p.text || ''; }).join('')
+            : null;
+          if (!text) throw new Error('[PromptEnhancer] Empty response');
+          console.log('[PromptEnhancer] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | brief:', text.trim().slice(0, 120) + '...');
+          var result = { prompt: text.trim(), manifest: imageContext, enhancerInput: userMessage, directorPlan: buildDirectorPlan(userIntent, imageContext) };
+          if (window.CafeSettings.getKeepDescriptions()) _cache[cacheKey(userMessage, imageItems)] = result;
+          return result;
         });
-      })
-      .then(function (data) {
-        var text = data.candidates &&
-          data.candidates[0] &&
-          data.candidates[0].content &&
-          data.candidates[0].content.parts &&
-          data.candidates[0].content.parts[0] &&
-          data.candidates[0].content.parts[0].text;
-        if (!text) throw new Error('[PromptEnhancer] Empty response');
-        console.log('[PromptEnhancer] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | brief:', text.trim().slice(0, 120) + '...');
-        return { prompt: text.trim(), manifest: imageContext, enhancerInput: userMessage, directorPlan: buildDirectorPlan(userIntent, imageContext) };
-      });
+    }
+
+    return runOne(0);
   }
+
   return { enhance: enhance, collectImageContext: collectImageContext };
 
 })();
