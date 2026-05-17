@@ -6,7 +6,7 @@
 window.DB = (function () {
 
   var DB_NAME    = 'cafehtml-db';
-  var DB_VERSION = 1;
+  var DB_VERSION = 2;
   var _db        = null;
 
   var S = {
@@ -15,7 +15,9 @@ window.DB = (function () {
     MODULE_STATE: 'module-state',
     REFERENCES  : 'references',
     GALLERY     : 'gallery',
-    SEQUENCE    : 'sequence'
+    SEQUENCE    : 'sequence',
+    IMAGES      : 'images',
+    DESCRIPTIONS: 'descriptions'
   };
 
   // ── Open ─────────────────────────────────────────────────────────────────────
@@ -53,6 +55,13 @@ window.DB = (function () {
         var sq = db.createObjectStore(S.SEQUENCE, { keyPath: 'id', autoIncrement: true });
         sq.createIndex('by_project', 'project_id');
         sq.createIndex('by_order',   'order');
+      }
+
+      if (!db.objectStoreNames.contains(S.IMAGES)) {
+        db.createObjectStore(S.IMAGES, { keyPath: 'uuid' });
+      }
+      if (!db.objectStoreNames.contains(S.DESCRIPTIONS)) {
+        db.createObjectStore(S.DESCRIPTIONS, { keyPath: 'uuid' });
       }
     };
 
@@ -312,16 +321,52 @@ window.DB = (function () {
     }
   };
 
+  // ── Images ────────────────────────────────────────────────────────────────────
+
+  var images = {
+    get: function (uuid) {
+      return ready.then(function () {
+        return wrap(tx(S.IMAGES).objectStore(S.IMAGES).get(uuid));
+      });
+    },
+    put: function (uuid, dataUrl) {
+      return ready.then(function () {
+        return wrap(
+          tx(S.IMAGES, 'readwrite').objectStore(S.IMAGES)
+            .put({ uuid: uuid, dataUrl: dataUrl, createdAt: new Date().toISOString() })
+        );
+      });
+    }
+  };
+
+  // ── Descriptions ──────────────────────────────────────────────────────────────
+
+  var descriptions = {
+    get: function (uuid) {
+      return ready.then(function () {
+        return wrap(tx(S.DESCRIPTIONS).objectStore(S.DESCRIPTIONS).get(uuid));
+      });
+    },
+    put: function (uuid, desc, context) {
+      return ready.then(function () {
+        var record = Object.assign({ uuid: uuid, desc: desc, createdAt: new Date().toISOString() }, context || {});
+        return wrap(tx(S.DESCRIPTIONS, 'readwrite').objectStore(S.DESCRIPTIONS).put(record));
+      });
+    }
+  };
+
   // ── Public API ────────────────────────────────────────────────────────────────
 
   return {
-    ready      : ready,
-    projects   : projects,
-    settings   : settings,
-    moduleState: moduleState,
-    references : references,
-    gallery    : gallery,
-    sequence   : sequence
+    ready       : ready,
+    projects    : projects,
+    settings    : settings,
+    moduleState : moduleState,
+    references  : references,
+    gallery     : gallery,
+    sequence    : sequence,
+    images      : images,
+    descriptions: descriptions
   };
 
 })();
