@@ -72,6 +72,46 @@ window.CafeAPI = (function () {
 
   // ── Google Vertex AI image generation ─────────────────────────────────────
 
+  function callGoogleAPI(modelId, apiKey, parts, generationConfig, opts) {
+    opts = opts || {};
+    var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + modelId + ':generateContent?key=' + apiKey;
+
+    var body = {
+      contents: [{ role: 'user', parts: parts }],
+      generationConfig: generationConfig,
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' }
+      ]
+    };
+    if (opts.systemInstruction) body.systemInstruction = opts.systemInstruction;
+
+    function runOne(attempt) {
+      attempt = attempt || 0;
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            if (res.status === 429 && attempt < 2) {
+              var wait = (attempt + 1) * 5000;
+              console.warn('[CafeAPI] 429 — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ')');
+              return new Promise(function (r) { setTimeout(r, wait); }).then(function () { return runOne(attempt + 1); });
+            }
+            throw new Error('API error ' + res.status + ': ' + JSON.stringify(data));
+          }
+          return data;
+        });
+      });
+    }
+
+    return runOne(0);
+  }
+
   function dataUrlToBase64(dataUrl) {
     var idx = dataUrl.indexOf(',');
     return idx !== -1 ? dataUrl.slice(idx + 1) : dataUrl;
@@ -86,82 +126,44 @@ window.CafeAPI = (function () {
     var arMap = { '1:1': '1:1', '16:9': '16:9', '9:16': '9:16', '4:3': '4:3', '3:4': '3:4' };
     var ar = arMap[aspectRatio] || '1:1';
 
-    function runOne(attempt) {
-      attempt = attempt || 0;
-      var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + modelId + ':generateContent?key=' + apiKey;
-
-      var parts = [{ text: prompt }];
-      if (imageRefs && imageRefs.length) {
-        imageRefs.forEach(function (ref) {
-          parts.push({ inline_data: { mime_type: mimeFromDataUrl(ref), data: dataUrlToBase64(ref) } });
-        });
-      }
-
-      var generationConfig = {
-        seed: seed,
-        responseModalities: ['IMAGE'],
-        imageConfig: {
-          aspectRatio: ar,
-          imageSize: imageSize || '1K',
-          imageOutputOptions: { mimeType: 'image/png' }
-        }
-      };
-
-      if (thinkingLevel) {
-        generationConfig.thinkingConfig = { thinkingLevel: thinkingLevel };
-      }
-
-      var imgPartCount = parts.filter(function (p) { return p.inline_data; }).length;
-      console.log('[CafeAPI] → POST', modelId, '| ar:', ar, '| size:', imageSize, '| thinking:', thinkingLevel || 'none', '| image refs:', imgPartCount, '| prompt chars:', (parts[0] && parts[0].text ? parts[0].text.length : 0));
-
-      return fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{
-              text: [
-                'Follow the user brief as an ordered visual reference manifest.',
-                'The inline images are supplied in the same Image N order named in the brief.',
-                'Use the brief to decide whether an image is a subject source, wardrobe source, scene source, style source, or base composition.',
-                'When an image is the base or main reference, preserve its camera, framing, perspective, lighting, colour grade, environment, and atmosphere.',
-                'When subjects or garments are replaced or inserted, integrate them physically into that base scene with matching scale, occlusion, shadows, reflections, and light response.',
-                'Do not create a collage, pasted cutout, side-by-side composite, contact sheet, or flat overlay.',
-                'Preserve concrete identifying details from referenced images only according to their assigned role in the brief; avoid generic substitutions.'
-              ].join(' ')
-            }]
-          },
-          contents: [{ role: 'user', parts: parts }],
-          generationConfig: generationConfig,
-          safetySettings: [
-            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' }
-          ]
-        })
-      })
-        .then(function (res) {
-          return res.json().then(function (body) {
-            if (!res.ok) {
-              if (res.status === 429 && attempt < 2) {
-                var wait = (attempt + 1) * 5000;
-                console.warn('[CafeAPI] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
-                return new Promise(function (resolve) { setTimeout(resolve, wait); })
-                  .then(function () { return runOne(attempt + 1); });
-              }
-              throw new Error('Google generate failed ' + res.status + ': ' + JSON.stringify(body));
-            }
-            return body;
-          });
-        });
+    var parts = [{ text: prompt }];
+    if (imageRefs && imageRefs.length) {
+      imageRefs.forEach(function (ref) {
+        parts.push({ inline_data: { mime_type: mimeFromDataUrl(ref), data: dataUrlToBase64(ref) } });
+      });
     }
+
+    var generationConfig = {
+      seed: seed,
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: ar, imageSize: imageSize || '1K', imageOutputOptions: { mimeType: 'image/png' } }
+    };
+    if (thinkingLevel) generationConfig.thinkingConfig = { thinkingLevel: thinkingLevel };
+
+    var imgPartCount = parts.filter(function (p) { return p.inline_data; }).length;
+    console.log('[CafeAPI] → POST', modelId, '| ar:', ar, '| size:', imageSize, '| thinking:', thinkingLevel || 'none', '| image refs:', imgPartCount, '| prompt chars:', (parts[0] && parts[0].text ? parts[0].text.length : 0));
+
+    var opts = {
+      systemInstruction: {
+        parts: [{
+          text: [
+            'Follow the user brief as an ordered visual reference manifest.',
+            'The inline images are supplied in the same Image N order named in the brief.',
+            'Use the brief to decide whether an image is a subject source, wardrobe source, scene source, style source, or base composition.',
+            'When an image is the base or main reference, preserve its camera, framing, perspective, lighting, colour grade, environment, and atmosphere.',
+            'When subjects or garments are replaced or inserted, integrate them physically into that base scene with matching scale, occlusion, shadows, reflections, and light response.',
+            'Do not create a collage, pasted cutout, side-by-side composite, contact sheet, or flat overlay.',
+            'Preserve concrete identifying details from referenced images only according to their assigned role in the brief; avoid generic substitutions.'
+          ].join(' ')
+        }]
+      }
+    };
 
     function runSequential(n) {
       var results = [];
       function next(i) {
         if (i >= n) return Promise.resolve(results);
-        return runOne(0).then(function (r) {
+        return callGoogleAPI(modelId, apiKey, parts, generationConfig, opts).then(function (r) {
           results.push(r);
           return next(i + 1);
         });
@@ -431,6 +433,6 @@ window.CafeAPI = (function () {
     });
   }
 
-  return { generate: generate, generateLayerImage: generateLayerImage };
+  return { generate: generate, generateLayerImage: generateLayerImage, callGoogleAPI: callGoogleAPI };
 
 })();
