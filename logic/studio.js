@@ -49,6 +49,9 @@ window.Studio = (function () {
   var cropBox = null, cropRatio = 16 / 9, cropIsFree = false;
   var cropDrag = null, cropResize = null;
 
+  // Persists between open/close cycles for the same image UUID
+  var _session = { uuid: null, history: [] };
+
   function grabDOM() {
     overlay       = document.getElementById('studio-overlay');
     studioCanvas  = document.getElementById('studioCanvas');
@@ -95,7 +98,7 @@ window.Studio = (function () {
     probe.src = url;
   }
 
-  function addToHistory(url) {
+  function addHistoryThumb(url) {
     var placeholder = historyFrames.querySelector('.history-placeholder');
     if (placeholder) placeholder.remove();
     var thumb = document.createElement('div');
@@ -103,6 +106,11 @@ window.Studio = (function () {
     thumb.innerHTML = '<img src="' + url + '" alt="">';
     thumb.addEventListener('click', function () { setActiveVersion(url, thumb); });
     historyFrames.prepend(thumb);
+    return thumb;
+  }
+
+  function addToHistory(url) {
+    var thumb = addHistoryThumb(url);
     setActiveVersion(url, thumb);
   }
 
@@ -349,8 +357,8 @@ window.Studio = (function () {
     var model  = window.CafeSettings.getActiveModel();
     if (!apiKey) { window.CafeSettings.openModal(); return Promise.reject(new Error('No API key')); }
 
-    var fullPrompt = prompt + (undoStack.length > 0 ? ' Focus on the annotated area.' : '');
-    var parts = [{ text: fullPrompt }];
+    var fullPrompt = (prompt + (undoStack.length > 0 ? ' Focus on the annotated area.' : '')).trim();
+    var parts = fullPrompt ? [{ text: fullPrompt }] : [];
     parts.push({ inline_data: { mime_type: mimeFrom(canvasImgUrl), data: base64From(canvasImgUrl) } });
     if (undoStack.length > 0) {
       parts.push({ inline_data: { mime_type: 'image/png', data: base64From(annotationDataUrl) } });
@@ -466,7 +474,6 @@ window.Studio = (function () {
 
     refineBtn.addEventListener('click', function () {
       var prompt = promptInput.value.trim();
-      if (!prompt) return;
       var canvasImg = studioCanvas.querySelector('img');
       if (!canvasImg) return;
 
@@ -497,7 +504,13 @@ window.Studio = (function () {
   function open(config) {
     initListeners();
     window.StudioModule.init();
-    window.StudioModule.reset();
+
+    var sameImage = config.uuid && config.uuid === _session.uuid;
+    if (!sameImage) {
+      window.StudioModule.reset();
+      _session.uuid    = config.uuid || null;
+      _session.history = [];
+    }
 
     _onDone    = config.onDone || null;
     _latestUrl = null;
@@ -527,13 +540,29 @@ window.Studio = (function () {
     clearHistory();
     updatePromptPlaceholder();
     promptInput.value = '';
-    addToHistory(config.imgUrl);
+
+    if (sameImage && _session.history.length > 0) {
+      // Restore history silently (oldest→newest so newest ends up on top)
+      for (var i = _session.history.length - 1; i >= 0; i--) {
+        addHistoryThumb(_session.history[i]);
+      }
+      var top = historyFrames.querySelector('.history-thumb');
+      if (top) setActiveVersion(top.querySelector('img').src, top);
+    } else {
+      addToHistory(config.imgUrl);
+    }
+
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
 
   function close() {
     if (!overlay) return;
+    _session.history = [];
+    historyFrames.querySelectorAll('.history-thumb:not(.history-placeholder)').forEach(function (t) {
+      var img = t.querySelector('img');
+      if (img && img.src) _session.history.push(img.src);
+    });
     overlay.classList.remove('open');
     document.body.style.overflow = '';
     deactivateTool();
