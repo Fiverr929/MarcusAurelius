@@ -77,11 +77,6 @@ window.Studio = (function () {
   }
 
   function setActiveVersion(url, thumb) {
-    var probe = new Image();
-    probe.onload = function () {
-      studioCanvas.style.aspectRatio = probe.naturalWidth + ' / ' + probe.naturalHeight;
-    };
-    probe.src = url;
     var existing = studioCanvas.querySelector('img');
     if (existing) existing.remove();
     var img = document.createElement('img');
@@ -90,8 +85,14 @@ window.Studio = (function () {
     studioCanvas.insertBefore(img, studioCanvas.firstChild);
     overlay.querySelectorAll('.history-thumb').forEach(function (t) { t.classList.remove('active'); });
     thumb.classList.add('active');
-    syncDrawLayer();
     _latestUrl = url;
+
+    var probe = new Image();
+    probe.onload = function () {
+      studioCanvas.style.aspectRatio = probe.naturalWidth + ' / ' + probe.naturalHeight;
+      requestAnimationFrame(syncDrawLayer);
+    };
+    probe.src = url;
   }
 
   function addToHistory(url) {
