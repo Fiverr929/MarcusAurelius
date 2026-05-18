@@ -203,48 +203,56 @@ window.Workspace = (function () {
 
   // ── Gallery hook — save each new image to DB on generation ───────────────────
 
-  function hookGallery() {
-    var _orig = window.Gallery.resolveLoading.bind(window.Gallery);
-    window.Gallery.resolveLoading = function (loadingId, cell) {
-      _orig(loadingId, cell);
-
-      function saveToProject(pid) {
-        DB.gallery.add(pid, {
-          imgUrl         : cell.imgUrl,
-          ratio          : cell.ratio,
-          prompt         : cell.prompt,
-          manifest       : cell.manifest || null,
-          date           : cell.date,
-          dims           : cell.dims,
-          model          : cell.model,
-          cost           : cell.cost,
-          generated      : true,
-          moduleSnapshot : cell.moduleSnapshot || null,
-          usedImages     : cell.usedImages     || [],
-        }).then(function (dbId) {
-          cell._dbId = dbId;
-          DB.projects.get(pid).then(function (proj) {
-            if (proj && !proj.thumbnail) {
-              var updates = { thumbnail: cell.imgUrl };
-              if (cell.prompt) {
-                var words = cell.prompt.trim().split(/\s+/).slice(0, 5).join(' ');
-                updates.name = words.length > 36 ? words.slice(0, 36) : words;
-              }
-              DB.projects.update(pid, updates);
+  function saveGalleryCell(cell) {
+    function doSave(pid) {
+      DB.gallery.add(pid, {
+        imgUrl         : cell.imgUrl,
+        ratio          : cell.ratio,
+        prompt         : cell.prompt,
+        manifest       : cell.manifest || null,
+        date           : cell.date,
+        dims           : cell.dims,
+        model          : cell.model,
+        cost           : cell.cost,
+        generated      : true,
+        moduleSnapshot : cell.moduleSnapshot || null,
+        usedImages     : cell.usedImages     || [],
+      }).then(function (dbId) {
+        cell._dbId = dbId;
+        DB.projects.get(pid).then(function (proj) {
+          if (proj && !proj.thumbnail) {
+            var updates = { thumbnail: cell.imgUrl };
+            if (cell.prompt) {
+              var words = cell.prompt.trim().split(/\s+/).slice(0, 5).join(' ');
+              updates.name = words.length > 36 ? words.slice(0, 36) : words;
             }
-          });
+            DB.projects.update(pid, updates);
+          }
         });
-      }
+      });
+    }
+    if (window.activeProjectId) {
+      doSave(window.activeProjectId);
+    } else {
+      DB.projects.create({ name: 'Project' }).then(function (id) {
+        window.activeProjectId = id;
+        doSave(id);
+        autosave();
+      });
+    }
+  }
 
-      if (window.activeProjectId) {
-        saveToProject(window.activeProjectId);
-      } else {
-        DB.projects.create({ name: 'Project' }).then(function (id) {
-          window.activeProjectId = id;
-          saveToProject(id);
-          autosave();
-        });
-      }
+  function hookGallery() {
+    var _origResolve = window.Gallery.resolveLoading.bind(window.Gallery);
+    window.Gallery.resolveLoading = function (loadingId, cell) {
+      _origResolve(loadingId, cell);
+      saveGalleryCell(cell);
+    };
+
+    var _origAdd = window.Gallery.addGenerated.bind(window.Gallery);
+    window.Gallery.addGenerated = function (cell) {
+      _origAdd(cell);
+      saveGalleryCell(cell);
     };
   }
 

@@ -88,7 +88,6 @@ window.Studio = (function () {
     studioCanvas.insertBefore(img, studioCanvas.firstChild);
     overlay.querySelectorAll('.history-thumb').forEach(function (t) { t.classList.remove('active'); });
     thumb.classList.add('active');
-    _latestUrl = url;
 
     var probe = new Image();
     probe.onload = function () {
@@ -128,6 +127,7 @@ window.Studio = (function () {
     thumb.innerHTML = '<img src="' + url + '" alt="">';
     thumb.addEventListener('click', function () { setActiveVersion(url, thumb); });
     setActiveVersion(url, thumb);
+    _latestUrl = url;
   }
 
   function removeLoadingThumb(thumb) {
@@ -469,6 +469,7 @@ window.Studio = (function () {
         disableCrop();
         deactivateTool();
         addToHistory(url);
+        _latestUrl = url;
       });
     });
 
