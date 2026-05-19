@@ -3949,6 +3949,7 @@
   .studio-module-panel .btn-new-layer { width: 100%; flex-shrink: 0; }
 
   </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -4418,7 +4419,7 @@
     </div>
   </div>
 
-  <script>
+  <script type="text/plain" data-disabled="legacy-inline-logic">
     (function () {
       var bar = document.getElementById('promptBar');
       var sw = document.getElementById('promptSwitch');
@@ -5210,6 +5211,9 @@
                     <div class="clr-main img-a"><img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt="image"></div>
                     <div class="clr-edit a"><img src="assets/icon-edit-active.svg" alt="edit"></div>
                     <div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="on"></div>`;
+                var genUuid = crypto.randomUUID();
+                clr.dataset.uuid = genUuid;
+                if (window.DB && window.DB.images) window.DB.images.put(genUuid, dataUrl);
                 clr.dataset.visionDesc = text; // Optimization: bypass future vision scans!
                 saveSlot();
                 syncModuleState();
@@ -5414,6 +5418,9 @@
               <div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="eye"></div>`;
           activeClrMain = null;
           clr.dataset.visionDesc = '';
+          var uuid = crypto.randomUUID();
+          clr.dataset.uuid = uuid;
+          if (window.DB && window.DB.images) window.DB.images.put(uuid, url);
           const owningContainer = clr.closest('.mod-layers');
           if (owningContainer && owningContainer._saveAndSync) owningContainer._saveAndSync();
 
@@ -5425,9 +5432,16 @@
             const section = modLayers ? modLayers.dataset.section : '';
             const clrMain = clr.querySelector('.clr-main');
             if (clrMain) clrMain.classList.add('scanning');
-            var scanPromise = section === 'style'
-              ? window.VisionScan.describeStyle(url)
-              : window.VisionScan.describe(url, layerName, section);
+            var scanPromise = window.DescriptionRegistry
+              ? window.DescriptionRegistry.ensure(url, {
+                  type: section === 'style' ? 'style' : 'module',
+                  layerName: layerName,
+                  section: section,
+                  uuid: uuid
+                })
+              : (section === 'style'
+                  ? window.VisionScan.describeStyle(url)
+                  : window.VisionScan.describe(url, layerName, section));
             scanPromise
               .then(function (desc) {
                 clr.dataset.visionDesc = desc;
@@ -7104,11 +7118,17 @@ const $hudInfo = document.getElementById('hud-info');
   <script src="logic/debug-logger.js"></script>
   <script src="logic/storage.js"></script>
   <script src="logic/vision.js"></script>
+  <script src="logic/registry.js"></script>
   <script src="logic/enhancer.js"></script>
   <script src="logic/prompt-builder.js"></script>
   <script src="logic/settings.js"></script>
   <script src="logic/api.js"></script>
   <script src="logic/workspace.js"></script>
+  <script src="logic/prompt-bar.js"></script>
+  <script src="logic/module-panel.js"></script>
+  <script src="logic/gallery.js"></script>
+  <script src="logic/sequence-bar.js"></script>
+  <script src="logic/refine.js"></script>
   <script src="logic/studio-module.js"></script>
   <script src="logic/studio.js"></script>
 
