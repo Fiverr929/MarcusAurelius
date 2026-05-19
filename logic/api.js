@@ -47,6 +47,34 @@ window.CafeAPI = (function () {
     return checkSection(payload.subject) || checkSection(payload.stage) || checkSection(payload.style);
   }
 
+  function summarizePayloadImages(payload) {
+    var out = [];
+    ['subject', 'stage', 'style'].forEach(function (sectionKey) {
+      var section = payload[sectionKey];
+      if (!section || !section.slots) return;
+      section.slots.forEach(function (slot) {
+        (slot.layers || []).forEach(function (layer) {
+          (layer.children || []).forEach(function (child) {
+            if (child.type !== 'image' || !child.imgUrl) return;
+            out.push({
+              section: sectionKey,
+              slot: slot.label || null,
+              active: slot.active !== false,
+              layer: layer.name || 'LAYER',
+              visible: child.visible !== false && layer.visible !== false,
+              uuid: child.uuid || null,
+              described: !!child.visionDesc,
+              len: child.imgUrl.length,
+              head: child.imgUrl.slice(0, 24),
+              tail: child.imgUrl.slice(-24)
+            });
+          });
+        });
+      });
+    });
+    return out;
+  }
+
   function snapshotHTML(html) {
     if (!html) return html;
     var tmp = document.createElement('div');
@@ -302,6 +330,7 @@ window.CafeAPI = (function () {
 
     _activeRequests++;
     console.log('[CafeAPI] Pipeline start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);
+    console.log('[CafeAPI] Payload image fingerprints:', JSON.stringify(summarizePayloadImages(payload)));
 
     // Catch-up scan — only for On Load. On Generate sends all images inline.
     var catchUpPromise = Promise.resolve();
@@ -324,6 +353,7 @@ window.CafeAPI = (function () {
           });
           // Re-collect with fresh descriptions written to DOM and refState
           payload = window.PromptBuilder.collect();
+          console.log('[CafeAPI] Payload image fingerprints after catch-up:', JSON.stringify(summarizePayloadImages(payload)));
         });
       }
     }
@@ -367,8 +397,22 @@ window.CafeAPI = (function () {
       debugEntry.imagesSent = {
         total:       imageRefs.length,
         refs:        (payload.refs || []).length,
-        layerImages: imageRefs.length - (payload.refs || []).length
+        layerImages: imageRefs.length - (payload.refs || []).length,
+        manifest:    (manifest || []).filter(function (item) { return item.kind === 'image'; }).map(function (item) {
+          return {
+            role: item.role || item.layerName || 'IMAGE',
+            section: item.section || null,
+            slot: item.slot || null,
+            position: item.position || null,
+            uuid: item.uuid || null,
+            described: !!item.desc,
+            len: item.imgUrl ? item.imgUrl.length : 0,
+            head: item.imgUrl ? item.imgUrl.slice(0, 24) : null,
+            tail: item.imgUrl ? item.imgUrl.slice(-24) : null
+          };
+        })
       };
+      console.log('[CafeAPI] Generation manifest fingerprints:', JSON.stringify(debugEntry.imagesSent.manifest));
 
       var tGen = Date.now();
       console.log('[CafeAPI] Generation start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);

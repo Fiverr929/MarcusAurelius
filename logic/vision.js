@@ -61,71 +61,63 @@ window.VisionScan = (function () {
     return (window.CafeSettings && window.CafeSettings.getScanTimeout ? window.CafeSettings.getScanTimeout() : 20) * 1000;
   }
 
-  var _cache = {};    // permanent per-session: key → description string
-  var _inFlight = {}; // concurrent dedup: key → in-flight Promise
-
-  function deduped(key, factory) {
-    if (_cache[key]) {
-      console.log('[VisionScan] cache hit (permanent) →', key.slice(0, 60));
-      return Promise.resolve(_cache[key]);
-    }
-    if (_inFlight[key]) {
-      console.log('[VisionScan] cache hit (in-flight) →', key.slice(0, 60));
-      return _inFlight[key];
-    }
-    var p = factory().then(
-      function (r) { _cache[key] = r; delete _inFlight[key]; return r; },
-      function (e) { delete _inFlight[key]; throw e; }
-    );
-    _inFlight[key] = p;
-    return p;
-  }
-
   function callGemini(apiKey, prompt, base64, mimeType) {
     var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL + ':generateContent?key=' + apiKey;
-
-    var controller = new AbortController();
-    var timer = setTimeout(function () { controller.abort(); }, getTimeoutMs());
     var t0 = Date.now();
     console.log('[VisionScan] → POST', MODEL, '| mime:', mimeType, '| prompt:', prompt.slice(0, 80) + '...');
 
-    return fetch(url, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user', parts: [
-            { text: prompt },
-            { inline_data: { mime_type: mimeType, data: base64 } }
-          ]
-        }],
-        generationConfig: { maxOutputTokens: 1024 }
+    function runOne(attempt) {
+      var controller = new AbortController();
+      var timer = setTimeout(function () { controller.abort(); }, getTimeoutMs());
+
+      return fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user', parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: base64 } }
+            ]
+          }],
+          generationConfig: { maxOutputTokens: 1024 }
+        })
       })
-    })
-      .then(function (res) {
-        clearTimeout(timer);
-        return res.json().then(function (data) {
-          if (!res.ok) throw new Error('[VisionScan] ' + res.status + ': ' + JSON.stringify(data));
-          return data;
+        .then(function (res) {
+          clearTimeout(timer);
+          return res.json().then(function (data) {
+            if (!res.ok) {
+              if (res.status === 429 && attempt < 2) {
+                var wait = (attempt + 1) * 5000;
+                console.warn('[VisionScan] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
+                return new Promise(function (resolve) { setTimeout(resolve, wait); })
+                  .then(function () { return runOne(attempt + 1); });
+              }
+              throw new Error('[VisionScan] ' + res.status + ': ' + JSON.stringify(data));
+            }
+            return data;
+          });
+        })
+        .then(function (data) {
+          var text = data.candidates &&
+            data.candidates[0] &&
+            data.candidates[0].content &&
+            data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0] &&
+            data.candidates[0].content.parts[0].text;
+          if (!text) throw new Error('[VisionScan] Empty response');
+          console.log('[VisionScan] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | chars:', text.trim().length);
+          return text.trim();
+        })
+        .catch(function (err) {
+          clearTimeout(timer);
+          console.warn('[VisionScan] ✗', MODEL, '| ' + (Date.now() - t0) + 'ms |', err.message);
+          throw err;
         });
-      })
-      .then(function (data) {
-        var text = data.candidates &&
-          data.candidates[0] &&
-          data.candidates[0].content &&
-          data.candidates[0].content.parts &&
-          data.candidates[0].content.parts[0] &&
-          data.candidates[0].content.parts[0].text;
-        if (!text) throw new Error('[VisionScan] Empty response');
-        console.log('[VisionScan] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | chars:', text.trim().length);
-        return text.trim();
-      })
-      .catch(function (err) {
-        clearTimeout(timer);
-        console.warn('[VisionScan] ✗', MODEL, '| ' + (Date.now() - t0) + 'ms |', err.message);
-        throw err;
-      });
+    }
+
+    return runOne(0);
   }
 
   function parseDataUrl(dataUrl) {
@@ -143,11 +135,8 @@ window.VisionScan = (function () {
     }
     var parsed = parseDataUrl(base64DataUrl);
     if (!parsed.base64) return Promise.reject(new Error('[VisionScan] Invalid image data'));
-    var key = 'describe:' + parsed.base64.slice(0, 512) + ':' + section + ':' + layerName;
     console.log('[VisionScan] describe →', section, '/', layerName);
-    return deduped(key, function () {
-      return callGemini(apiKey, buildPrompt(layerName, section), parsed.base64, parsed.mimeType);
-    })
+    return callGemini(apiKey, buildPrompt(layerName, section), parsed.base64, parsed.mimeType)
       .then(function (desc) { console.log('[VisionScan] describe ✓', section, '/', layerName); return desc; })
       .catch(function (err) { console.warn('[VisionScan] describe ✗', section, '/', layerName, '—', err.message); throw err; });
   }
@@ -160,11 +149,8 @@ window.VisionScan = (function () {
     }
     var parsed = parseDataUrl(base64DataUrl);
     if (!parsed.base64) return Promise.reject(new Error('[VisionScan] Invalid image data'));
-    var key = 'style:' + parsed.base64.slice(0, 512);
     console.log('[VisionScan] describeStyle →');
-    return deduped(key, function () {
-      return callGemini(apiKey, STYLE_PROMPT + PROSE + PRECISE_SUFFIX, parsed.base64, parsed.mimeType);
-    })
+    return callGemini(apiKey, STYLE_PROMPT + PROSE + PRECISE_SUFFIX, parsed.base64, parsed.mimeType)
       .then(function (desc) { console.log('[VisionScan] describeStyle ✓'); return desc; })
       .catch(function (err) { console.warn('[VisionScan] describeStyle ✗ —', err.message); throw err; });
   }
@@ -177,23 +163,12 @@ window.VisionScan = (function () {
     }
     var parsed = parseDataUrl(base64DataUrl);
     if (!parsed.base64) return Promise.reject(new Error('[VisionScan] Invalid image data'));
-    var key = 'ref:' + parsed.base64.slice(0, 512);
     console.log('[VisionScan] describeRef →');
-    return deduped(key, function () {
-      return callGemini(apiKey, REF_PROMPT + PROSE + PRECISE_SUFFIX, parsed.base64, parsed.mimeType);
-    })
+    return callGemini(apiKey, REF_PROMPT + PROSE + PRECISE_SUFFIX, parsed.base64, parsed.mimeType)
       .then(function (desc) { console.log('[VisionScan] describeRef ✓'); return desc; })
       .catch(function (err) { console.warn('[VisionScan] describeRef ✗ —', err.message); throw err; });
   }
 
-  function clearCache() {
-    Object.keys(_cache).forEach(function (k) { delete _cache[k]; });
-    Object.keys(_inFlight).forEach(function (k) { delete _inFlight[k]; });
-    console.log('[VisionScan] Cache cleared');
-  }
-
-  window._visionCache = _cache;
-
-  return { describe: describe, describeStyle: describeStyle, describeRef: describeRef, clearCache: clearCache };
+  return { describe: describe, describeStyle: describeStyle, describeRef: describeRef };
 
 })();

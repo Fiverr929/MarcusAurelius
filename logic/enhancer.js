@@ -318,8 +318,27 @@ window.PromptEnhancer = (function () {
 
   function cacheKey(userMessage, imageItems) {
     return userMessage + '||' + imageItems.map(function (i) {
-      return i.uuid || ('blob:' + i.imgUrl.length);
+      if (i.uuid) return 'uuid:' + i.uuid;
+      var src = i.imgUrl || '';
+      // Length alone collides easily for replaced module images. Sample both ends
+      // so a changed data URL invalidates the enhancer cache without hashing MBs.
+      return 'data:' + src.length + ':' + src.slice(0, 96) + ':' + src.slice(-96);
     }).join('|');
+  }
+
+  function imageFingerprint(item) {
+    var src = item.imgUrl || '';
+    return {
+      role: item.role || item.layerName || 'IMAGE',
+      section: item.section || null,
+      slot: item.slot || null,
+      position: item.position || null,
+      uuid: item.uuid || null,
+      described: !!item.desc,
+      len: src.length,
+      head: src.slice(0, 24),
+      tail: src.slice(-24)
+    };
   }
 
   function enhance(payload) {
@@ -335,24 +354,31 @@ window.PromptEnhancer = (function () {
 
     var imageItems = imageContext.filter(function (i) { return i.kind === 'image' && i.imgUrl; });
 
-    var keepDescriptions = window.CafeSettings.getKeepDescriptions();
-    if (keepDescriptions) {
-      var key = cacheKey(userMessage, imageItems);
-      if (_cache[key]) {
-        console.log('[PromptEnhancer] ✓ cache hit — skipping Gemini call');
-        return Promise.resolve(_cache[key]);
-      }
-    }
-
     var inlineItems = imageItems.filter(function (i) { return !i.desc; });
     inlineItems.sort(function (a, b) { return a.position - b.position; });
+
+    // KeepDescriptions is a vision-description cache. Do not cache enhancer
+    // outputs when live inline images are present, because the brief depends on
+    // Gemini re-reading those pixels and stale briefs produce wrong generations.
+    var canCacheEnhancer = window.CafeSettings.getKeepDescriptions() && inlineItems.length === 0;
+    var activeCacheKey = canCacheEnhancer ? cacheKey(userMessage, imageItems) : null;
+    console.log('[PromptEnhancer] image fingerprints:', JSON.stringify(imageItems.map(imageFingerprint)));
+    if (canCacheEnhancer) {
+      console.log('[PromptEnhancer] cache key:', activeCacheKey);
+      if (_cache[activeCacheKey]) {
+        console.log('[PromptEnhancer] ✓ cache hit — skipping Gemini call');
+        return Promise.resolve(_cache[activeCacheKey]);
+      }
+    } else {
+      console.log('[PromptEnhancer] cache disabled for this run — inline image pixels must be re-read');
+    }
 
     var parts = [{ text: userMessage }];
     inlineItems.forEach(function (item) {
       parts.push({ inline_data: { mime_type: mimeFromDataUrl(item.imgUrl), data: dataUrlToBase64(item.imgUrl) } });
     });
 
-    console.log('[PromptEnhancer] → POST', MODEL, '| images inline:', inlineItems.length, '| described:', imageItems.length - inlineItems.length, '| prompt chars:', userMessage.length);
+    console.log('[PromptEnhancer] → POST', MODEL, '| images inline:', inlineItems.length, '| described:', imageItems.length - inlineItems.length, '| enhancer cache:', canCacheEnhancer ? 'on' : 'off', '| prompt chars:', userMessage.length);
     console.log('[PromptEnhancer] user message:\n' + userMessage);
 
     function runOne(attempt) {
@@ -397,7 +423,10 @@ window.PromptEnhancer = (function () {
           if (!text) throw new Error('[PromptEnhancer] Empty response');
           console.log('[PromptEnhancer] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | brief:', text.trim().slice(0, 120) + '...');
           var result = { prompt: text.trim(), manifest: imageContext, enhancerInput: userMessage, directorPlan: buildDirectorPlan(userIntent, imageContext) };
-          if (window.CafeSettings.getKeepDescriptions()) _cache[cacheKey(userMessage, imageItems)] = result;
+          if (canCacheEnhancer) {
+            _cache[activeCacheKey] = result;
+            console.log('[PromptEnhancer] cached enhancer output for key:', activeCacheKey);
+          }
           return result;
         });
     }
