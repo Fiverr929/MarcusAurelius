@@ -455,7 +455,14 @@ function downloadCell(cell) {
 function deleteCell(id) {
   var idx = cellIndexById(id);
   if (idx === -1) return;
-  CELLS.splice(idx, 1);
+  var cell = CELLS.splice(idx, 1)[0];
+  if (cell) {
+    var dbId = cell._dbId !== undefined ? cell._dbId : cell.id;
+    if (cell._imgUuid && window.DB) {
+      window.DB.images.delete(cell._imgUuid);
+    }
+    if (window.DB && window.DB.gallery) window.DB.gallery.delete(dbId);
+  }
   rebuildIndexMap();
   buildGrid();
   window.Workspace.autosave();
@@ -464,7 +471,7 @@ function deleteCell(id) {
 function duplicateCell(id) {
   var cell = CELLS.find(function (c) { return c.id === id; });
   if (!cell) return;
-  var copy = Object.assign({}, cell, { id: Date.now(), uuid: crypto.randomUUID() });
+  var copy = Object.assign({}, cell, { id: Date.now(), uuid: crypto.randomUUID(), _imgUuid: null, _dbId: null });
   CELLS.unshift(copy);
   rebuildIndexMap();
   buildGrid();
@@ -499,9 +506,20 @@ document.getElementById('ddrop-duplicate').addEventListener('click', function ()
 });
 
 document.getElementById('ddrop-delete').addEventListener('click', function () {
-  selectedIds.forEach(function (id) {
-    var idx = cellIndexById(id);
-    if (idx !== -1) CELLS.splice(idx, 1);
+  var toDelete = [];
+  CELLS = CELLS.filter(function (cell) {
+    if (selectedIds.has(cell.id)) {
+      toDelete.push(cell);
+      return false;
+    }
+    return true;
+  });
+  toDelete.forEach(function (cell) {
+    var dbId = cell._dbId !== undefined ? cell._dbId : cell.id;
+    if (cell._imgUuid && window.DB) {
+      window.DB.images.delete(cell._imgUuid);
+    }
+    if (window.DB && window.DB.gallery) window.DB.gallery.delete(dbId);
   });
   rebuildIndexMap();
   selectedIds.clear();
@@ -529,7 +547,10 @@ document.getElementById('hud-drop-ref').addEventListener('click', function () {
   if (!cell || !cell.imgUrl) return;
   var mode = document.getElementById('promptBar').dataset.state;
   if (window.refState[mode].length < 5) {
-    window.refState[mode].push({ url: cell.imgUrl, desc: null });
+    var refUuid = crypto.randomUUID();
+    var pid = window.activeProjectId;
+    if (window.DB) window.DB.images.put(refUuid, cell.imgUrl, pid);
+    window.refState[mode].push({ url: cell.imgUrl, desc: null, uuid: refUuid });
     renderChips();
   }
   closeDropdown($hudThreedotDrop);

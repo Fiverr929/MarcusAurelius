@@ -365,8 +365,9 @@ window.Studio = (function () {
     }
 
     var moduleImages = window.StudioModule.collectImages();
-    moduleImages.forEach(function (imgUrl) {
-      parts.push({ inline_data: { mime_type: mimeFrom(imgUrl), data: base64From(imgUrl) } });
+    moduleImages.forEach(function (ref) {
+      parts.push({ text: 'Reference — ' + ref.name + ':' });
+      parts.push({ inline_data: { mime_type: mimeFrom(ref.url), data: base64From(ref.url) } });
     });
 
     var generationConfig = {
@@ -543,14 +544,28 @@ window.Studio = (function () {
     promptInput.value = '';
 
     if (sameImage && _session.history.length > 0) {
-      // Restore history silently (oldest→newest so newest ends up on top)
+      // In-memory restore (same session, no page refresh)
       for (var i = _session.history.length - 1; i >= 0; i--) {
         addHistoryThumb(_session.history[i]);
       }
       var top = historyFrames.querySelector('.history-thumb');
       if (top) setActiveVersion(top.querySelector('img').src, top);
     } else {
+      // Show base image immediately, then async-replace with DB history if available
       addToHistory(config.imgUrl);
+      if (config.uuid && window.activeProjectId && window.DB) {
+        window.DB.studioState.get(window.activeProjectId).then(function (saved) {
+          if (saved && saved.uuid === config.uuid && saved.history && saved.history.length > 0) {
+            _session.history = saved.history;
+            clearHistory();
+            for (var j = _session.history.length - 1; j >= 0; j--) {
+              addHistoryThumb(_session.history[j]);
+            }
+            var top2 = historyFrames.querySelector('.history-thumb');
+            if (top2) setActiveVersion(top2.querySelector('img').src, top2);
+          }
+        }).catch(function () {});
+      }
     }
 
     overlay.classList.add('open');
@@ -564,6 +579,10 @@ window.Studio = (function () {
       var img = t.querySelector('img');
       if (img && img.src) _session.history.push(img.src);
     });
+    var pid = window.activeProjectId;
+    if (pid && window.DB && _session.uuid && _session.history.length > 0) {
+      window.DB.studioState.save(pid, { uuid: _session.uuid, history: _session.history });
+    }
     overlay.classList.remove('open');
     document.body.style.overflow = '';
     deactivateTool();

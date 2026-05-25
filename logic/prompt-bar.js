@@ -240,6 +240,8 @@ function renderChips() {
   row.querySelectorAll('.ref-chip').forEach(function (chip) {
     chip.querySelector('.ref-chip-remove').addEventListener('click', function () {
       var idx = parseInt(chip.dataset.index, 10);
+      var ref = window.refState[mode][idx];
+      if (ref && ref.uuid && window.DB) window.DB.images.delete(ref.uuid);
       window.refState[mode].splice(idx, 1);
       renderChips();
       window.Workspace.autosave();
@@ -264,8 +266,11 @@ document.getElementById('refFileInput').addEventListener('change', function (e) 
     reader.onload = function (evt) {
       if (window.refState[mode].length < 5) {
         var refUrl = evt.target.result;
+        var uuid = crypto.randomUUID();
+        var pid = window.activeProjectId;
+        if (window.DB) window.DB.images.put(uuid, refUrl, pid);
         var chipIdx = window.refState[mode].length;
-        window.refState[mode].push({ url: refUrl, desc: null });
+        window.refState[mode].push({ url: refUrl, desc: null, uuid: uuid });
         renderChips();
         window.Workspace.autosave();
 
@@ -343,6 +348,7 @@ window.ProjectsPanel = (function () {
       if (!name) return;
       DB.projects.create({ name: name.trim() }).then(function (id) {
         window.Workspace.loadProject(id);
+        modal.classList.remove('open');
         loadAndRender();
       });
     });
@@ -373,25 +379,35 @@ window.ProjectsPanel = (function () {
     }).join('');
 
     list.querySelectorAll('.pm-item').forEach(function (el) {
-      var clicks = 0, timer = null;
       el.addEventListener('click', function (e) {
         if (e.target.classList.contains('pm-delete')) return;
-        clicks++;
-        if (clicks === 1) {
-          timer = setTimeout(function () { clicks = 0; }, 300);
-        } else {
-          clearTimeout(timer); clicks = 0;
-          var id = parseInt(el.dataset.id);
-          window.Workspace.loadProject(id);
-          modal.classList.remove('open');
-        }
+        var id = parseInt(el.dataset.id);
+        window.Workspace.loadProject(id);
+        modal.classList.remove('open');
       });
     });
 
     list.querySelectorAll('.pm-delete').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
-        DB.projects.delete(parseInt(btn.dataset.id)).then(loadAndRender);
+        var idToDelete = parseInt(btn.dataset.id);
+        DB.projects.delete(idToDelete).then(function() {
+          if (idToDelete === window.activeProjectId) {
+            DB.projects.getAll().then(function(projects) {
+              if (projects.length) {
+                projects.sort(function (a, b) { return b.date_modified > a.date_modified ? 1 : -1; });
+                window.Workspace.loadProject(projects[0].id, true);
+              } else {
+                DB.projects.create({ name: 'Project' }).then(function (id) {
+                  window.Workspace.loadProject(id, true);
+                });
+              }
+              loadAndRender();
+            });
+          } else {
+            loadAndRender();
+          }
+        });
       });
     });
   }

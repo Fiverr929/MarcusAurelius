@@ -6,7 +6,6 @@
 window.DB = (function () {
 
   var DB_NAME    = 'cafehtml-db';
-  var DB_VERSION = 2;
   var _db        = null;
 
   var S = {
@@ -17,61 +16,88 @@ window.DB = (function () {
     GALLERY     : 'gallery',
     SEQUENCE    : 'sequence',
     IMAGES      : 'images',
-    DESCRIPTIONS: 'descriptions'
+    DESCRIPTIONS: 'descriptions',
+    STUDIO_STATE: 'studio-state'
   };
 
   // ── Open ─────────────────────────────────────────────────────────────────────
 
   var ready = new Promise(function (resolve, reject) {
-    var req = indexedDB.open(DB_NAME, DB_VERSION);
-
-    req.onupgradeneeded = function (e) {
+    var reqCurrent = indexedDB.open(DB_NAME);
+    reqCurrent.onsuccess = function (e) {
       var db = e.target.result;
+      var currentVersion = db.version || 1;
+      var needsUpgrade = !db.objectStoreNames.contains(S.PROJECTS) ||
+                         !db.objectStoreNames.contains(S.SETTINGS) ||
+                         !db.objectStoreNames.contains(S.MODULE_STATE) ||
+                         !db.objectStoreNames.contains(S.STUDIO_STATE) ||
+                         !db.objectStoreNames.contains(S.REFERENCES) ||
+                         !db.objectStoreNames.contains(S.GALLERY) ||
+                         !db.objectStoreNames.contains(S.SEQUENCE) ||
+                         !db.objectStoreNames.contains(S.IMAGES) ||
+                         !db.objectStoreNames.contains(S.DESCRIPTIONS);
+      db.close();
 
-      if (!db.objectStoreNames.contains(S.PROJECTS)) {
-        var ps = db.createObjectStore(S.PROJECTS, { keyPath: 'id', autoIncrement: true });
-        ps.createIndex('by_modified', 'date_modified');
-      }
+      var targetVersion = needsUpgrade ? currentVersion + 1 : currentVersion;
 
-      if (!db.objectStoreNames.contains(S.SETTINGS)) {
-        db.createObjectStore(S.SETTINGS, { keyPath: 'project_id' });
-      }
+      var req = indexedDB.open(DB_NAME, targetVersion);
+      req.onupgradeneeded = function (e2) {
+        var db2 = e2.target.result;
 
-      if (!db.objectStoreNames.contains(S.MODULE_STATE)) {
-        db.createObjectStore(S.MODULE_STATE, { keyPath: 'project_id' });
-      }
+        if (!db2.objectStoreNames.contains(S.PROJECTS)) {
+          var ps = db2.createObjectStore(S.PROJECTS, { keyPath: 'id', autoIncrement: true });
+          ps.createIndex('by_modified', 'date_modified');
+        }
 
-      if (!db.objectStoreNames.contains(S.REFERENCES)) {
-        var rs = db.createObjectStore(S.REFERENCES, { keyPath: 'id', autoIncrement: true });
-        rs.createIndex('by_project', 'project_id');
-      }
+        if (!db2.objectStoreNames.contains(S.SETTINGS)) {
+          db2.createObjectStore(S.SETTINGS, { keyPath: 'project_id' });
+        }
 
-      if (!db.objectStoreNames.contains(S.GALLERY)) {
-        var gs = db.createObjectStore(S.GALLERY, { keyPath: 'id', autoIncrement: true });
-        gs.createIndex('by_project', 'project_id');
-      }
+        if (!db2.objectStoreNames.contains(S.MODULE_STATE)) {
+          db2.createObjectStore(S.MODULE_STATE, { keyPath: 'project_id' });
+        }
 
-      if (!db.objectStoreNames.contains(S.SEQUENCE)) {
-        var sq = db.createObjectStore(S.SEQUENCE, { keyPath: 'id', autoIncrement: true });
-        sq.createIndex('by_project', 'project_id');
-        sq.createIndex('by_order',   'order');
-      }
+        if (!db2.objectStoreNames.contains(S.STUDIO_STATE)) {
+          db2.createObjectStore(S.STUDIO_STATE, { keyPath: 'project_id' });
+        }
 
-      if (!db.objectStoreNames.contains(S.IMAGES)) {
-        db.createObjectStore(S.IMAGES, { keyPath: 'uuid' });
-      }
-      if (!db.objectStoreNames.contains(S.DESCRIPTIONS)) {
-        db.createObjectStore(S.DESCRIPTIONS, { keyPath: 'uuid' });
-      }
+        if (!db2.objectStoreNames.contains(S.REFERENCES)) {
+          var rs = db2.createObjectStore(S.REFERENCES, { keyPath: 'id', autoIncrement: true });
+          rs.createIndex('by_project', 'project_id');
+        }
+
+        if (!db2.objectStoreNames.contains(S.GALLERY)) {
+          var gs = db2.createObjectStore(S.GALLERY, { keyPath: 'id', autoIncrement: true });
+          gs.createIndex('by_project', 'project_id');
+        }
+
+        if (!db2.objectStoreNames.contains(S.SEQUENCE)) {
+          var sq = db2.createObjectStore(S.SEQUENCE, { keyPath: 'id', autoIncrement: true });
+          sq.createIndex('by_project', 'project_id');
+          sq.createIndex('by_order',   'order');
+        }
+
+        if (!db2.objectStoreNames.contains(S.IMAGES)) {
+          db2.createObjectStore(S.IMAGES, { keyPath: 'uuid' });
+        }
+        if (!db2.objectStoreNames.contains(S.DESCRIPTIONS)) {
+          db2.createObjectStore(S.DESCRIPTIONS, { keyPath: 'uuid' });
+        }
+      };
+
+      req.onsuccess = function (e2) {
+        _db = e2.target.result;
+        resolve(_db);
+      };
+
+      req.onerror = function (e2) {
+        console.error('[DB] open target failed:', e2.target.error);
+        reject(e2.target.error);
+      };
     };
 
-    req.onsuccess = function (e) {
-      _db = e.target.result;
-      resolve(_db);
-    };
-
-    req.onerror = function (e) {
-      console.error('[DB] open failed:', e.target.error);
+    reqCurrent.onerror = function (e) {
+      console.error('[DB] open current failed:', e.target.error);
       reject(e.target.error);
     };
   });
@@ -152,15 +178,18 @@ window.DB = (function () {
     // Cascade — removes all data across every store for this project.
     delete: function (id) {
       return ready.then(function () {
-        var allStores = [S.PROJECTS, S.SETTINGS, S.MODULE_STATE, S.REFERENCES, S.GALLERY, S.SEQUENCE];
+        var allStores = [S.PROJECTS, S.SETTINGS, S.MODULE_STATE, S.STUDIO_STATE, S.REFERENCES, S.GALLERY, S.SEQUENCE];
         var t = tx(allStores, 'readwrite');
         return Promise.all([
           wrap(t.objectStore(S.PROJECTS).delete(id)),
           wrap(t.objectStore(S.SETTINGS).delete(id)),
           wrap(t.objectStore(S.MODULE_STATE).delete(id)),
+          wrap(t.objectStore(S.STUDIO_STATE).delete(id)),
           deleteByIndex(t, S.REFERENCES, id),
           deleteByIndex(t, S.GALLERY,    id),
-          deleteByIndex(t, S.SEQUENCE,   id)
+          deleteByIndex(t, S.SEQUENCE,   id),
+          images.deleteByProject(id),
+          descriptions.deleteByProject(id)
         ]);
       });
     }
@@ -200,6 +229,25 @@ window.DB = (function () {
       return ready.then(function () {
         return wrap(
           tx(S.MODULE_STATE, 'readwrite').objectStore(S.MODULE_STATE)
+            .put(Object.assign({}, data, { project_id: projectId }))
+        );
+      });
+    }
+  };
+
+  // ── Studio State ──────────────────────────────────────────────────────────────
+
+  var studioState = {
+    get: function (projectId) {
+      return ready.then(function () {
+        return wrap(tx(S.STUDIO_STATE).objectStore(S.STUDIO_STATE).get(projectId));
+      });
+    },
+
+    save: function (projectId, data) {
+      return ready.then(function () {
+        return wrap(
+          tx(S.STUDIO_STATE, 'readwrite').objectStore(S.STUDIO_STATE)
             .put(Object.assign({}, data, { project_id: projectId }))
         );
       });
@@ -329,12 +377,48 @@ window.DB = (function () {
         return wrap(tx(S.IMAGES).objectStore(S.IMAGES).get(uuid));
       });
     },
-    put: function (uuid, dataUrl) {
+    put: function (uuid, dataUrl, projectId) {
       return ready.then(function () {
         return wrap(
           tx(S.IMAGES, 'readwrite').objectStore(S.IMAGES)
-            .put({ uuid: uuid, dataUrl: dataUrl, createdAt: new Date().toISOString() })
+            .put({ uuid: uuid, dataUrl: dataUrl, project_id: projectId || null, createdAt: new Date().toISOString() })
         );
+      });
+    },
+    delete: function (uuid) {
+      return ready.then(function () {
+        return wrap(tx(S.IMAGES, 'readwrite').objectStore(S.IMAGES).delete(uuid));
+      });
+    },
+    deleteByProject: function (projectId) {
+      return ready.then(function () {
+        var store = tx(S.IMAGES, 'readwrite').objectStore(S.IMAGES);
+        return new Promise(function (resolve, reject) {
+          var req = store.openCursor();
+          req.onsuccess = function (e) {
+            var cursor = e.target.result;
+            if (!cursor) { resolve(); return; }
+            if (cursor.value.project_id === projectId) cursor.delete();
+            cursor.continue();
+          };
+          req.onerror = function () { reject(req.error); };
+        });
+      });
+    },
+    runOrphanCleanup: function () {
+      return ready.then(function () {
+        var store = tx(S.IMAGES, 'readwrite').objectStore(S.IMAGES);
+        return new Promise(function (resolve, reject) {
+          var count = 0;
+          var req = store.openCursor();
+          req.onsuccess = function (e) {
+            var cursor = e.target.result;
+            if (!cursor) { console.log('[DB] orphan cleanup: removed ' + count + ' records'); resolve(); return; }
+            if (!cursor.value.project_id) { cursor.delete(); count++; }
+            cursor.continue();
+          };
+          req.onerror = function () { reject(req.error); };
+        });
       });
     }
   };
@@ -352,6 +436,21 @@ window.DB = (function () {
         var record = Object.assign({ uuid: uuid, desc: desc, createdAt: new Date().toISOString() }, context || {});
         return wrap(tx(S.DESCRIPTIONS, 'readwrite').objectStore(S.DESCRIPTIONS).put(record));
       });
+    },
+    deleteByProject: function (projectId) {
+      return ready.then(function () {
+        var store = tx(S.DESCRIPTIONS, 'readwrite').objectStore(S.DESCRIPTIONS);
+        return new Promise(function (resolve, reject) {
+          var req = store.openCursor();
+          req.onsuccess = function (e) {
+            var cursor = e.target.result;
+            if (!cursor) { resolve(); return; }
+            if (cursor.value.project_id === projectId) cursor.delete();
+            cursor.continue();
+          };
+          req.onerror = function () { reject(req.error); };
+        });
+      });
     }
   };
 
@@ -362,6 +461,7 @@ window.DB = (function () {
     projects    : projects,
     settings    : settings,
     moduleState : moduleState,
+    studioState : studioState,
     references  : references,
     gallery     : gallery,
     sequence    : sequence,

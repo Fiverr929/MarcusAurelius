@@ -296,7 +296,7 @@
       var name = e.target.closest('.plr-name');
       if (name) {
         name.contentEditable = 'true';
-        name.style.borderColor = '#ea5823';
+        if (!name.closest('.studio-module-panel')) name.style.borderColor = '#ea5823';
         name.style.outline = 'none';
         name.focus();
         var range = document.createRange();
@@ -376,6 +376,8 @@
         if (!text) return;
         var clr = compose._originalClr;
         clr.dataset.savedPrompt = text;
+        var oldUuid = clr.dataset.uuid;
+        if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
         clr.innerHTML =
               '<div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>' +
               '<div class="clr-t orange">T</div>' +
@@ -402,6 +404,8 @@
 
         if (window.CafeAPI && window.CafeAPI.generateLayerImage) {
           window.CafeAPI.generateLayerImage(text).then(function (dataUrl) {
+            var oldUuid = clr.dataset.uuid;
+            if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
             clr.innerHTML =
                 '<div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>' +
                 '<div class="clr-main img-a"><img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover;" alt="image"></div>' +
@@ -409,7 +413,7 @@
                 '<div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="on"></div>';
             var genUuid = crypto.randomUUID();
             clr.dataset.uuid = genUuid;
-            DB.images.put(genUuid, dataUrl);
+            DB.images.put(genUuid, dataUrl, window.activeProjectId);
             clr.dataset.visionDesc = text;
             saveSlot();
             syncModuleState();
@@ -466,8 +470,12 @@
         var group = clr.closest('.layer-group');
         var clrs = children.querySelectorAll('.clr');
         if (clrs.length > 1) {
+          var oldUuid = clr.dataset.uuid;
+          if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
           clr.remove();
         } else {
+          var oldUuid = clr.dataset.uuid;
+          if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
           var temp = document.createElement('div');
           temp.innerHTML = makeClrHTML();
           clr.replaceWith(temp.firstElementChild);
@@ -509,9 +517,11 @@
             if (!refinedUrl) return;
             img.src = refinedUrl;
             clr.dataset.visionDesc = '';
+            var oldUuid = clr.dataset.uuid;
+            if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
             var newUuid = crypto.randomUUID();
             clr.dataset.uuid = newUuid;
-            DB.images.put(newUuid, refinedUrl);
+            DB.images.put(newUuid, refinedUrl, window.activeProjectId);
             saveSlot();
             syncModuleState();
           }
@@ -595,6 +605,8 @@
     var reader = new FileReader();
     reader.onload = function (evt) {
       var url = evt.target.result;
+      var oldUuid = clr.dataset.uuid;
+      if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
       clr.innerHTML =
           '<div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>' +
           '<div class="clr-main img-a"><img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" alt="image"></div>' +
@@ -604,7 +616,7 @@
       clr.dataset.visionDesc = '';
       var uuid = crypto.randomUUID();
       clr.dataset.uuid = uuid;
-      DB.images.put(uuid, url);
+      DB.images.put(uuid, url, window.activeProjectId);
       var owningContainer = clr.closest('.mod-layers');
 
       if (window.CafeSettings.getScanTiming() === 'load') {
