@@ -4131,6 +4131,11 @@ textarea:focus-visible,
 .sm-ref-card-name:focus,
 .sm-ref-card-name:focus-visible { outline: none; }
 
+.studio-module-panel .plr-name:focus {
+  outline: none;
+  border-bottom: 1px solid #c7c7c7;
+}
+
 .title-bar,
 #gallery-controls,
 .module-panel,

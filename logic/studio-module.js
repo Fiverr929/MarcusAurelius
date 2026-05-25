@@ -187,6 +187,28 @@ window.StudioModuleState = { layers: null };
           var container = clr.closest('.mod-layers');
           if (container && container._saveAndSync) container._saveAndSync();
           activeClrMain = null;
+
+          // Auto-prompt rename so user can name the group immediately
+          var group = clr.closest('.layer-group');
+          var nameEl = group && group.querySelector('.plr-name');
+          if (nameEl) {
+            nameEl.contentEditable = 'true';
+            nameEl.focus();
+            var range = document.createRange();
+            range.selectNodeContents(nameEl);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            nameEl.addEventListener('keydown', function onKey(e) {
+              if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+            });
+            nameEl.addEventListener('blur', function onBlur() {
+              nameEl.removeEventListener('blur', onBlur);
+              nameEl.contentEditable = 'false';
+              var val = nameEl.textContent.trim().toUpperCase();
+              nameEl.textContent = val || 'REFERENCE';
+            }, { once: true });
+          }
         }
       };
       reader.readAsDataURL(file);
