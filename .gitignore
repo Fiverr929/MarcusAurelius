@@ -4,6 +4,8 @@ cafe-debug-*.json
 
 # Docs (private notes, logs, chats)
 docs/
+!docs/log.md
+!docs/CafeHTML.md
 
 # OS files
 .DS_Store
