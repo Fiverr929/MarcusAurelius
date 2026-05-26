@@ -187,15 +187,23 @@ window.CafeAPI = (function () {
       for (var i = 0; i < n; i++) {
         calls.push(callGoogleAPI(modelId, apiKey, parts, generationConfig, opts));
       }
-      return Promise.all(calls);
+      // allSettled — a failed variation must not discard the ones that succeeded.
+      return Promise.allSettled(calls);
     }
 
-    return runParallel(numImages).then(function (results) {
+    return runParallel(numImages).then(function (settled) {
       var predictions = [];
       var blockReason = null;
       var finishReasons = [];
+      var firstError = null;
 
-      results.forEach(function (result) {
+      settled.forEach(function (outcome) {
+        if (outcome.status === 'rejected') {
+          if (!firstError) firstError = outcome.reason;
+          console.warn('[CafeAPI] Variation call failed:', (outcome.reason && outcome.reason.message) || outcome.reason);
+          return;
+        }
+        var result = outcome.value;
         if (result.promptFeedback && result.promptFeedback.blockReason) {
           blockReason = result.promptFeedback.blockReason;
           console.warn('[CafeAPI] Prompt blocked:', blockReason, result.promptFeedback);
@@ -220,6 +228,9 @@ window.CafeAPI = (function () {
       });
 
       if (!predictions.length) {
+        // No images at all — surface the real network/API error if every call failed,
+        // otherwise the block/finish reason from the responses.
+        if (firstError) throw firstError;
         var reason = blockReason
           ? 'Prompt blocked — ' + blockReason
           : finishReasons.length
