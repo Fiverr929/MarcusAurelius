@@ -304,9 +304,11 @@ window.Workspace = (function () {
       var sceneRefs = refs.filter(function (r) { return r.mode === 'SCENE'; });
 
       Promise.all(frameRefs.map(resolveRef)).then(function (resolved) {
+        resolved.forEach(function (r) { if (!r.url) console.warn('[Workspace] ref image missing from DB, dropping:', r.uuid); });
         window.refState.FRAME = resolved.filter(function (r) { return r.url; });
         return Promise.all(sceneRefs.map(resolveRef));
       }).then(function (resolved) {
+        resolved.forEach(function (r) { if (!r.url) console.warn('[Workspace] ref image missing from DB, dropping:', r.uuid); });
         window.refState.SCENE = resolved.filter(function (r) { return r.url; });
         window.renderChips();
       });

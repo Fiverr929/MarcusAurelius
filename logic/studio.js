@@ -577,8 +577,10 @@ window.Studio = (function () {
     _session.history = [];
     historyFrames.querySelectorAll('.history-thumb:not(.history-placeholder)').forEach(function (t) {
       var img = t.querySelector('img');
-      if (img && img.src) _session.history.push(img.src);
+      // Skip blob: URLs — they expire on page close and can't be restored
+      if (img && img.src && img.src.startsWith('data:')) _session.history.push(img.src);
     });
+    if (_session.history.length > 10) _session.history = _session.history.slice(0, 10);
     var pid = window.activeProjectId;
     if (pid && window.DB && _session.uuid && _session.history.length > 0) {
       window.DB.studioState.save(pid, { uuid: _session.uuid, history: _session.history });
