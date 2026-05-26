@@ -28,7 +28,13 @@ window.Workspace = (function () {
 
   function autosave() {
     var pid = window.activeProjectId;
-    if (!pid) return;
+    if (!pid) {
+      DB.projects.create({ name: 'Project' }).then(function (id) {
+        window.activeProjectId = id;
+        autosave();
+      });
+      return;
+    }
 
     var payload = window.PromptBuilder.collect();
     var s = payload.settings || {};
@@ -163,15 +169,7 @@ window.Workspace = (function () {
         result[key] = data;
       }
     });
-    var sl = window.StudioModuleState && window.StudioModuleState.layers;
-    if (sl && sl.html) {
-      result.studioLayers = { html: serializeHTML(sl.html) };
-    } else if (window._pendingStudioLayers && window._pendingStudioLayers.html) {
-      // Studio not opened this session — preserve the state loaded from DB rather than overwriting with null.
-      result.studioLayers = { html: serializeHTML(window._pendingStudioLayers.html) };
-    } else {
-      result.studioLayers = null;
-    }
+    result.studioLayers = null;
     return result;
   }
 
@@ -249,14 +247,41 @@ window.Workspace = (function () {
           img.src = record.dataUrl;
           img.removeAttribute('data-uuid');
         } else {
-          console.warn('[Workspace] restoreHTML: image not found in DB for uuid', uuid);
+          console.warn('[Workspace] restoreHTML: image not found in DB for uuid', uuid, '— resetting slot to LOAD');
+          // Reset the broken clr to a clean LOAD state so the slot is usable
+          var clr = img.closest('.clr');
+          if (clr) {
+            delete clr.dataset.uuid;
+            delete clr.dataset.visionDesc;
+            clr.innerHTML =
+              '<div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>' +
+              '<div class="clr-main load"><img src="assets/icon-load.svg" alt="LOAD"></div>' +
+              '<div class="clr-t blue">T</div>';
+          }
         }
-      }).catch(function (e) { console.warn('[Workspace] restoreHTML: DB error for uuid', uuid, e); });
+      }).catch(function (e) {
+        console.warn('[Workspace] restoreHTML: DB error for uuid', uuid, e);
+        var clr = img.closest('.clr');
+        if (clr) {
+          delete clr.dataset.uuid;
+          delete clr.dataset.visionDesc;
+          clr.innerHTML =
+            '<div class="clr-x"><img src="assets/icon-close.svg" alt="x"></div>' +
+            '<div class="clr-main load"><img src="assets/icon-load.svg" alt="LOAD"></div>' +
+            '<div class="clr-t blue">T</div>';
+        }
+      });
     })).then(function () { return tmp.innerHTML; });
   }
 
   function restoreModuleState(moduleState) {
-    window.ModuleState = { subject: null, stage: null, style: null };
+    // Clear properties on the EXISTING object instead of replacing it.
+    // makeSection() closures capture config.stateTarget = window.ModuleState by reference.
+    // Replacing the object breaks that reference, so syncModuleState would write to the
+    // old object while autosave reads from the new one — losing all user changes.
+    window.ModuleState.subject = null;
+    window.ModuleState.stage   = null;
+    window.ModuleState.style   = null;
     if (!moduleState) { window.applyModuleState(); return; }
 
     Promise.all(['subject', 'stage', 'style'].map(function (key) {
@@ -304,19 +329,7 @@ window.Workspace = (function () {
       applySettings(settings);
       restoreModuleState(moduleState);
 
-      // Studio module layers — deferred: StudioModule.init() may not have run yet.
-      // Store resolved HTML in a pending global; init() picks it up on first open.
-      var sl = moduleState && moduleState.studioLayers;
-      if (sl && sl.html) {
-        restoreHTML(sl.html).then(function (html) {
-          window._pendingStudioLayers = { html: html };
-          // If Studio was already opened this session, apply immediately.
-          var smEl = document.getElementById('sm-layers');
-          if (smEl && smEl._loadFromState) { smEl._loadFromState(window._pendingStudioLayers); window._pendingStudioLayers = null; }
-        });
-      } else {
-        window._pendingStudioLayers = null;
-      }
+      window._pendingStudioLayers = null;
 
       function resolveRef(r) {
         if (r.uuid && window.DB) {
@@ -370,6 +383,24 @@ window.Workspace = (function () {
     }).catch(function (e) {
       console.warn('[Workspace] loadProject failed:', e);
     });
+  }
+
+  function clearWorkspace() {
+    window.activeProjectId = null;
+    applySettings({ mode: 'FRAME', prompt: '' });
+    restoreModuleState(null);
+    window._pendingStudioLayers = null;
+    if (window.refState) {
+      window.refState.FRAME = [];
+      window.refState.SCENE = [];
+      if (window.renderChips) window.renderChips();
+    }
+    if (window.Gallery) window.Gallery.clearGenerated();
+    if (window.clearSeqSlots) window.clearSeqSlots();
+    if (_saveTimer) {
+      clearTimeout(_saveTimer);
+      _saveTimer = null;
+    }
   }
 
   // ── Gallery hook — save each new image to DB on generation ───────────────────
@@ -557,6 +588,7 @@ window.Workspace = (function () {
     exportCafe       : exportCafe,
     importCafe       : importCafe,
     loadProject      : loadProject,
+    clearWorkspace   : clearWorkspace,
     applyModuleState : restoreModuleState
   };
 

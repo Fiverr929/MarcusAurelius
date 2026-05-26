@@ -587,6 +587,22 @@ document.getElementById('hud-btn-upscale').addEventListener('click', function ()
 });
 
 // HUD — Refine
+function persistGalleryCellImage(cell) {
+  if (!window.DB || !window.activeProjectId || !cell || !cell.imgUrl) return;
+
+  var imageUuid = cell._imgUuid || crypto.randomUUID();
+  cell._imgUuid = imageUuid;
+
+  window.DB.images.put(imageUuid, cell.imgUrl, window.activeProjectId)
+    .then(function () {
+      var dbId = cell._dbId !== undefined ? cell._dbId : cell.id;
+      if (dbId !== undefined && window.DB.gallery) {
+        return window.DB.gallery.update(dbId, { imgUrl: imageUuid });
+      }
+    })
+    .catch(function (e) { console.error('[Gallery] Failed to save refined image:', e); });
+}
+
 document.getElementById('hud-edit').addEventListener('click', function () {
   var cell = window.getHudCell ? window.getHudCell() : CELLS[hudIndex];
   if (!cell || !cell.imgUrl) return;
@@ -598,23 +614,10 @@ document.getElementById('hud-edit').addEventListener('click', function () {
     caller: 'gallery',
     onDone: function (refinedUrl) {
       if (!refinedUrl) return;
-      var newCell = {
-        id:             Date.now() + Math.random(),
-        uuid:           crypto.randomUUID(),
-        ratio:          cell.ratio,
-        imgUrl:         refinedUrl,
-        date:           cell.date,
-        type:           'Image',
-        dims:           '—',
-        prompt:         cell.prompt,
-        manifest:       cell.manifest || null,
-        model:          window.CafeSettings.getActiveModel().label,
-        cost:           window.CafeSettings.getCostPerImage(),
-        generated:      true,
-        moduleSnapshot: cell.moduleSnapshot || null,
-        usedImages:     cell.usedImages || []
-      };
-      window.Gallery.addGenerated(newCell);
+      cell.imgUrl = refinedUrl;
+      persistGalleryCellImage(cell);
+      buildGrid();
+      openHUD(cell.id);
       window.Workspace.autosave();
     }
   });

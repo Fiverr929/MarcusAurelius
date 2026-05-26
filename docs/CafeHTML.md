@@ -21,10 +21,11 @@ Current scope: Image generation (FRAME mode). Video, Audio, Timeline are future 
 
 ## Stack
 
-Plain HTML / CSS / JS only. No frameworks, no React, no build tools. All styles inline in `<style>` blocks.
+Plain HTML / CSS / JS only. No frameworks, no React, no build tools. Styles live in `style.css`.
 
 Main file: `CafeHTML-v2.html`
-Logic files: `logic/api.js`, `logic/prompt-builder.js`, `logic/enhancer.js`, `logic/vision.js`, `logic/registry.js`, `logic/settings.js`, `logic/workspace.js`, `logic/storage.js`, `logic/debug-logger.js`
+Styles: `style.css`
+Logic files: `logic/api.js`, `logic/prompt-builder.js`, `logic/enhancer.js`, `logic/vision.js`, `logic/registry.js`, `logic/settings.js`, `logic/workspace.js`, `logic/storage.js`, `logic/debug-logger.js`, `logic/prompt-bar.js`, `logic/module-panel.js`, `logic/gallery.js`, `logic/sequence-bar.js`, `logic/studio.js`, `logic/studio-module.js`
 Docs: `docs/` folder
 
 ---
@@ -142,6 +143,31 @@ Full-screen panel opened from Image HUD. Separate from the main generation pipel
 - **Crop tool** — drag/resize crop box, free or ratio-locked, applies client-side
 - **Refs** — up to 3 additional reference images for the refine call
 - **Refine button** — sends canvas image + annotation PNG + prompt + refs to active Google model. Appends "Focus on the annotated area." when strokes exist
+
+---
+
+## Studio Overlay
+
+Studio is the current image editing workspace for Gallery images and Module image layers.
+
+- **Entry points** â€” Gallery HUD pencil and Module image-layer pencil both call `window.Studio.open({ imgUrl, uuid, ratio, caller, onDone })`
+- **History is image-specific** â€” saved under `DB.studioState.histories[uuid]`, not shared globally
+- **Active history image** â€” clicking a history thumbnail updates `activeUrl`; Back returns that selected active image to the caller
+- **Gallery return** â€” replaces the original Gallery image in place with the selected active Studio image
+- **Module return** â€” replaces the module image in place and keeps the same module image UUID so Studio history remains attached
+- **References are image-specific** â€” Studio module/reference layers are stored as `layers` on the same per-UUID Studio session
+- **No automatic Gallery publishing** â€” Studio outputs do not auto-add new Gallery rows. Future behavior should be an explicit "Save to Gallery" action.
+
+---
+
+## Projects Panel
+
+The Projects modal is owned by `logic/prompt-bar.js`; persistence lives in `logic/workspace.js` and `logic/storage.js`.
+
+- **New** â€” creates `Project N` directly, loads it with `skipSave=true`, and closes the modal
+- **Delete** â€” visible `×` button removes the project and cascades its related DB records
+- **Delete final project** â€” clears the workspace and leaves the Projects list empty; it does not auto-create a replacement project
+- **Storage cascade** â€” project/settings/module/studio/reference/gallery/sequence records delete first, then image/description records clean up by project
 
 ---
 
@@ -407,6 +433,8 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | Gallery + Image HUD | `logic/gallery.js` | Done |
 | Sequence Bar | `logic/sequence-bar.js` | Done |
 | Refine Overlay | `logic/refine.js` | Done |
+| Studio Overlay | `logic/studio.js` | Done |
+| Studio Reference Panel | `logic/studio-module.js` | Done |
 
 ---
 
@@ -434,6 +462,10 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-25 | UUID image storage — all stores use UUID pointers | `DB.images` is the single source of truth for all image data. moduleState HTML, references, and gallery cells hold UUID keys. Base64 lives in DB.images only. Project delete and per-image-delete cascade properly. Export resolves UUIDs back to base64 for self-contained `.cafe` files. |
 | 2026-05-25 | DB version detection is dynamic | Instead of hardcoded `DB_VERSION`, storage.js opens the DB, checks which stores are missing, and bumps version only when needed. Safe across future store additions. |
 | 2026-05-25 | Studio module LOAD slot auto-prompts rename | After loading an image via the LOAD slot, `.plr-name` is immediately focused with text selected. Blur commits and saves to DB. Consistent with the `+` header ref-card naming flow. |
+| 2026-05-26 | Studio sessions are keyed by source image UUID | History, active selected image, and Studio reference layers restore per image. Gallery and Module Studio no longer share references or history. |
+| 2026-05-26 | Studio Back returns the selected active history image | Clicking a history thumbnail sets `activeUrl`; closing Studio returns that image to Gallery or Module instead of always returning the newest generated result. |
+| 2026-05-26 | Studio does not auto-publish to Gallery | Gallery and Module callers both replace their original image in place. Future Gallery publishing should be an explicit "Save to Gallery" action. |
+| 2026-05-26 | Projects modal can have zero projects | Deleting the final project clears the workspace and leaves the list empty; the app no longer auto-creates a replacement row that makes deletion look broken. |
 
 ---
 

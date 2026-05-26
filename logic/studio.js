@@ -50,7 +50,53 @@ window.Studio = (function () {
   var cropDrag = null, cropResize = null;
 
   // Persists between open/close cycles for the same image UUID
-  var _session = { uuid: null, history: [] };
+  var _session = { uuid: null, history: [], activeUrl: null };
+
+  function captureHistory() {
+    var history = [];
+    if (!historyFrames) return history;
+    historyFrames.querySelectorAll('.history-thumb:not(.history-placeholder)').forEach(function (thumb) {
+      var img = thumb.querySelector('img');
+      if (img && img.src && img.src.startsWith('data:')) history.push(img.src);
+    });
+    return history.length > 10 ? history.slice(0, 10) : history;
+  }
+
+  function persistHistory() {
+    var uuid = _session.uuid;
+    var history = captureHistory();
+    var activeUrl = _latestUrl || _session.activeUrl || null;
+    var layers = window.StudioModule && window.StudioModule.saveCurrent ? window.StudioModule.saveCurrent() : null;
+    _session.history = history;
+    _session.activeUrl = activeUrl;
+    var pid = window.activeProjectId;
+    if (pid && window.DB && uuid && (history.length > 0 || layers)) {
+      window.DB.studioState.get(pid).then(function (saved) {
+        var histories = saved && saved.histories ? saved.histories : {};
+        var previous = histories[uuid] && !Array.isArray(histories[uuid]) ? histories[uuid] : {};
+        histories[uuid] = Object.assign({}, previous, { history: history, activeUrl: activeUrl, layers: layers });
+        return window.DB.studioState.save(pid, { uuid: uuid, history: history, activeUrl: activeUrl, histories: histories });
+      })
+        .catch(function (e) { console.error('[Studio] Failed to save history:', e); });
+    }
+  }
+
+  function getSavedSession(saved, uuid) {
+    var entry = saved && uuid && saved.histories ? saved.histories[uuid] : null;
+    if (Array.isArray(entry) && entry.length > 0) return { history: entry, activeUrl: entry[0] };
+    if (entry && Array.isArray(entry.history) && entry.history.length > 0) {
+      return { history: entry.history, activeUrl: entry.activeUrl || entry.history[0], layers: entry.layers || null };
+    }
+    if (saved && saved.uuid === uuid && saved.history && saved.history.length > 0) {
+      return { history: saved.history, activeUrl: saved.activeUrl || saved.history[0] };
+    }
+    return null;
+  }
+
+  function loadStudioModuleForSession(session) {
+    if (!window.StudioModule || !window.StudioModule.loadForSource) return;
+    window.StudioModule.loadForSource(_session.uuid, session && session.layers ? session.layers : null);
+  }
 
   function grabDOM() {
     overlay       = document.getElementById('studio-overlay');
@@ -79,7 +125,7 @@ window.Studio = (function () {
     addPlaceholders();
   }
 
-  function setActiveVersion(url, thumb) {
+  function setActiveVersion(url, thumb, options) {
     var existing = studioCanvas.querySelector('img');
     if (existing) existing.remove();
     var img = document.createElement('img');
@@ -89,6 +135,8 @@ window.Studio = (function () {
     overlay.querySelectorAll('.history-thumb').forEach(function (t) { t.classList.remove('active'); });
     thumb.classList.add('active');
     _latestUrl = url;
+    _session.activeUrl = url;
+    if (!options || options.persist !== false) persistHistory();
 
     var probe = new Image();
     probe.onload = function () {
@@ -109,9 +157,24 @@ window.Studio = (function () {
     return thumb;
   }
 
-  function addToHistory(url) {
+  function findHistoryThumb(url) {
+    var thumbs = historyFrames.querySelectorAll('.history-thumb:not(.history-placeholder)');
+    for (var i = 0; i < thumbs.length; i++) {
+      var img = thumbs[i].querySelector('img');
+      if (img && img.src === url) return thumbs[i];
+    }
+    return null;
+  }
+
+  function activateHistoryUrl(url, fallbackThumb) {
+    var thumb = url ? findHistoryThumb(url) : null;
+    if (!thumb) thumb = fallbackThumb || historyFrames.querySelector('.history-thumb:not(.history-placeholder)');
+    if (thumb) setActiveVersion(thumb.querySelector('img').src, thumb, { persist: false });
+  }
+
+  function addToHistory(url, options) {
     var thumb = addHistoryThumb(url);
-    setActiveVersion(url, thumb);
+    setActiveVersion(url, thumb, options);
   }
 
   function addLoadingThumb() {
@@ -128,7 +191,6 @@ window.Studio = (function () {
     thumb.innerHTML = '<img src="' + url + '" alt="">';
     thumb.addEventListener('click', function () { setActiveVersion(url, thumb); });
     setActiveVersion(url, thumb);
-    _latestUrl = url;
   }
 
   function removeLoadingThumb(thumb) {
@@ -399,6 +461,10 @@ window.Studio = (function () {
 
     document.getElementById('studio-close').addEventListener('click', close);
 
+    window.addEventListener('beforeunload', function () {
+      persistHistory();
+    });
+
     overlay.querySelectorAll('.tool-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var tool = btn.dataset.tool;
@@ -509,6 +575,7 @@ window.Studio = (function () {
     if (!sameImage) {
       _session.uuid    = config.uuid || null;
       _session.history = [];
+      _session.activeUrl = null;
     }
 
     _onDone    = config.onDone || null;
@@ -541,25 +608,29 @@ window.Studio = (function () {
     promptInput.value = '';
 
     if (sameImage && _session.history.length > 0) {
+      loadStudioModuleForSession({ layers: window.StudioModuleState.layers });
       // In-memory restore (same session, no page refresh)
       for (var i = _session.history.length - 1; i >= 0; i--) {
         addHistoryThumb(_session.history[i]);
       }
-      var top = historyFrames.querySelector('.history-thumb');
-      if (top) setActiveVersion(top.querySelector('img').src, top);
+      activateHistoryUrl(_session.activeUrl);
     } else {
+      loadStudioModuleForSession(null);
       // Show base image immediately, then async-replace with DB history if available
-      addToHistory(config.imgUrl);
+      addToHistory(config.imgUrl, { persist: false });
+
       if (config.uuid && window.activeProjectId && window.DB) {
         window.DB.studioState.get(window.activeProjectId).then(function (saved) {
-          if (saved && saved.uuid === config.uuid && saved.history && saved.history.length > 0) {
-            _session.history = saved.history;
+          var savedSession = getSavedSession(saved, config.uuid);
+          if (savedSession) {
+            _session.history = savedSession.history;
+            _session.activeUrl = savedSession.activeUrl;
+            loadStudioModuleForSession(savedSession);
             clearHistory();
             for (var j = _session.history.length - 1; j >= 0; j--) {
               addHistoryThumb(_session.history[j]);
             }
-            var top2 = historyFrames.querySelector('.history-thumb');
-            if (top2) setActiveVersion(top2.querySelector('img').src, top2);
+            activateHistoryUrl(_session.activeUrl);
           }
         }).catch(function () {});
       }
@@ -571,17 +642,7 @@ window.Studio = (function () {
 
   function close() {
     if (!overlay) return;
-    _session.history = [];
-    historyFrames.querySelectorAll('.history-thumb:not(.history-placeholder)').forEach(function (t) {
-      var img = t.querySelector('img');
-      // Skip blob: URLs — they expire on page close and can't be restored
-      if (img && img.src && img.src.startsWith('data:')) _session.history.push(img.src);
-    });
-    if (_session.history.length > 10) _session.history = _session.history.slice(0, 10);
-    var pid = window.activeProjectId;
-    if (pid && window.DB && _session.uuid && _session.history.length > 0) {
-      window.DB.studioState.save(pid, { uuid: _session.uuid, history: _session.history });
-    }
+    persistHistory();
     overlay.classList.remove('open');
     document.body.style.overflow = '';
     deactivateTool();

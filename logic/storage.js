@@ -180,17 +180,22 @@ window.DB = (function () {
       return ready.then(function () {
         var allStores = [S.PROJECTS, S.SETTINGS, S.MODULE_STATE, S.STUDIO_STATE, S.REFERENCES, S.GALLERY, S.SEQUENCE];
         var t = tx(allStores, 'readwrite');
-        return Promise.all([
+        var coreDeletes = Promise.all([
           wrap(t.objectStore(S.PROJECTS).delete(id)),
           wrap(t.objectStore(S.SETTINGS).delete(id)),
           wrap(t.objectStore(S.MODULE_STATE).delete(id)),
           wrap(t.objectStore(S.STUDIO_STATE).delete(id)),
           deleteByIndex(t, S.REFERENCES, id),
           deleteByIndex(t, S.GALLERY,    id),
-          deleteByIndex(t, S.SEQUENCE,   id),
-          images.deleteByProject(id),
-          descriptions.deleteByProject(id)
+          deleteByIndex(t, S.SEQUENCE,   id)
         ]);
+
+        return coreDeletes.then(function () {
+          return Promise.all([
+            images.deleteByProject(id),
+            descriptions.deleteByProject(id)
+          ]);
+        });
       });
     }
   };

@@ -268,7 +268,8 @@ document.getElementById('refFileInput').addEventListener('change', function (e) 
         var refUrl = evt.target.result;
         var uuid = crypto.randomUUID();
         var pid = window.activeProjectId;
-        if (window.DB) window.DB.images.put(uuid, refUrl, pid);
+        if (window.DB) window.DB.images.put(uuid, refUrl, pid)
+          .catch(function (e) { console.error('[PromptBar] Failed to save ref image to DB:', e); });
         var chipIdx = window.refState[mode].length;
         window.refState[mode].push({ url: refUrl, desc: null, uuid: uuid });
         renderChips();
@@ -344,12 +345,14 @@ window.ProjectsPanel = (function () {
       if (e.target === modal) modal.classList.remove('open');
     });
     document.getElementById('pm-new').addEventListener('click', function () {
-      var name = window.prompt('Project name:', 'Project');
-      if (!name) return;
-      DB.projects.create({ name: name.trim() }).then(function (id) {
-        window.Workspace.loadProject(id);
+      DB.projects.getAll().then(function (projects) {
+        return DB.projects.create({ name: 'Project ' + (projects.length + 1) });
+      }).then(function (id) {
+        window.Workspace.loadProject(id, true);
         modal.classList.remove('open');
         loadAndRender();
+      }).catch(function (e) {
+        console.error('[ProjectsPanel] Failed to create project:', e);
       });
     });
     document.getElementById('pm-export').addEventListener('click', function () {
@@ -398,15 +401,15 @@ window.ProjectsPanel = (function () {
                 projects.sort(function (a, b) { return b.date_modified > a.date_modified ? 1 : -1; });
                 window.Workspace.loadProject(projects[0].id, true);
               } else {
-                DB.projects.create({ name: 'Project' }).then(function (id) {
-                  window.Workspace.loadProject(id, true);
-                });
+                window.Workspace.clearWorkspace();
               }
               loadAndRender();
             });
           } else {
             loadAndRender();
           }
+        }).catch(function (e) {
+          console.error('[ProjectsPanel] Failed to delete project:', e);
         });
       });
     });

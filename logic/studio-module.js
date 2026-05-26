@@ -9,6 +9,7 @@ window.StudioModuleState = { layers: null };
   var activeClrMain = null;  // replacing an existing LOAD slot
   var activeAddRow  = null;  // + bar below a group adds a new image child
   var pendingNewCard = false; // + header button clicked, waiting for file
+  var currentSourceUuid = null;
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -53,7 +54,8 @@ window.StudioModuleState = { layers: null };
     addChildRow.parentElement.insertBefore(clr, addChildRow);
     var uuid = crypto.randomUUID();
     clr.dataset.uuid = uuid;
-    DB.images.put(uuid, url, window.activeProjectId);
+    DB.images.put(uuid, url, window.activeProjectId)
+      .catch(function (e) { console.error('[StudioModule] Failed to save image to DB:', e); });
     var container = clr.closest('.mod-layers');
     if (container && container._saveAndSync) container._saveAndSync();
   }
@@ -96,7 +98,7 @@ window.StudioModuleState = { layers: null };
       var group = temp.firstElementChild;
       card.replaceWith(group);
       var clr = group.querySelector('.clr');
-      if (clr) { var uuid = crypto.randomUUID(); clr.dataset.uuid = uuid; DB.images.put(uuid, url, window.activeProjectId); }
+      if (clr) { var uuid = crypto.randomUUID(); clr.dataset.uuid = uuid; DB.images.put(uuid, url, window.activeProjectId).catch(function (e) { console.error('[StudioModule] Failed to save ref image to DB:', e); }); }
       var container = document.getElementById('sm-layers');
       if (container && container._saveAndSync) container._saveAndSync();
     });
@@ -117,11 +119,6 @@ window.StudioModuleState = { layers: null };
       noEye:            true,
       noLink:           true
     });
-
-    if (window._pendingStudioLayers) {
-      var smEl = document.getElementById('sm-layers');
-      if (smEl && smEl._loadFromState) { smEl._loadFromState(window._pendingStudioLayers); window._pendingStudioLayers = null; }
-    }
 
     var mo = new MutationObserver(syncAllGroupX);
     mo.observe(document.getElementById('sm-layers'), { childList: true, subtree: true });
@@ -188,7 +185,8 @@ window.StudioModuleState = { layers: null };
             '<div class="clr-main img-a"><img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" alt="image"></div>';
           var uuid = crypto.randomUUID();
           clr.dataset.uuid = uuid;
-          DB.images.put(uuid, url, window.activeProjectId);
+          DB.images.put(uuid, url, window.activeProjectId)
+            .catch(function (e) { console.error('[StudioModule] Failed to save uploaded image to DB:', e); });
           var container = clr.closest('.mod-layers');
           if (container && container._saveAndSync) container._saveAndSync();
           activeClrMain = null;
@@ -260,10 +258,27 @@ window.StudioModuleState = { layers: null };
     }
   }
 
+  function loadForSource(uuid, layers) {
+    currentSourceUuid = uuid || null;
+    window.StudioModuleState.layers = layers || null;
+    var container = document.getElementById('sm-layers');
+    if (!container || !container._loadFromState) return;
+    if (layers) container._loadFromState(layers);
+    else if (container._resetState) container._resetState();
+  }
+
+  function saveCurrent() {
+    var container = document.getElementById('sm-layers');
+    if (container && container._saveAndSync) container._saveAndSync();
+    return window.StudioModuleState.layers || null;
+  }
+
   window.StudioModule = {
     _initialized: false,
     init:          init,
     collectImages: collectImages,
+    loadForSource: loadForSource,
+    saveCurrent:   saveCurrent,
     reset:         reset
   };
 

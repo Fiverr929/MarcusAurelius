@@ -687,6 +687,54 @@ After loading an image via the default LOAD slot in the studio module panel, the
 
 ---
 
+### 2026-05-26 — Studio Persistence + Project Modal Fixes
+
+**Status:** COMPLETED
+
+**What Was Done:**
+
+Studio state was made image-specific and the Projects modal was cleaned up so UI actions match IndexedDB behavior.
+
+**Studio history + active image:**
+- `logic/studio.js` now stores Studio sessions per source image UUID in `DB.studioState.histories[uuid]`
+- Each saved Studio session contains `history`, `activeUrl`, and isolated Studio reference `layers`
+- Clicking a history thumbnail updates `activeUrl`; closing Studio returns the selected active image, not always the newest/top thumbnail
+- Opening Studio restores the selected active history image for that source UUID
+- Opening Studio no longer immediately overwrites saved history with only the base image
+
+**Gallery + Module Studio return behavior:**
+- Gallery Studio now replaces the original Gallery image in place with the active Studio image
+- Module Studio keeps the same module image UUID when refined so history remains attached to that module image
+- Automatic "add Studio output to Gallery" was removed for consistency; future behavior should be an explicit "Save to Gallery" action
+
+**Studio references isolated:**
+- Studio reference panel state is now saved per source image UUID
+- References loaded in one Studio image no longer appear when Studio is opened for another image
+- Old global `studioLayers` workspace save/load path disabled to prevent cross-image reference leakage
+
+**Projects modal fixes:**
+- `New` creates `Project N` directly instead of using `window.prompt`
+- Delete button is visible by default
+- Deleting the final project clears the workspace and leaves the project list empty instead of recreating a replacement project
+- Project delete cascade now deletes core project stores first, then image/description cleanup
+
+**UI polish:**
+- Studio Back button default color changed to the shared light gray token `#c7c7c7`
+
+**Files Touched:**
+- `logic/studio.js`
+- `logic/studio-module.js`
+- `logic/gallery.js`
+- `logic/module-panel.js`
+- `logic/prompt-bar.js`
+- `logic/workspace.js`
+- `logic/storage.js`
+- `style.css`
+- `docs/log.md`
+- `docs/CafeHTML.md`
+
+---
+
 ## Design Tokens (Quick Reference)
 
 | Token | Hex | Role |

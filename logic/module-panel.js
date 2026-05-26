@@ -413,7 +413,8 @@
                 '<div class="plr-eye on"><img src="assets/icon-eye-on.svg" alt="on"></div>';
             var genUuid = crypto.randomUUID();
             clr.dataset.uuid = genUuid;
-            DB.images.put(genUuid, dataUrl, window.activeProjectId);
+            DB.images.put(genUuid, dataUrl, window.activeProjectId)
+              .catch(function (e) { console.error('[ModulePanel] Failed to save generated image to DB:', e); });
             clr.dataset.visionDesc = text;
             saveSlot();
             syncModuleState();
@@ -517,11 +518,10 @@
             if (!refinedUrl) return;
             img.src = refinedUrl;
             clr.dataset.visionDesc = '';
-            var oldUuid = clr.dataset.uuid;
-            if (oldUuid && window.DB) window.DB.images.delete(oldUuid);
-            var newUuid = crypto.randomUUID();
-            clr.dataset.uuid = newUuid;
-            DB.images.put(newUuid, refinedUrl, window.activeProjectId);
+            var imageUuid = clr.dataset.uuid || crypto.randomUUID();
+            clr.dataset.uuid = imageUuid;
+            DB.images.put(imageUuid, refinedUrl, window.activeProjectId)
+              .catch(function (e) { console.error('[ModulePanel] Failed to save refined image to DB:', e); });
             saveSlot();
             syncModuleState();
           }
@@ -616,7 +616,8 @@
       clr.dataset.visionDesc = '';
       var uuid = crypto.randomUUID();
       clr.dataset.uuid = uuid;
-      DB.images.put(uuid, url, window.activeProjectId);
+      DB.images.put(uuid, url, window.activeProjectId)
+        .catch(function (e) { console.error('[ModulePanel] Failed to save uploaded image to DB:', e); });
       var owningContainer = clr.closest('.mod-layers');
 
       if (window.CafeSettings.getScanTiming() === 'load') {
