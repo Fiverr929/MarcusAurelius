@@ -348,6 +348,7 @@ window.Workspace = (function () {
         item._dbId = item.id;
         if (item.imgUrl && !item.imgUrl.startsWith('data:')) {
           item._imgUuid = item.imgUrl;
+          if (!item.uuid) item.uuid = item._imgUuid; // stable fallback for old items missing uuid
           return window.DB.images.get(item.imgUrl).then(function (rec) {
             item.imgUrl = rec ? rec.dataUrl : '';
             return item;
@@ -379,6 +380,7 @@ window.Workspace = (function () {
       window.DB.images.put(imgUuid, cell.imgUrl, pid).then(function () {
         cell._imgUuid = imgUuid;
         DB.gallery.add(pid, {
+          uuid           : cell.uuid || null,
           imgUrl         : imgUuid,
           ratio          : cell.ratio,
           prompt         : cell.prompt,
