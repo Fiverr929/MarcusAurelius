@@ -285,6 +285,27 @@ window.DB = (function () {
           return Promise.all(items.map(function (item) { return wrap(store.delete(item.id)); }));
         });
       });
+    },
+
+    // Atomic clear-then-add in a single transaction — prevents race-condition duplicates.
+    replace: function (projectId, refs) {
+      return ready.then(function () {
+        var t     = tx(S.REFERENCES, 'readwrite');
+        var store = t.objectStore(S.REFERENCES);
+        return new Promise(function (resolve, reject) {
+          var req = store.index('by_project').openCursor(IDBKeyRange.only(projectId));
+          req.onsuccess = function (e) {
+            var cursor = e.target.result;
+            if (cursor) { cursor.delete(); cursor.continue(); return; }
+            var now = new Date().toISOString();
+            refs.forEach(function (r) {
+              store.add(Object.assign({}, r, { project_id: projectId, added_at: now }));
+            });
+            resolve();
+          };
+          req.onerror = function () { reject(req.error); };
+        });
+      });
     }
   };
 

@@ -44,7 +44,7 @@ window.Workspace = (function () {
         frameCount : s.frameCount
       }),
       DB.moduleState.save(pid, serializeModuleState(window.ModuleState) || {}),
-      DB.references.clear(pid).then(function () {
+      (function () {
         var rs = window.refState;
         var all = rs.FRAME.map(function (ref) {
           var r = typeof ref === 'string' ? { url: ref, desc: null } : ref;
@@ -53,8 +53,8 @@ window.Workspace = (function () {
           var r = typeof ref === 'string' ? { url: ref, desc: null } : ref;
           return { mode: 'SCENE', uuid: r.uuid || null, src: r.uuid ? null : r.url, desc: r.desc || null };
         }));
-        return Promise.all(all.map(function (r) { return DB.references.add(pid, r); }));
-      }),
+        return DB.references.replace(pid, all);
+      }()),
       DB.sequence.save(pid, window.getSeqSlots ? window.getSeqSlots() : [])
     ])
     .then(function () { showSaveIndicator(true); })
@@ -160,7 +160,14 @@ window.Workspace = (function () {
       }
     });
     var sl = window.StudioModuleState && window.StudioModuleState.layers;
-    result.studioLayers = (sl && sl.html) ? { html: serializeHTML(sl.html) } : null;
+    if (sl && sl.html) {
+      result.studioLayers = { html: serializeHTML(sl.html) };
+    } else if (window._pendingStudioLayers && window._pendingStudioLayers.html) {
+      // Studio not opened this session — preserve the state loaded from DB rather than overwriting with null.
+      result.studioLayers = { html: serializeHTML(window._pendingStudioLayers.html) };
+    } else {
+      result.studioLayers = null;
+    }
     return result;
   }
 
