@@ -6,8 +6,6 @@
   var text = document.getElementById('promptText');
   var settBtn = document.getElementById('settingsBtn');
   var drop = document.getElementById('settingsDropdown');
-  var seedInput = document.getElementById('seedNum');
-  var seedTimer = null;
 
   document.body.dataset.state = bar.dataset.state;
 
@@ -23,8 +21,6 @@
 
     drop.dataset.open = 'false';
     settBtn.classList.remove('open');
-
-    if (seedTimer) { clearTimeout(seedTimer); seedTimer = null; }
 
     renderChips();
   });
@@ -166,33 +162,6 @@
       var entry = group.querySelector('.sd-entry-lbl');
       if (entry) { entry.removeAttribute('readonly'); entry.focus(); }
     });
-  });
-
-  /* ── Seed Lock Toggle ── */
-  document.getElementById('seedLock').addEventListener('click', function () {
-    var locked = drop.dataset.seed === 'locked';
-    drop.dataset.seed = locked ? 'unlocked' : 'locked';
-    document.getElementById('seedNotice').textContent = locked
-      ? '*SEED IS UNLOCKED TO GIVE MORE VARIETY'
-      : '*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS';
-    seedInput.readOnly = !locked;
-    if (locked) { seedInput.focus(); }
-    else { seedInput.blur(); if (seedTimer) clearTimeout(seedTimer); }
-  });
-
-  seedInput.addEventListener('input', function () {
-    if (drop.dataset.seed !== 'unlocked') return;
-    var v = parseInt(this.value, 10);
-    if (this.value !== '' && (isNaN(v) || v < 1)) this.value = 1;
-    if (v > 999999) this.value = 999999;
-    if (seedTimer) clearTimeout(seedTimer);
-    seedTimer = setTimeout(function () {
-      if (drop.dataset.seed === 'unlocked') {
-        drop.dataset.seed = 'locked';
-        seedInput.readOnly = true;
-        document.getElementById('seedNotice').textContent = '*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS';
-      }
-    }, 2000);
   });
 
   /* ── Custom Variation Entry ── */

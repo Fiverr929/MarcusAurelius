@@ -146,7 +146,7 @@ window.CafeAPI = (function () {
     return match ? match[1] : 'image/jpeg';
   }
 
-  function googleGenerate(modelId, apiKey, prompt, numImages, aspectRatio, imageRefs, imageSize, thinkingLevel, seed) {
+  function googleGenerate(modelId, apiKey, prompt, numImages, aspectRatio, imageRefs, imageSize, thinkingLevel) {
     var arMap = { '1:1': '1:1', '16:9': '16:9', '9:16': '9:16', '4:3': '4:3', '3:4': '3:4' };
     var ar = arMap[aspectRatio] || '1:1';
 
@@ -158,7 +158,6 @@ window.CafeAPI = (function () {
     }
 
     var generationConfig = {
-      seed: seed,
       responseModalities: ['IMAGE'],
       imageConfig: { aspectRatio: ar, imageSize: imageSize || '1K', imageOutputOptions: { mimeType: 'image/png' } }
     };
@@ -247,9 +246,8 @@ window.CafeAPI = (function () {
     var ratio = '1:1';
     var imageSize = model.defaultResolution || '1K';
     var thinkingLevel = model.thinkingLevel || null;
-    var activeSeed = Math.floor(Math.random() * 999999) + 1;
 
-    return googleGenerate(model.id, apiKey, promptText, 1, ratio, [], imageSize, thinkingLevel, activeSeed)
+    return googleGenerate(model.id, apiKey, promptText, 1, ratio, [], imageSize, thinkingLevel)
       .then(function (result) {
         var predictions = result.predictions || [];
         var p = predictions[0];
@@ -374,10 +372,6 @@ window.CafeAPI = (function () {
         .map(function (item) { return item.imgUrl; });
       var imageSize = window.CafeSettings.getActiveResolution();
       var thinkingLevel = model.thinkingLevel || null;
-      var seedLocked = payload.settings.seedLocked;
-      var activeSeed = (seedLocked && payload.settings.seed) ? payload.settings.seed : Math.floor(Math.random() * 999999) + 1;
-      var seedInput = document.getElementById('seedNum');
-      if (seedInput) seedInput.value = activeSeed;
 
       debugEntry.imagesSent = {
         total:       imageRefs.length,
@@ -401,7 +395,7 @@ window.CafeAPI = (function () {
 
       var tGen = Date.now();
       console.log('[CafeAPI] Generation start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);
-      return googleGenerate(model.id, apiKey, finalPrompt, numImages, ratio, imageRefs, imageSize, thinkingLevel, activeSeed)
+      return googleGenerate(model.id, apiKey, finalPrompt, numImages, ratio, imageRefs, imageSize, thinkingLevel)
         .then(function (result) {
           var predictions = result.predictions || [];
           var imgUrls = predictions

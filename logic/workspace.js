@@ -45,8 +45,6 @@ window.Workspace = (function () {
         prompt     : payload.prompt  || '',
         aspectRatio: s.aspectRatio,
         variation  : s.variation,
-        seed       : s.seed,
-        seedLocked : s.seedLocked,
         frameCount : s.frameCount
       }),
       DB.moduleState.save(pid, serializeModuleState(window.ModuleState) || {}),
@@ -104,17 +102,6 @@ window.Workspace = (function () {
         drop.querySelectorAll('.sd-var-btn').forEach(function (btn) {
           btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === s.variation);
         });
-      }
-      if (s.seed) {
-        var seedInput = document.getElementById('seedNum');
-        if (seedInput) seedInput.value = s.seed;
-      }
-      if (s.seedLocked !== undefined) {
-        drop.dataset.seed = s.seedLocked ? 'locked' : 'unlocked';
-        var seedNotice = document.getElementById('seedNotice');
-        if (seedNotice) seedNotice.textContent = s.seedLocked
-          ? '*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS'
-          : '*SEED IS UNLOCKED TO GIVE MORE VARIETY';
       }
       if (s.frameCount) {
         drop.querySelectorAll('.sd-fc-btn').forEach(function (btn) {

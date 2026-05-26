@@ -80,16 +80,10 @@ window.PromptBuilder = (function () {
     var fcBtn = drop.querySelector('.sd-fc-btn.active');
     var frameCount = fcBtn ? (parseInt(fcBtn.textContent.trim(), 10) || null) : null;
 
-    var seedInput = document.getElementById('seedNum');
-    var seedLocked = drop.dataset.seed === 'locked';
-    var seed = seedInput ? (parseInt(seedInput.value, 10) || null) : null;
-
     return {
       aspectRatio: aspectRatio,
       variation: variation,
-      frameCount: frameCount,
-      seed: seed,
-      seedLocked: seedLocked
+      frameCount: frameCount
     };
   }
 

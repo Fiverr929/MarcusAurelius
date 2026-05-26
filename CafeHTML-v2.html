@@ -21,7 +21,7 @@
       <div class="btn-settings" id="settingsBtn">
         <img src="assets/icon-settings.svg" alt="settings" />
       </div>
-      <div class="settings-dropdown" id="settingsDropdown" data-open="false" data-seed="locked">
+      <div class="settings-dropdown" id="settingsDropdown" data-open="false">
         <!-- ── FRAME ONLY: 4 aspect ratios + Variation ── -->
         <div class="sd-frame-only sd-section">
           <div class="sd-label">ASPECT RATIO</div>
@@ -62,32 +62,6 @@
             <div class="sd-custom-group">
               <button class="sd-custom-lbl" data-value="CUSTOM">CUSTOM</button>
               <input class="sd-entry-lbl" id="frameEntry" type="number" min="1" max="99" placeholder="−">
-            </div>
-          </div>
-        </div>
-        <!-- Seed -->
-        <div class="sd-section">
-          <div class="sd-seed-notice" id="seedNotice">*SEED IS LOCKED TO CREATE SIMILAR OUTPUTS</div>
-          <div class="sd-seed-bar">
-            <div class="sd-seed-lbl">SEED</div>
-            <div class="sd-seed-input">
-              <input class="sd-seed-num" id="seedNum" type="number" min="1" max="999999" value="421326" readonly>
-              <div class="sd-seed-lock" id="seedLock">
-                <svg class="lock-closed" width="12" height="14" viewBox="0 0 14 16" fill="none">
-                  <rect x="1" y="7" width="12" height="9" rx="1.5" fill="var(--accent)" />
-                  <path d="M4 7V5.5a3 3 0 0 1 6 0V7" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"
-                    fill="none" />
-                  <circle cx="7" cy="11.5" r="1.5" fill="#c7c7c7" />
-                  <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#c7c7c7" />
-                </svg>
-                <svg class="lock-open" width="12" height="14" viewBox="0 0 14 16" fill="none">
-                  <rect x="1" y="7" width="12" height="9" rx="1.5" fill="#c7c7c7" />
-                  <path d="M10 7V5.5a3 3 0 0 0-6 0" stroke="#c7c7c7" stroke-width="2" stroke-linecap="round"
-                    fill="none" />
-                  <circle cx="7" cy="11.5" r="1.5" fill="#999997" />
-                  <rect x="6.4" y="12.5" width="1.2" height="2" rx="0.5" fill="#999997" />
-                </svg>
-              </div>
             </div>
           </div>
         </div>
