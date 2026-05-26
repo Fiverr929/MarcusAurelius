@@ -129,7 +129,7 @@ window.Workspace = (function () {
     tmp.innerHTML = html;
     tmp.querySelectorAll('.clr[data-uuid]').forEach(function (clr) {
       var uuid = clr.dataset.uuid;
-      var img = clr.querySelector('img');
+      var img = clr.querySelector('.clr-main img');  // target the image, not the clr-x icon
       if (img && img.src && img.src.startsWith('data:')) {
         img.src = '';
         img.setAttribute('data-uuid', uuid);

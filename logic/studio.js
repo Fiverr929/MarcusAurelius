@@ -507,7 +507,6 @@ window.Studio = (function () {
 
     var sameImage = config.uuid && config.uuid === _session.uuid;
     if (!sameImage) {
-      window.StudioModule.reset();
       _session.uuid    = config.uuid || null;
       _session.history = [];
     }
