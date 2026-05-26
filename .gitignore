@@ -7,6 +7,9 @@ docs/
 !docs/log.md
 !docs/CafeHTML.md
 
+# Components (HTML reference snapshots)
+Components/
+
 # OS files
 .DS_Store
 Thumbs.db
