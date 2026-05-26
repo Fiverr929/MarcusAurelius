@@ -199,15 +199,19 @@ window.StudioModuleState = { layers: null };
             var sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(range);
-            nameEl.addEventListener('keydown', function onKey(e) {
+            function onNameKey(e) {
               if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
-            });
-            nameEl.addEventListener('blur', function onBlur() {
-              nameEl.removeEventListener('blur', onBlur);
+            }
+            function onNameBlur() {
+              nameEl.removeEventListener('keydown', onNameKey);
+              nameEl.removeEventListener('blur', onNameBlur);
               nameEl.contentEditable = 'false';
               var val = nameEl.textContent.trim().toUpperCase();
               nameEl.textContent = val || 'REFERENCE';
-            }, { once: true });
+              if (container && container._saveAndSync) container._saveAndSync();
+            }
+            nameEl.addEventListener('keydown', onNameKey);
+            nameEl.addEventListener('blur', onNameBlur);
           }
         }
       };
