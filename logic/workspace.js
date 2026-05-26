@@ -248,8 +248,10 @@ window.Workspace = (function () {
         if (record && record.dataUrl) {
           img.src = record.dataUrl;
           img.removeAttribute('data-uuid');
+        } else {
+          console.warn('[Workspace] restoreHTML: image not found in DB for uuid', uuid);
         }
-      }).catch(function () {});
+      }).catch(function (e) { console.warn('[Workspace] restoreHTML: DB error for uuid', uuid, e); });
     })).then(function () { return tmp.innerHTML; });
   }
 
