@@ -182,19 +182,15 @@ window.CafeAPI = (function () {
       }
     };
 
-    function runSequential(n) {
-      var results = [];
-      function next(i) {
-        if (i >= n) return Promise.resolve(results);
-        return callGoogleAPI(modelId, apiKey, parts, generationConfig, opts).then(function (r) {
-          results.push(r);
-          return next(i + 1);
-        });
+    function runParallel(n) {
+      var calls = [];
+      for (var i = 0; i < n; i++) {
+        calls.push(callGoogleAPI(modelId, apiKey, parts, generationConfig, opts));
       }
-      return next(0);
+      return Promise.all(calls);
     }
 
-    return runSequential(numImages).then(function (results) {
+    return runParallel(numImages).then(function (results) {
       var predictions = [];
       var blockReason = null;
       var finishReasons = [];
