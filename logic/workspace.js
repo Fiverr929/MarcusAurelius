@@ -159,6 +159,8 @@ window.Workspace = (function () {
         result[key] = data;
       }
     });
+    var sl = window.StudioModuleState && window.StudioModuleState.layers;
+    result.studioLayers = (sl && sl.html) ? { html: serializeHTML(sl.html) } : null;
     return result;
   }
 
@@ -288,6 +290,20 @@ window.Workspace = (function () {
 
       applySettings(settings);
       restoreModuleState(moduleState);
+
+      // Studio module layers — deferred: StudioModule.init() may not have run yet.
+      // Store resolved HTML in a pending global; init() picks it up on first open.
+      var sl = moduleState && moduleState.studioLayers;
+      if (sl && sl.html) {
+        restoreHTML(sl.html).then(function (html) {
+          window._pendingStudioLayers = { html: html };
+          // If Studio was already opened this session, apply immediately.
+          var smEl = document.getElementById('sm-layers');
+          if (smEl && smEl._loadFromState) { smEl._loadFromState(window._pendingStudioLayers); window._pendingStudioLayers = null; }
+        });
+      } else {
+        window._pendingStudioLayers = null;
+      }
 
       function resolveRef(r) {
         if (r.uuid && window.DB) {

@@ -118,6 +118,11 @@ window.StudioModuleState = { layers: null };
       noLink:           true
     });
 
+    if (window._pendingStudioLayers) {
+      var smEl = document.getElementById('sm-layers');
+      if (smEl && smEl._loadFromState) { smEl._loadFromState(window._pendingStudioLayers); window._pendingStudioLayers = null; }
+    }
+
     var mo = new MutationObserver(syncAllGroupX);
     mo.observe(document.getElementById('sm-layers'), { childList: true, subtree: true });
 
