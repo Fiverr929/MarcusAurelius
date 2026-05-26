@@ -333,6 +333,14 @@ window.ProjectsPanel = (function () {
   var modal, list, _ready = false;
   var THUMB = '<svg class="pm-thumb-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="18" height="18" rx="1" stroke="#e8e6e6" stroke-width="1.2"/><path d="M1 14l5-5 4 4 3-4 6 6" stroke="#e8e6e6" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 
+  function escapeHTML(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function init() {
     if (_ready) return;
     modal = document.getElementById('projects-modal');
@@ -374,7 +382,7 @@ window.ProjectsPanel = (function () {
       return '<div class="pm-item' + (isActive ? ' active' : '') + '" data-id="' + p.id + '">' +
         '<div class="pm-thumb">' + (p.thumbnail ? '<img src="' + p.thumbnail + '">' : THUMB) + '</div>' +
         '<div class="pm-info">' +
-          '<div class="pm-name">' + p.name + '<span class="pm-ext">.cafe</span></div>' +
+          '<div class="pm-name">' + escapeHTML(p.name) + '<span class="pm-ext">.cafe</span></div>' +
           '<div class="pm-meta">' + (p.date_modified || '').slice(0, 10) + '</div>' +
         '</div>' +
         '<button class="pm-delete" data-id="' + p.id + '">&#215;</button>' +

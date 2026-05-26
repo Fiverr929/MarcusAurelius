@@ -483,7 +483,7 @@ function deleteCell(id) {
 function duplicateCell(id) {
   var cell = CELLS.find(function (c) { return c.id === id; });
   if (!cell) return;
-  var copy = Object.assign({}, cell, { id: Date.now(), uuid: crypto.randomUUID(), _imgUuid: null, _dbId: null });
+  var copy = Object.assign({}, cell, { id: Date.now() + Math.random(), uuid: crypto.randomUUID(), _imgUuid: null, _dbId: null });
   CELLS.unshift(copy);
   rebuildIndexMap();
   buildGrid();
