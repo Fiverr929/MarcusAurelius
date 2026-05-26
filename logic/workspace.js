@@ -131,6 +131,10 @@ window.Workspace = (function () {
       var uuid = clr.dataset.uuid;
       var img = clr.querySelector('.clr-main img');  // target the image, not the clr-x icon
       if (img && img.src && img.src.startsWith('data:')) {
+        // Migrate inline data: URL to DB.images if not already stored
+        if (window.DB && uuid && window.activeProjectId) {
+          window.DB.images.put(uuid, img.src, window.activeProjectId);
+        }
         img.src = '';
         img.setAttribute('data-uuid', uuid);
       }
