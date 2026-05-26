@@ -14,7 +14,6 @@ var hudOpen = false;
 var hudIndex = 0;
 var infoPanelOpen = false;
 var selectedIds = new Set();
-var cellIndexMap = new Map();
 var visibleCells = [];
 
 /* ═══════════════════════════════════════════════════════════
@@ -51,62 +50,92 @@ function buildGrid() {
   applyFilters();
 }
 
-function rebuildIndexMap() {
-  cellIndexMap.clear();
-  CELLS.forEach(function (c, i) { cellIndexMap.set(c.id, i); });
+function currentSort() {
+  return (document.querySelector('.filter-chip[data-group="sort"].active') || {dataset:{}}).dataset.val || 'newest';
 }
 
-function applyFilters() {
-  var sortVal  = (document.querySelector('.filter-chip[data-group="sort"].active')  || {dataset:{}}).dataset.val  || 'newest';
+function cellMatchesFilter(cell) {
   var ratioVal = (document.querySelector('.filter-chip[data-group="ratio"].active') || {dataset:{}}).dataset.val || 'all';
-  var LANDSCAPE = ['16:9', '21:9', '4:3'];
-  var PORTRAIT  = ['9:16', '3:4'];
-  var SQUARE    = ['1:1'];
+  if (ratioVal === 'landscape') return ['16:9', '21:9', '4:3'].includes(cell.ratio);
+  if (ratioVal === 'portrait')  return ['9:16', '3:4'].includes(cell.ratio);
+  if (ratioVal === 'square')    return cell.ratio === '1:1';
+  return true;
+}
 
-  var filtered = CELLS.filter(function (cell) {
-    if (ratioVal === 'landscape' && !LANDSCAPE.includes(cell.ratio)) return false;
-    if (ratioVal === 'portrait'  && !PORTRAIT.includes(cell.ratio))  return false;
-    if (ratioVal === 'square'    && !SQUARE.includes(cell.ratio))    return false;
-    return true;
-  });
+function createCellElement(cell) {
+  var el = document.createElement('div');
+  el.className = 'gallery-cell';
+  el.dataset.id = cell.id;
+  el.dataset.ratio = cell.ratio;
+  if (cell.uuid) el.dataset.uuid = cell.uuid;
+  if (selectedIds.has(cell.id)) el.classList.add('selected');
 
-  if (sortVal === 'oldest') filtered = filtered.slice().reverse();
+  var inner = document.createElement('div');
+  inner.className = 'cell-inner';
+  if (cell.imgUrl) {
+    inner.style.backgroundImage = 'url(\'' + cell.imgUrl + '\')';
+    inner.style.backgroundSize = 'cover';
+    inner.style.backgroundPosition = 'center';
+  } else if (cell.phClass) {
+    inner.classList.add(cell.phClass);
+  }
+  el.appendChild(inner);
+
+  var check = document.createElement('div');
+  check.className = 'cell-check';
+  el.appendChild(check);
+
+  el.addEventListener('click', function () { onCellClick(cell.id); });
+  return el;
+}
+
+// Full rebuild — used for filter/sort changes and bulk operations.
+function applyFilters() {
+  var filtered = CELLS.filter(cellMatchesFilter);
+  if (currentSort() === 'oldest') filtered = filtered.slice().reverse();
 
   visibleCells = filtered;
 
   var loadingEls = Array.from($grid.querySelectorAll('[data-loading-id]'));
 
   var frag = document.createDocumentFragment();
-  filtered.forEach(function (cell) {
-    var el = document.createElement('div');
-    el.className = 'gallery-cell';
-    el.dataset.id = cell.id;
-    el.dataset.ratio = cell.ratio;
-    if (cell.uuid) el.dataset.uuid = cell.uuid;
-    if (selectedIds.has(cell.id)) el.classList.add('selected');
-
-    var inner = document.createElement('div');
-    inner.className = 'cell-inner';
-    if (cell.imgUrl) {
-      inner.style.backgroundImage = 'url(\'' + cell.imgUrl + '\')';
-      inner.style.backgroundSize = 'cover';
-      inner.style.backgroundPosition = 'center';
-    } else if (cell.phClass) {
-      inner.classList.add(cell.phClass);
-    }
-    el.appendChild(inner);
-
-    var check = document.createElement('div');
-    check.className = 'cell-check';
-    el.appendChild(check);
-
-    el.addEventListener('click', function () { onCellClick(cell.id); });
-    frag.appendChild(el);
-  });
+  filtered.forEach(function (cell) { frag.appendChild(createCellElement(cell)); });
 
   $grid.innerHTML = '';
   loadingEls.forEach(function (el) { $grid.appendChild(el); });
   $grid.appendChild(frag);
+}
+
+// Incremental insert for a single new (newest) cell — avoids rebuilding the
+// whole grid. Keeps visibleCells aligned with the DOM order of gallery cells.
+// loadingEl, if given, is the placeholder this cell resolves (newest sort
+// replaces it in place; oldest sort removes it and appends at the end).
+function insertCellIntoView(cell, loadingEl) {
+  if (!cellMatchesFilter(cell)) {
+    if (loadingEl) loadingEl.remove();
+    return;
+  }
+  var el = createCellElement(cell);
+  if (currentSort() === 'oldest') {
+    if (loadingEl) loadingEl.remove();
+    $grid.appendChild(el);
+    visibleCells.push(cell);
+  } else if (loadingEl) {
+    loadingEl.replaceWith(el);
+    visibleCells.unshift(cell);
+  } else {
+    var firstGallery = $grid.querySelector('.gallery-cell:not([data-loading-id])');
+    if (firstGallery) $grid.insertBefore(el, firstGallery);
+    else $grid.appendChild(el);
+    visibleCells.unshift(cell);
+  }
+}
+
+function removeCellFromView(id) {
+  var el = $grid.querySelector('.gallery-cell[data-id="' + id + '"]');
+  if (el) el.remove();
+  var vi = visibleCells.findIndex(function (c) { return c.id === id; });
+  if (vi !== -1) visibleCells.splice(vi, 1);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -249,10 +278,6 @@ document.querySelectorAll('.dropdown').forEach(function (d) { d.addEventListener
 /* ═══════════════════════════════════════════════════════════
    HUD
 ═══════════════════════════════════════════════════════════ */
-function cellIndexById(id) {
-  return cellIndexMap.has(id) ? cellIndexMap.get(id) : -1;
-}
-
 // Index into the currently displayed (filtered/sorted) list — what the HUD navigates.
 function visibleIndexById(id) {
   for (var i = 0; i < visibleCells.length; i++) {
@@ -465,7 +490,7 @@ function downloadCell(cell) {
 }
 
 function deleteCell(id) {
-  var idx = cellIndexById(id);
+  var idx = CELLS.findIndex(function (c) { return c.id === id; });
   if (idx === -1) return;
   var cell = CELLS.splice(idx, 1)[0];
   if (cell) {
@@ -475,8 +500,7 @@ function deleteCell(id) {
     }
     if (window.DB && window.DB.gallery) window.DB.gallery.delete(dbId);
   }
-  rebuildIndexMap();
-  buildGrid();
+  removeCellFromView(id);
   window.Workspace.autosave();
 }
 
@@ -485,8 +509,7 @@ function duplicateCell(id) {
   if (!cell) return;
   var copy = Object.assign({}, cell, { id: Date.now() + Math.random(), uuid: crypto.randomUUID(), _imgUuid: null, _dbId: null });
   CELLS.unshift(copy);
-  rebuildIndexMap();
-  buildGrid();
+  insertCellIntoView(copy);
   window.Workspace.autosave();
 }
 
@@ -532,11 +555,10 @@ document.getElementById('ddrop-delete').addEventListener('click', function () {
       window.DB.images.delete(cell._imgUuid);
     }
     if (window.DB && window.DB.gallery) window.DB.gallery.delete(dbId);
+    removeCellFromView(cell.id);
   });
-  rebuildIndexMap();
   selectedIds.clear();
   setSelectMode(false);
-  buildGrid();
   closeDropdown($tdropdown);
   window.Workspace.autosave();
 });
@@ -646,8 +668,7 @@ window.closeHUD = closeHUD;
 window.Gallery = {
   addGenerated: function (cell) {
     CELLS.unshift(cell);
-    rebuildIndexMap();
-    buildGrid();
+    insertCellIntoView(cell);
   },
   getGeneratedCells: function () {
     return CELLS.filter(function (c) { return c.generated === true; });
@@ -656,7 +677,6 @@ window.Gallery = {
     for (var i = CELLS.length - 1; i >= 0; i--) {
       if (CELLS[i].generated) CELLS.splice(i, 1);
     }
-    rebuildIndexMap();
     buildGrid();
   },
   addLoading: function (loadingId, ratio, mode) {
@@ -680,31 +700,7 @@ window.Gallery = {
   resolveLoading: function (loadingId, cell) {
     var loadingEl = $grid.querySelector('[data-loading-id="' + loadingId + '"]');
     CELLS.unshift(cell);
-    rebuildIndexMap();
-
-    if (loadingEl) {
-      var el = document.createElement('div');
-      el.className = 'gallery-cell';
-      el.dataset.id = cell.id;
-      el.dataset.ratio = cell.ratio;
-      if (cell.uuid) el.dataset.uuid = cell.uuid;
-
-      var inner = document.createElement('div');
-      inner.className = 'cell-inner';
-      inner.style.backgroundImage = 'url(\'' + cell.imgUrl + '\')';
-      inner.style.backgroundSize = 'cover';
-      inner.style.backgroundPosition = 'center';
-      el.appendChild(inner);
-
-      var check = document.createElement('div');
-      check.className = 'cell-check';
-      el.appendChild(check);
-
-      el.addEventListener('click', function () { onCellClick(cell.id); });
-      loadingEl.replaceWith(el);
-    } else {
-      buildGrid();
-    }
+    insertCellIntoView(cell, loadingEl);
   },
   removeLoading: function (loadingId) {
     var loadingEl = $grid.querySelector('[data-loading-id="' + loadingId + '"]');
