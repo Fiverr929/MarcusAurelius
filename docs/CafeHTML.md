@@ -42,9 +42,12 @@ Docs: `docs/` folder
 3. PromptEnhancer.enhance()    — builds text message with descriptions + sends only undescribed images inline
                                  calls Gemini 2.5 Flash → returns { prompt, manifest }
 4. googleGenerate()            — sends enhanced prompt + ALL images (refs + module, positioned first then described) → returns predictions
+                                 N variations = N parallel calls (allSettled — successes survive a failed call)
 5. Gallery.resolveLoading()    — displays result, saves to IndexedDB via Workspace hook
 6. Registry.clear()            — if Keep Descriptions OFF, clears all stored descriptions
 ```
+
+There is no single-request multi-image parameter for the Gemini image models, so each variation is a separate `callGoogleAPI`. They run concurrently via `Promise.allSettled`; a failed call (network / 429-after-retries / safety block) is dropped without discarding the variations that succeeded. The batch only errors when *zero* images come back.
 
 ---
 
@@ -90,7 +93,7 @@ If VisionScan fails for any image (429, timeout, network error), that image's `d
 All Google calls share one helper — `CafeNet.fetchJSON` (`logic/net.js`) — which handles 429 retry/backoff plus an optional per-attempt timeout (used by VisionScan's AbortController path):
 - Attempt 1: wait 5 seconds, retry
 - Attempt 2: wait 10 seconds, retry
-- After 2 retries: hard fail (VisionScan → image goes inline; enhancer → pipeline aborts; generation → batch aborts)
+- After 2 retries: hard fail (VisionScan → image goes inline; enhancer → pipeline aborts; generation → that one variation is dropped, the rest of the batch still resolves)
 
 `api.js`, `enhancer.js`, and `vision.js` all route through it; each keeps its own response parsing and logging.
 
@@ -176,8 +179,10 @@ The Projects modal is owned by `logic/prompt-bar.js`; persistence lives in `logi
 | Label | Model ID | Thinking | Resolutions |
 |---|---|---|---|
 | NANO BANANA | `gemini-2.5-flash-image` | none | default only |
-| NANO BANANA 2 | `gemini-3.1-flash-image-preview` | MINIMAL | 512, 1K, 2K, 4K |
-| NANO BANANA PRO | `gemini-3-pro-image-preview` | none | 1K, 2K, 4K |
+| NANO BANANA 2 | `gemini-3.1-flash-image-preview` | minimal / high (user-selectable, default minimal) | 512, 1K, 2K, 4K |
+| NANO BANANA PRO | `gemini-3-pro-image-preview` | on by default, not configurable | 1K, 2K, 4K |
+
+`thinkingLevel` values are lowercase (`minimal` / `high`). Only NB2 exposes a selectable level — a "Thinking" control appears on the settings API page when NB2 is active (`CafeSettings.getActiveThinkingLevel()`). `seed` is **not** supported by any of these models (Imagen-only) and is not sent.
 
 Enhancer model: `gemini-2.5-flash` (text + vision, not an image model)
 
@@ -473,6 +478,9 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-27 | Shared `CafeNet.fetchJSON` helper | Extracted the duplicated fetch + 429 retry/backoff from `api.js`, `enhancer.js`, `vision.js` into `logic/net.js`. Supports a per-attempt timeout (VisionScan) and a log label. |
 | 2026-05-27 | Gallery uses incremental DOM updates | Generation, duplicate, delete (single + multi), and project-load insert/remove a single cell instead of rebuilding the whole grid. Filter/sort changes and `clearGenerated` still full-rebuild. `cellIndexMap`/`rebuildIndexMap` dropped; a `visibleCells` array tracks the displayed list for HUD navigation. |
 | 2026-05-27 | A project always exists at startup | Init creates a project when none exist, so `activeProjectId` is set before any upload. Prevents first-action uploads from being stored with `project_id: null` and then wiped by `runOrphanCleanup` on reload. |
+| 2026-05-27 | Multi-variation calls run in parallel (again) | `googleGenerate` fires N variation calls concurrently via `Promise.allSettled` instead of a sequential chain. Restores the 2026-05-21 intent after the code had drifted back to sequential. No single-request multi-image param exists, so N images require N calls. |
+| 2026-05-27 | A failed variation no longer discards the batch | `allSettled` keeps the images that succeeded; a rejected call is dropped. The batch only throws when zero images come back, surfacing the underlying error if every call failed. |
+| 2026-05-27 | NB2 thinking level is user-selectable | NANO BANANA 2 exposes `minimal`/`high` via a Thinking control on the settings API page; `api.js` reads `CafeSettings.getActiveThinkingLevel()`. NB and Pro return null (thinkingConfig omitted). Values lowercased to match the docs. |
 
 ---
 

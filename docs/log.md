@@ -839,6 +839,29 @@ A read-through review of the whole `logic/` layer, then a series of fixes and cl
 
 ---
 
+### 2026-05-27 — Generation Pipeline: Parallel + Partial Success + NB2 Thinking
+
+**What Was Done:**
+
+Pipeline work following a docs check of the Gemini image models (`ai.google.dev/gemini-api/docs/image-generation`). Confirmed there's no single-request multi-image param and no `seed` support for these models.
+
+**Parallel generation (`api.js`):**
+- `googleGenerate` fires the N variation calls concurrently instead of sequentially. Each variation is still a separate `callGoogleAPI` (no batch param exists), but they no longer wait on each other — a 4-image batch finishes in roughly one call's time. Re-applies the 2026-05-21 intent after the code had drifted back to sequential.
+
+**Partial-success (`api.js`):**
+- Switched from `Promise.all` to `Promise.allSettled`. A failed variation (network / 429-after-retries / safety block) is dropped instead of discarding the whole batch. Only throws when zero images come back, surfacing the first real error if every call failed.
+
+**NB2 thinking-level option (`settings.js`, `api.js`, `CafeHTML-v2.html`):**
+- Added a "Thinking" control on the settings API page, shown only for models with selectable levels (NANO BANANA 2: `minimal` / `high`, default `minimal`). Renders like the Resolution list; reuses `.csm-resolution-row` styling, no new CSS.
+- `api.js` reads `CafeSettings.getActiveThinkingLevel()` instead of the hardcoded model value. NB and Pro return null (thinkingConfig omitted). Value lowercased (`minimal`) to match the docs.
+- Cost-vs-thinking display was considered and skipped — thinking tokens vary per prompt; no flat per-image figure to show.
+
+**Files Touched:**
+- `logic/api.js`, `logic/settings.js`, `CafeHTML-v2.html`
+- `docs/log.md`, `docs/CafeHTML.md`
+
+---
+
 ## Design Tokens (Quick Reference)
 
 | Token | Hex | Role |
