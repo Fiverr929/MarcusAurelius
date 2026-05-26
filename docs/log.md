@@ -789,6 +789,56 @@ Rebuilt the Studio reference panel from scratch — dropped `ModulePanel.makeSec
 
 ---
 
+### 2026-05-27 — Code Review Pass: Bug Fixes, Dead-Code Removal, Seed Removal
+
+**What Was Done:**
+
+A read-through review of the whole `logic/` layer, then a series of fixes and cleanups. No new features — correctness, robustness, and weight reduction.
+
+**Bug fixes:**
+- `module-panel.js` — layer-name editing: the `keydown` listener removed itself on the *first* keystroke, so Enter/Escape only committed if pressed as the very first key. Moved cleanup into the blur `commit()` handler so both listeners are removed together.
+- `gallery.js` — HUD navigation ignored active filters: it indexed the full `CELLS` array while the grid showed a filtered subset. Added a `visibleCells` array (the displayed/filtered/sorted list); HUD open/nav/counter/info now use it. Data ops (delete) still use `CELLS`.
+- `api.js` — Generate button could stay stuck spinning: it gated on the shared `_activeRequests` counter, which `generateLayerImage` also mutates. Added a dedicated `_activeGenerations` counter for the button.
+- `prompt-bar.js` — project names were injected into the projects modal via `innerHTML` unescaped. Added an `escapeHTML` helper.
+- `gallery.js` — duplicated cells used `id: Date.now()` (collides within one ms on multi-select duplicate). Now `Date.now() + Math.random()` like generated cells.
+
+**Data-loss fix:**
+- `workspace.js` — images uploaded as the *first action* on a fresh DB were written with `project_id: null` (no project existed yet) and then deleted by `runOrphanCleanup` on reload. Init now creates a project up front when none exist, so `activeProjectId` is always set before any upload.
+
+**Dead-code removal:**
+- Deleted `logic/refine.js` (`RefineArea`, ~577 lines), its `<script>` tag, and the orphaned `#refine-overlay` markup. Superseded by Studio; nothing invoked it. Shared `.refine-*` CSS classes kept (Studio reuses them).
+
+**Performance / dedup:**
+- `gallery.js` — incremental DOM updates. Generation, duplicate, delete (single + multi), and project-load now insert/remove a single cell instead of rebuilding the whole grid each time. Filter/sort changes and `clearGenerated` still full-rebuild. Extracted `createCellElement` / `cellMatchesFilter` / `currentSort`; dropped `cellIndexMap`/`rebuildIndexMap`.
+- `logic/net.js` (new) — `CafeNet.fetchJSON(url, options, { label, maxRetries, timeoutMs })`. The duplicated fetch + 429 retry/backoff in `api.js`, `enhancer.js`, `vision.js` now route through it (vision uses `timeoutMs` for its AbortController path).
+
+**Tidy-ups:**
+- Proper transitive descending sort comparators for the project list (`workspace.js`, `prompt-bar.js`).
+- `settings.js` — `setActiveModel` no longer stores `null` resolution; falls back to first resolution or `'1K'`.
+- `enhancer.js` — bounded the enhancer cache to 50 entries (FIFO).
+
+**Seed removal:**
+- Confirmed via docs that the Gemini image models (`gemini-2.5-flash-image`, `gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`) do **not** support a `seed` parameter — it's documented only for Imagen, and was silently ignored. Removed all seed plumbing: `generationConfig.seed`, the seed-lock UI (`seedLock`/`seedNum`/`seedNotice`), `data-seed` state, related JS in `api.js`/`prompt-builder.js`/`workspace.js`/`prompt-bar.js`, the HTML block, and the dead CSS. Old projects with stored `seed`/`seedLocked` fields just ignore them on load.
+
+**Docs / housekeeping:**
+- README: documented the Studio module split and fixed em-dash encoding corruption.
+- Untracked `Components/` (HTML reference snapshots) via `.gitignore`.
+- Updated `docs/CafeHTML.md` (removed Refine sections, added CafeNet/seed/gallery/init decisions).
+
+**Files Touched:**
+- `logic/api.js`, `logic/enhancer.js`, `logic/vision.js`, `logic/gallery.js`, `logic/module-panel.js`, `logic/prompt-bar.js`, `logic/prompt-builder.js`, `logic/workspace.js`, `logic/settings.js`
+- `logic/net.js` (created), `logic/refine.js` (deleted)
+- `CafeHTML-v2.html`, `style.css`, `README.md`, `.gitignore`
+- `docs/log.md`, `docs/CafeHTML.md`
+
+**Known follow-ups (not done):**
+- Generation-failure UX (no user-facing error when a generation fails).
+- `runSequential` discards the whole batch if one variation fails (no partial results).
+- Variations run sequentially; the enhancer always runs even for plain prompts (latency).
+- Part 1: lazy image loading / thumbnails to cut gallery memory (needs a spec).
+
+---
+
 ## Design Tokens (Quick Reference)
 
 | Token | Hex | Role |

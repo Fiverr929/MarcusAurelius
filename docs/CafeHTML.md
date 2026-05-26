@@ -25,7 +25,7 @@ Plain HTML / CSS / JS only. No frameworks, no React, no build tools. Styles live
 
 Main file: `CafeHTML-v2.html`
 Styles: `style.css`
-Logic files: `logic/api.js`, `logic/prompt-builder.js`, `logic/enhancer.js`, `logic/vision.js`, `logic/registry.js`, `logic/settings.js`, `logic/workspace.js`, `logic/storage.js`, `logic/debug-logger.js`, `logic/prompt-bar.js`, `logic/module-panel.js`, `logic/gallery.js`, `logic/sequence-bar.js`, `logic/studio.js`, `logic/studio-module.js`
+Logic files: `logic/net.js`, `logic/api.js`, `logic/prompt-builder.js`, `logic/enhancer.js`, `logic/vision.js`, `logic/registry.js`, `logic/settings.js`, `logic/workspace.js`, `logic/storage.js`, `logic/debug-logger.js`, `logic/prompt-bar.js`, `logic/module-panel.js`, `logic/gallery.js`, `logic/sequence-bar.js`, `logic/studio.js`, `logic/studio-module.js`
 Docs: `docs/` folder
 
 ---
@@ -87,12 +87,12 @@ If VisionScan fails for any image (429, timeout, network error), that image's `d
 
 ### Retry Behavior
 
-Both VisionScan and the enhancer retry on 429:
+All Google calls share one helper — `CafeNet.fetchJSON` (`logic/net.js`) — which handles 429 retry/backoff plus an optional per-attempt timeout (used by VisionScan's AbortController path):
 - Attempt 1: wait 5 seconds, retry
 - Attempt 2: wait 10 seconds, retry
-- After 2 retries: hard fail (VisionScan → image goes inline; enhancer → pipeline aborts)
+- After 2 retries: hard fail (VisionScan → image goes inline; enhancer → pipeline aborts; generation → batch aborts)
 
-The generation model (`googleGenerate`) uses the same 5s/10s retry pattern.
+`api.js`, `enhancer.js`, and `vision.js` all route through it; each keeps its own response parsing and logging.
 
 ---
 
@@ -131,18 +131,6 @@ Each child slot (`.clr`) has a `T` badge:
 ## Global References
 
 `refState = { FRAME: [], SCENE: [] }` — up to 5 refs per mode, each entry is `{url, desc}` (legacy strings supported via typeof fallback). Uploaded via prompt bar `+` button. Labelled R1–R5 in the manifest, sent first in the image array.
-
----
-
-## Refine Overlay
-
-Full-screen panel opened from Image HUD. Separate from the main generation pipeline.
-
-- **History strip** — left panel of version thumbnails. Click to switch active canvas
-- **Pencil tool** — draw annotation strokes, undo/redo stack
-- **Crop tool** — drag/resize crop box, free or ratio-locked, applies client-side
-- **Refs** — up to 3 additional reference images for the refine call
-- **Refine button** — sends canvas image + annotation PNG + prompt + refs to active Google model. Appends "Focus on the annotated area." when strokes exist
 
 ---
 
@@ -346,7 +334,7 @@ When hidden, `.layer-off` on `.plr` grays out X, expand, name, and link via CSS 
 |---|---|---|
 | X button | `.clr-x` / `.clr-x.off` | Blue when visible, gray when hidden |
 | Main area | `.clr-main.img-a` / `.img-i` | Active/inactive image thumbnail |
-| Edit button | `.clr-edit.a` / `.clr-edit.i` | Pencil icon — opens Refine overlay |
+| Edit button | `.clr-edit.a` / `.clr-edit.i` | Pencil icon — opens Studio overlay |
 | Eye button | `.plr-eye.on` / `.plr-eye.off` | Toggle visibility |
 
 ### Mode C — Prompt Active
@@ -408,7 +396,7 @@ Controls which subject slot (A, B, C…) is active and ON/OFF.
 
 ### Edit (Pencil) Button
 
-`.clr-edit` — opens Refine overlay for image editing. Currently placeholder — no click action on child rows yet.
+`.clr-edit` — opens the Studio overlay for image editing (`window.Studio.open`).
 
 ### Link / Unlink Button
 
@@ -444,7 +432,6 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | Module Panel (SUBJECT/STAGE/STYLE) | `logic/module-panel.js` | Done |
 | Gallery + Image HUD | `logic/gallery.js` | Done |
 | Sequence Bar | `logic/sequence-bar.js` | Done |
-| Refine Overlay | `logic/refine.js` | Done |
 | Studio Overlay | `logic/studio.js` | Done |
 | Studio Reference Panel | `logic/studio-module.js` | Done |
 
@@ -481,7 +468,12 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-26 | Studio reference panel no longer uses ModulePanel.makeSection | Custom render/serialize cycle eliminates hidden slots, text rows, eye, and link behavior that ModulePanel always brought along. Panel state is `{ groups: [{ action, name, images: [{ uuid }] }] }`. |
 | 2026-05-26 | Studio references carry ACTION intent | Each reference group has an action tag (INSERT / SWAP / TRANSFER / REMOVE / PRESERVE). The API prompt includes `action` + `intent` per reference so the model knows how to apply each image. Default action is TRANSFER. |
 | 2026-05-26 | action-drawer-open separate from drawer-open | Action button active state only triggers on `.action-drawer-open`, not `.drawer-open`, so opening the name editor no longer falsely activates the action button. |
+| 2026-05-27 | Seed control removed | Gemini image models (`gemini-2.5-flash-image`, `gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`) do not support a `seed` parameter — documented only for Imagen, silently ignored here. Removed `generationConfig.seed`, the seed-lock UI, `data-seed` state, and dead CSS. Old projects ignore stored `seed`/`seedLocked` fields on load. |
+| 2026-05-27 | Refine overlay removed | `logic/refine.js` (`RefineArea`) and `#refine-overlay` were dead — superseded by Studio, never invoked. Deleted the module, script tag, and markup. Shared `.refine-*` CSS classes kept (Studio reuses them). |
+| 2026-05-27 | Shared `CafeNet.fetchJSON` helper | Extracted the duplicated fetch + 429 retry/backoff from `api.js`, `enhancer.js`, `vision.js` into `logic/net.js`. Supports a per-attempt timeout (VisionScan) and a log label. |
+| 2026-05-27 | Gallery uses incremental DOM updates | Generation, duplicate, delete (single + multi), and project-load insert/remove a single cell instead of rebuilding the whole grid. Filter/sort changes and `clearGenerated` still full-rebuild. `cellIndexMap`/`rebuildIndexMap` dropped; a `visibleCells` array tracks the displayed list for HUD navigation. |
+| 2026-05-27 | A project always exists at startup | Init creates a project when none exist, so `activeProjectId` is set before any upload. Prevents first-action uploads from being stored with `project_id: null` and then wiped by `runOrphanCleanup` on reload. |
 
 ---
 
-*Last updated: 2026-05-26*
+*Last updated: 2026-05-27*
