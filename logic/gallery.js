@@ -15,6 +15,7 @@ var hudIndex = 0;
 var infoPanelOpen = false;
 var selectedIds = new Set();
 var cellIndexMap = new Map();
+var visibleCells = [];
 
 /* ═══════════════════════════════════════════════════════════
    DOM REFS
@@ -70,6 +71,8 @@ function applyFilters() {
   });
 
   if (sortVal === 'oldest') filtered = filtered.slice().reverse();
+
+  visibleCells = filtered;
 
   var loadingEls = Array.from($grid.querySelectorAll('[data-loading-id]'));
 
@@ -250,8 +253,16 @@ function cellIndexById(id) {
   return cellIndexMap.has(id) ? cellIndexMap.get(id) : -1;
 }
 
+// Index into the currently displayed (filtered/sorted) list — what the HUD navigates.
+function visibleIndexById(id) {
+  for (var i = 0; i < visibleCells.length; i++) {
+    if (visibleCells[i].id === id) return i;
+  }
+  return -1;
+}
+
 function openHUD(id) {
-  var idx = cellIndexById(id);
+  var idx = visibleIndexById(id);
   if (idx === -1) return;
   hudIndex = idx;
   hudOpen = true;
@@ -269,8 +280,8 @@ function closeHUD() {
 }
 
 function renderHUDSlide(id, direction) {
-  var cell = CELLS[id];
-  $hudCounter.textContent = (id + 1) + ' OF ' + CELLS.length;
+  var cell = visibleCells[id];
+  $hudCounter.textContent = (id + 1) + ' OF ' + visibleCells.length;
 
   var incoming = document.createElement('div');
   incoming.className = 'hud-slide';
@@ -319,7 +330,8 @@ function renderHUDSlide(id, direction) {
 }
 
 function navigateHUD(dir) {
-  var next = (hudIndex + dir + CELLS.length) % CELLS.length;
+  if (!visibleCells.length) return;
+  var next = (hudIndex + dir + visibleCells.length) % visibleCells.length;
   var direction = dir > 0 ? 'next' : 'prev';
   hudIndex = next;
   renderHUDSlide(hudIndex, direction);
@@ -337,7 +349,7 @@ document.getElementById('info-load-setup').addEventListener('click', function (e
 });
 
 document.getElementById('info-popup-yes').addEventListener('click', function () {
-  var cell = CELLS[hudIndex];
+  var cell = visibleCells[hudIndex];
   if (cell && cell.moduleSnapshot && window.Workspace) {
     window.Workspace.applyModuleState(cell.moduleSnapshot);
   }
@@ -383,7 +395,7 @@ function closeInfoPanel() {
 }
 
 function populateInfoPanel(id) {
-  var cell = CELLS[id];
+  var cell = visibleCells[id];
   $infoPanelDate.textContent = cell.date;
   $infoPanelType.textContent = cell.type;
   $infoPanelDims.textContent = cell.dims;
@@ -531,7 +543,7 @@ document.getElementById('ddrop-delete').addEventListener('click', function () {
 
 /* ── HUD 3-dot actions ── */
 document.getElementById('hud-drop-reuse').addEventListener('click', function () {
-  var cell = CELLS[hudIndex];
+  var cell = visibleCells[hudIndex];
   if (!cell || !cell.prompt) return;
   var promptEl = document.getElementById('promptText');
   if (promptEl) {
@@ -543,7 +555,7 @@ document.getElementById('hud-drop-reuse').addEventListener('click', function () 
 });
 
 document.getElementById('hud-drop-ref').addEventListener('click', function () {
-  var cell = CELLS[hudIndex];
+  var cell = visibleCells[hudIndex];
   if (!cell || !cell.imgUrl) return;
   var mode = document.getElementById('promptBar').dataset.state;
   if (window.refState[mode].length < 5) {
@@ -558,7 +570,7 @@ document.getElementById('hud-drop-ref').addEventListener('click', function () {
 });
 
 document.getElementById('hud-drop-duplicate').addEventListener('click', function () {
-  var cell = CELLS[hudIndex];
+  var cell = visibleCells[hudIndex];
   if (!cell) return;
   duplicateCell(cell.id);
   closeDropdown($hudThreedotDrop);
@@ -566,12 +578,12 @@ document.getElementById('hud-drop-duplicate').addEventListener('click', function
 
 // HUD bottom strip — Download
 document.getElementById('hud-btn-download').addEventListener('click', function () {
-  downloadCell(CELLS[hudIndex]);
+  downloadCell(visibleCells[hudIndex]);
 });
 
 // HUD bottom strip — Delete
 document.getElementById('hud-btn-delete').addEventListener('click', function () {
-  var cell = CELLS[hudIndex];
+  var cell = visibleCells[hudIndex];
   if (!cell) return;
   var id = cell.id;
   closeHUD();
@@ -604,7 +616,7 @@ function persistGalleryCellImage(cell) {
 }
 
 document.getElementById('hud-edit').addEventListener('click', function () {
-  var cell = window.getHudCell ? window.getHudCell() : CELLS[hudIndex];
+  var cell = window.getHudCell ? window.getHudCell() : visibleCells[hudIndex];
   if (!cell || !cell.imgUrl) return;
   closeHUD();
   window.Studio.open({
@@ -628,7 +640,7 @@ document.getElementById('hud-edit').addEventListener('click', function () {
 ═══════════════════════════════════════════════════════════ */
 buildGrid();
 $scroll.dataset.view = 'medium';
-window.getHudCell = function () { return CELLS[hudIndex]; };
+window.getHudCell = function () { return visibleCells[hudIndex]; };
 window.closeHUD = closeHUD;
 
 window.Gallery = {

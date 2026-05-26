@@ -281,6 +281,7 @@ window.CafeAPI = (function () {
   // ── Main generate ─────────────────────────────────────────────────────────
 
   var _activeRequests = 0;
+  var _activeGenerations = 0; // main generate() pipelines only — drives the Generate button state
 
   function generate() {
     var model = window.CafeSettings.getActiveModel();
@@ -306,6 +307,7 @@ window.CafeAPI = (function () {
 
     var genBtn = document.getElementById('generateBtn');
     if (genBtn) genBtn.classList.add('cafe-loading');
+    _activeGenerations++;
 
     var t0 = Date.now();
     var debugEntry = {
@@ -483,7 +485,8 @@ window.CafeAPI = (function () {
       window.CafeDebug.record(debugEntry);
     }).then(function () {
       _activeRequests--;
-      if (_activeRequests === 0 && genBtn) genBtn.classList.remove('cafe-loading');
+      _activeGenerations--;
+      if (_activeGenerations === 0 && genBtn) genBtn.classList.remove('cafe-loading');
       if (!window.CafeSettings.getKeepDescriptions()) {
         window.DescriptionRegistry.clear();
       }

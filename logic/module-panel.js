@@ -303,19 +303,21 @@
         range.selectNodeContents(name);
         window.getSelection().removeAllRanges();
         window.getSelection().addRange(range);
-        name.addEventListener('blur', function commit() {
+        function commit() {
           name.contentEditable = 'false';
           name.style.borderColor = '';
           if (!name.textContent.trim()) name.textContent = 'NEW LAYER';
           name.removeEventListener('blur', commit);
+          name.removeEventListener('keydown', onKey);
           saveSlot();
           syncModuleState();
-        });
-        name.addEventListener('keydown', function onKey(e) {
+        }
+        function onKey(e) {
           if (e.key === 'Enter') { e.preventDefault(); name.blur(); }
           if (e.key === 'Escape') { name.textContent = name.dataset.prev || 'NEW LAYER'; name.blur(); }
-          name.removeEventListener('keydown', onKey);
-        });
+        }
+        name.addEventListener('blur', commit);
+        name.addEventListener('keydown', onKey);
         name.dataset.prev = name.textContent;
         return;
       }
