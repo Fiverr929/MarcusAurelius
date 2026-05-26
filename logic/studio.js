@@ -88,6 +88,7 @@ window.Studio = (function () {
     studioCanvas.insertBefore(img, studioCanvas.firstChild);
     overlay.querySelectorAll('.history-thumb').forEach(function (t) { t.classList.remove('active'); });
     thumb.classList.add('active');
+    _latestUrl = url;
 
     var probe = new Image();
     probe.onload = function () {
@@ -465,13 +466,10 @@ window.Studio = (function () {
       offscreen.width  = bw;
       offscreen.height = bh;
       offscreen.getContext('2d').drawImage(img, bx, by, bw, bh, 0, 0, bw, bh);
-      offscreen.toBlob(function (blob) {
-        var url = URL.createObjectURL(blob);
-        disableCrop();
-        deactivateTool();
-        addToHistory(url);
-        _latestUrl = url;
-      });
+      var url = offscreen.toDataURL('image/png');
+      disableCrop();
+      deactivateTool();
+      addToHistory(url);
     });
 
     refineBtn.addEventListener('click', function () {
