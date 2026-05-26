@@ -3670,10 +3670,10 @@
   }
   .sm-header-add {
     width: 20px; height: 20px; flex-shrink: 0;
-    background: #ea5823; position: relative; cursor: pointer;
+    background: #c7c7c7; position: relative; cursor: pointer;
   }
   .sm-header-add::before, .sm-header-add::after {
-    content: ''; position: absolute; background: #5271ff; top: 50%; left: 50%;
+    content: ''; position: absolute; background: #999997; top: 50%; left: 50%;
   }
   .sm-header-add::before { width: 2px; height: 10px; transform: translate(-50%,-50%); }
   .sm-header-add::after  { width: 10px; height: 2px; transform: translate(-50%,-50%); }
@@ -3681,66 +3681,126 @@
     flex: 1; overflow-y: auto; overflow-x: hidden;
     display: flex; flex-direction: column;
     scrollbar-width: none; -ms-overflow-style: none;
+    position: relative;
   }
+  .studio-module-scroll::before,
+  .studio-module-scroll::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: #c7c7c7;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .studio-module-scroll::before { left: 6px; }
+  .studio-module-scroll::after { right: 6px; }
   .studio-module-scroll::-webkit-scrollbar { display: none; }
-  .studio-module-panel .mod-layers { padding: 6px; }
+  .studio-module-panel .mod-layers { padding: 6px; position: relative; z-index: 1; }
   .studio-module-panel .btn-new-layer { display: none; }
   .studio-module-panel .layer-children { max-height: 9999px; }
-  .studio-module-panel .plr { width: 100%; }
+  .studio-module-panel .plr { width: 250px; margin: 0 auto; }
+  .studio-module-panel .plr-x.blue {
+    background: #c7c7c7;
+  }
   .studio-module-panel .plr-name { flex: 1; width: auto; }
+  .studio-module-panel .plr-name.blue {
+    background: #c7c7c7; color: #999997; border-color: #c7c7c7;
+  }
+  .studio-module-panel .drawer-open .plr-name.blue {
+    background: #ea5823; color: #c7c7c7; border-color: #ea5823;
+  }
   .studio-module-panel .plr-name:focus,
   .studio-module-panel .plr-name:focus-visible { outline: none !important; border-color: #5271ff !important; }
   .studio-module-panel .clr {
     position: relative; display: block;
     width: 250px; height: 250px; padding: 0;
   }
-  .studio-module-panel .clr-main { width: 100%; height: 100%; }
+  .studio-module-panel .clr-main { width: 100%; height: 100%; border-color: #c7c7c7; }
   .studio-module-panel .clr-x {
-    position: absolute; top: 4px; left: 4px;
-    width: 24px; height: 24px; z-index: 2;
+    position: absolute; bottom: 4px; right: 4px;
+    width: 22px; height: 22px; z-index: 2;
+    background: #999997;
   }
+  .studio-module-panel .clr-x img { width: 10px; height: 12px; }
   .studio-module-panel .clr-t { display: none; }
   .studio-module-panel .add-child-row { width: 250px; margin-top: 0; justify-content: stretch; }
   .studio-module-panel .btn-add-child {
-    width: 250px; height: 20px; background: #5271ff; border: none; position: relative;
+    width: 250px; height: 20px; background: #c7c7c7; border: none; position: relative;
   }
   .studio-module-panel .btn-add-child img { display: none; }
   .studio-module-panel .btn-add-child::before,
   .studio-module-panel .btn-add-child::after {
-    content: ''; position: absolute; background: #ea5823; top: 50%; left: 50%;
+    content: ''; position: absolute; background: #999997; top: 50%; left: 50%;
   }
   .studio-module-panel .btn-add-child::before { width: 2px; height: 10px; transform: translate(-50%,-50%); }
   .studio-module-panel .btn-add-child::after  { width: 10px; height: 2px; transform: translate(-50%,-50%); }
+  .studio-module-panel .add-child-row.disabled .btn-add-child {
+    background: #999997; cursor: default; pointer-events: none;
+  }
+  .studio-module-panel .add-child-row.disabled .btn-add-child::before,
+  .studio-module-panel .add-child-row.disabled .btn-add-child::after {
+    background: #c7c7c7;
+  }
+  .studio-module-panel .sm-action-btn {
+    width: 76px; height: 25px; flex-shrink: 0;
+    border: none; background: #c7c7c7; color: #ea5823;
+    font-family: 'Times New Roman', serif; font-size: 10px; letter-spacing: 0.08em;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; text-transform: uppercase;
+  }
+  .studio-module-panel .action-drawer-open .sm-action-btn { background: #ea5823; color: #c7c7c7; }
+  .studio-module-panel .plr-name[data-name-trigger] {
+    cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    caret-color: transparent; user-select: none;
+  }
+  .studio-module-panel .sm-action-drawer,
+  .studio-module-panel .sm-name-editor {
+    width: 250px; margin: 0 auto; flex-shrink: 0;
+  }
+  .sm-header-action-menu {
+    width: 250px; margin: 0 auto 6px; flex-shrink: 0;
+    border-top: 1px solid #c7c7c7;
+    border-bottom: 1px solid #c7c7c7;
+    transform-origin: top;
+    animation: sm-create-stack-open 0.14s ease-out;
+  }
+  .sm-create-option {
+    width: 100%; height: 25px;
+    border: none; border-top: 1px solid rgba(153,153,151,0.45);
+    background: #c7c7c7; color: #999997;
+    font-family: 'Times New Roman', serif; font-size: 11px; letter-spacing: 0.1em;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; text-transform: uppercase;
+  }
+  .sm-create-option:first-child { border-top: none; }
+  .sm-create-option:hover {
+    background: #999997; color: #c7c7c7;
+  }
+  @keyframes sm-create-stack-open {
+    from { transform: scaleY(0.82); opacity: 0; }
+    to { transform: scaleY(1); opacity: 1; }
+  }
+  .sm-action-option {
+    width: 100%; height: 25px;
+    border: none; border-top: 1px solid rgba(153,153,151,0.45);
+    background: #999997; color: #c7c7c7;
+    font-family: 'Times New Roman', serif; font-size: 11px; letter-spacing: 0.1em;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; text-transform: uppercase;
+  }
+  .sm-action-option:first-child { border-top: none; }
+  .sm-action-option.active,
+  .sm-action-option:hover { background: #ea5823; color: #c7c7c7; }
+  .studio-module-panel .sm-name-editor { height: 25px; background: #999997; }
+  .studio-module-panel .sm-name-input {
+    width: 100%; height: 25px; border: none; outline: none;
+    background: #999997; color: #c7c7c7;
+    font-family: 'Times New Roman', serif; font-size: 13px; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0 8px;
+  }
 
   /* ── Add-reference card ── */
-  .sm-ref-card { width: 100%; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; margin-bottom: 6px; }
-  .sm-ref-card-bar { width: 250px; height: 25px; display: flex; align-items: center; flex-shrink: 0; }
-  .sm-ref-card-x {
-    width: 24px; height: 25px; flex-shrink: 0; cursor: pointer;
-    background: #5271ff; display: flex; align-items: center; justify-content: center;
-  }
-  .sm-ref-card-x img { width: 15.8px; height: 12.2px; }
-  .sm-ref-card-img {
-    width: 250px; height: 250px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; overflow: hidden;
-    border: 0.756px solid #5271ff;
-  }
-  .sm-ref-card-img.loaded img { width: 100%; height: 100%; object-fit: cover; }
-  .sm-ref-card-name {
-    flex: 1; height: 25px; line-height: 25px; background: #5271ff;
-    color: #c7c7c7; font-family: 'Times New Roman', serif;
-    font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase;
-    display: block; padding: 0 8px; overflow: hidden; white-space: nowrap;
-    outline: none; cursor: text;
-  }
-  .sm-ref-card-name:empty::before { content: 'NAME...'; color: rgba(199,199,199,0.45); pointer-events: none; }
-  .sm-ref-card-add {
-    width: 48px; height: 25px; flex-shrink: 0;
-    background: #ea5823; color: #5271ff; cursor: pointer; border: none;
-    font-family: 'Times New Roman', serif; font-size: 11px; letter-spacing: 0.12em;
-    display: flex; align-items: center; justify-content: center;
-  }
-
   /* ── Studio module: collapsed state ── */
   .studio-module-panel .layer-group.collapsed .layer-children {
     max-height: 9999px !important; opacity: 1 !important; display: block !important;

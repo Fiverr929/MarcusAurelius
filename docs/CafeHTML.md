@@ -150,13 +150,25 @@ Full-screen panel opened from Image HUD. Separate from the main generation pipel
 
 Studio is the current image editing workspace for Gallery images and Module image layers.
 
-- **Entry points** â€” Gallery HUD pencil and Module image-layer pencil both call `window.Studio.open({ imgUrl, uuid, ratio, caller, onDone })`
-- **History is image-specific** â€” saved under `DB.studioState.histories[uuid]`, not shared globally
-- **Active history image** â€” clicking a history thumbnail updates `activeUrl`; Back returns that selected active image to the caller
-- **Gallery return** â€” replaces the original Gallery image in place with the selected active Studio image
-- **Module return** â€” replaces the module image in place and keeps the same module image UUID so Studio history remains attached
-- **References are image-specific** â€” Studio module/reference layers are stored as `layers` on the same per-UUID Studio session
-- **No automatic Gallery publishing** â€” Studio outputs do not auto-add new Gallery rows. Future behavior should be an explicit "Save to Gallery" action.
+- **Entry points** — Gallery HUD pencil and Module image-layer pencil both call `window.Studio.open({ imgUrl, uuid, ratio, caller, onDone })`
+- **History is image-specific** — saved under `DB.studioState.histories[uuid]`, not shared globally
+- **Active history image** — clicking a history thumbnail updates `activeUrl`; Back returns that selected active image to the caller
+- **Gallery return** — replaces the original Gallery image in place with the selected active Studio image
+- **Module return** — replaces the module image in place and keeps the same module image UUID so Studio history remains attached
+- **References are image-specific** — Studio module/reference layers are stored as `layers` on the same per-UUID Studio session
+- **No automatic Gallery publishing** — Studio outputs do not auto-add new Gallery rows. Future behavior should be an explicit “Save to Gallery” action.
+
+### Studio Reference Panel (`studio-module.js`)
+
+Purpose-built panel — does not use `ModulePanel.makeSection`. Owns its own render/serialize cycle.
+
+- **ACTION system** — each reference group carries one of `INSERT | SWAP | TRANSFER | REMOVE | PRESERVE` (default: `TRANSFER`). Action is sent to the API alongside the reference images.
+- **Adding groups** — header `+` button opens an action-type menu; user picks action, then file picker opens. First image creates the group.
+- **Adding images to a group** — add-child-row button below each group. Max 3 images per group (`MAX_IMAGES_PER_GROUP`).
+- **Action drawer** — click the action button on any group to open a picker; closes all other drawers first.
+- **Name editor** — click the group name label to open an inline input; Enter/Escape/blur commits. Opening name editor closes any open action drawer on the same group.
+- **Serialize** — `serialize()` reads the DOM and returns `{ groups: [{ action, name, images: [{ uuid }] }] }`. Images store UUID only; `resolveMissingImages()` fetches base64 from `DB.images` on load.
+- **Legacy compat** — `parseLegacyLayers()` converts old HTML-snapshot format to new shape on restore.
 
 ---
 
@@ -466,6 +478,9 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-26 | Studio Back returns the selected active history image | Clicking a history thumbnail sets `activeUrl`; closing Studio returns that image to Gallery or Module instead of always returning the newest generated result. |
 | 2026-05-26 | Studio does not auto-publish to Gallery | Gallery and Module callers both replace their original image in place. Future Gallery publishing should be an explicit "Save to Gallery" action. |
 | 2026-05-26 | Projects modal can have zero projects | Deleting the final project clears the workspace and leaves the list empty; the app no longer auto-creates a replacement row that makes deletion look broken. |
+| 2026-05-26 | Studio reference panel no longer uses ModulePanel.makeSection | Custom render/serialize cycle eliminates hidden slots, text rows, eye, and link behavior that ModulePanel always brought along. Panel state is `{ groups: [{ action, name, images: [{ uuid }] }] }`. |
+| 2026-05-26 | Studio references carry ACTION intent | Each reference group has an action tag (INSERT / SWAP / TRANSFER / REMOVE / PRESERVE). The API prompt includes `action` + `intent` per reference so the model knows how to apply each image. Default action is TRANSFER. |
+| 2026-05-26 | action-drawer-open separate from drawer-open | Action button active state only triggers on `.action-drawer-open`, not `.drawer-open`, so opening the name editor no longer falsely activates the action button. |
 
 ---
 

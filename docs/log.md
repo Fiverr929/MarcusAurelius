@@ -735,6 +735,60 @@ Studio state was made image-specific and the Projects modal was cleaned up so UI
 
 ---
 
+### 2026-05-26 — Studio Module: ACTION System + Visual Polish
+
+**Status:** COMPLETED
+
+**What Was Done:**
+
+Rebuilt the Studio reference panel from scratch — dropped `ModulePanel.makeSection` entirely and replaced it with a purpose-built render/serialize cycle. Added an ACTION system so each reference group carries intent metadata sent to the API.
+
+**`logic/studio-module.js` — full rework:**
+- Dropped `ModulePanel.makeSection` dependency. Studio module now owns its own `render()`, `serialize()`, `resolveMissingImages()`, and `loadForSource()` — no hidden slots, text rows, eye, or link behavior
+- ACTION system: each group has one of `INSERT | SWAP | TRANSFER | REMOVE | PRESERVE` (default: `TRANSFER`)
+- Header `+` button opens an action-type menu — user picks action first, then file picker opens
+- Per-group action drawer (click action button) — toggle open/close, updates `data-action` and button label
+- Per-group name editor drawer (click name label) — inline `<input>`, Enter/Escape/blur to commit
+- `MAX_IMAGES_PER_GROUP = 3` — add-child-row disables when limit reached
+- `parseLegacyLayers()` — reads old HTML-snapshot format and converts to new `{ groups }` shape for backward compat
+- `autosave()` — serializes to `StudioModuleState.layers` and debounces workspace autosave
+- API prompt updated: each reference now sends `action` + `intent` fields instead of bare name
+
+**Bug fixes:**
+- Action button showed active state when name editor opened — fixed by using `action-drawer-open` class only for action drawer; name editor uses `drawer-open`
+- Name editor didn't close action drawer on same group — added explicit close before opening name editor
+
+**`logic/studio.js`:**
+- Removed empty history placeholder divs — they appeared as broken entries when no history existed
+
+**`style.css` — Studio module visual polish:**
+- Group X button: `icon-x-inactive.svg` (grey), no background
+- Action button: grey bg / orange text default; orange bg / grey text when `action-drawer-open`
+- Action drawer options: grey bg / grey text; orange bg / grey text on hover; orange bg / grey text when active
+- Name editor drawer: grey bg (`#999997`), light grey text (`#c7c7c7`)
+- Name label active (drawer open): orange bg, light grey text
+- Image border: `border-color: #c7c7c7` overrides global blue border in studio context
+- Per-image delete button: replaced top-left X with bottom-right trash icon (`icon-trash.svg`, 22×22px)
+
+**`assets/icon-trash.svg` — new asset:**
+- Minimalist trash can with handle, lid, body, and 3 vertical line details
+- Uses `#c7c7c7` fill for visibility on grey background
+
+**`CafeHTML-v2.html`:**
+- `#sm-layers` starts empty — JS renders groups from `StudioModuleState.layers` on `init()`
+- Removed static default layer-group HTML
+
+**Files Touched:**
+- `logic/studio-module.js`
+- `logic/studio.js`
+- `style.css`
+- `CafeHTML-v2.html`
+- `assets/icon-trash.svg` (created)
+- `docs/log.md`
+- `docs/CafeHTML.md`
+
+---
+
 ## Design Tokens (Quick Reference)
 
 | Token | Hex | Role |

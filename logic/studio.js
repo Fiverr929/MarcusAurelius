@@ -113,16 +113,12 @@ window.Studio = (function () {
   // ── History ───────────────────────────────────────────────────────────────
 
   function addPlaceholders() {
-    for (var i = 0; i < 3; i++) {
-      var p = document.createElement('div');
-      p.className = 'history-thumb history-placeholder';
-      historyFrames.appendChild(p);
-    }
+    // Intentionally no-op: placeholders created empty boxes that looked like
+    // broken history entries.
   }
 
   function clearHistory() {
     historyFrames.innerHTML = '';
-    addPlaceholders();
   }
 
   function setActiveVersion(url, thumb, options) {
@@ -147,8 +143,7 @@ window.Studio = (function () {
   }
 
   function addHistoryThumb(url) {
-    var placeholder = historyFrames.querySelector('.history-placeholder');
-    if (placeholder) placeholder.remove();
+    historyFrames.querySelectorAll('.history-placeholder').forEach(function (p) { p.remove(); });
     var thumb = document.createElement('div');
     thumb.className = 'history-thumb';
     thumb.innerHTML = '<img src="' + url + '" alt="">';
@@ -178,8 +173,7 @@ window.Studio = (function () {
   }
 
   function addLoadingThumb() {
-    var placeholder = historyFrames.querySelector('.history-placeholder');
-    if (placeholder) placeholder.remove();
+    historyFrames.querySelectorAll('.history-placeholder').forEach(function (p) { p.remove(); });
     var thumb = document.createElement('div');
     thumb.className = 'history-thumb loading';
     historyFrames.prepend(thumb);
@@ -195,7 +189,7 @@ window.Studio = (function () {
 
   function removeLoadingThumb(thumb) {
     thumb.remove();
-    if (!historyFrames.querySelector('.history-thumb')) addPlaceholders();
+    // If no history exists, keep the column empty (no placeholders).
   }
 
   // ── Draw layer ────────────────────────────────────────────────────────────
@@ -429,7 +423,7 @@ window.Studio = (function () {
 
     var moduleImages = window.StudioModule.collectImages();
     moduleImages.forEach(function (ref) {
-      parts.push({ text: 'Reference — ' + ref.name + ':' });
+      parts.push({ text: 'Reference action: ' + (ref.action || 'TRANSFER') + '\nIntent: ' + ref.name + '\nUse this reference only for the stated action and intent:' });
       parts.push({ inline_data: { mime_type: mimeFrom(ref.url), data: base64From(ref.url) } });
     });
 
