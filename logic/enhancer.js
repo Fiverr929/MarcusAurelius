@@ -393,57 +393,39 @@ window.PromptEnhancer = (function () {
     console.log('[PromptEnhancer] → POST', MODEL, '| images inline:', inlineItems.length, '| described:', imageItems.length - inlineItems.length, '| enhancer cache:', canCacheEnhancer ? 'on' : 'off', '| prompt chars:', userMessage.length);
     console.log('[PromptEnhancer] user message:\n' + userMessage);
 
-    function runOne(attempt) {
-      return fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          contents: [{ role: 'user', parts: parts }],
-          generationConfig: { maxOutputTokens: 4999 },
-          safetySettings: [
-            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' }
-          ]
-        })
+    return window.CafeNet.fetchJSON(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        contents: [{ role: 'user', parts: parts }],
+        generationConfig: { maxOutputTokens: 4999 },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' }
+        ]
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            if (!res.ok) {
-              if (res.status === 429 && attempt < 2) {
-                var wait = (attempt + 1) * 5000;
-                console.warn('[PromptEnhancer] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
-                return new Promise(function (resolve) { setTimeout(resolve, wait); })
-                  .then(function () { return runOne(attempt + 1); });
-              }
-              throw new Error('[PromptEnhancer] ' + res.status + ': ' + JSON.stringify(data));
-            }
-            return data;
-          });
-        })
-        .then(function (data) {
-          var candidateParts = data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts;
-          console.log('[PromptEnhancer] parts:', JSON.stringify((candidateParts || []).map(function(p) { return { thought: p.thought, len: (p.text || '').length, preview: (p.text || '').slice(0, 60) }; })));
-          var text = candidateParts
-            ? candidateParts.filter(function (p) { return !p.thought; }).map(function (p) { return p.text || ''; }).join('')
-            : null;
-          if (!text) throw new Error('[PromptEnhancer] Empty response');
-          console.log('[PromptEnhancer] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | brief:', text.trim().slice(0, 120) + '...');
-          var result = { prompt: text.trim(), manifest: imageContext, enhancerInput: userMessage, directorPlan: buildDirectorPlan(userIntent, imageContext) };
-          if (canCacheEnhancer) {
-            cacheSet(activeCacheKey, result);
-            console.log('[PromptEnhancer] cached enhancer output for key:', activeCacheKey);
-          }
-          return result;
-        });
-    }
-
-    return runOne(0);
+    }, { label: '[PromptEnhancer]' })
+      .then(function (data) {
+        var candidateParts = data.candidates &&
+          data.candidates[0] &&
+          data.candidates[0].content &&
+          data.candidates[0].content.parts;
+        console.log('[PromptEnhancer] parts:', JSON.stringify((candidateParts || []).map(function(p) { return { thought: p.thought, len: (p.text || '').length, preview: (p.text || '').slice(0, 60) }; })));
+        var text = candidateParts
+          ? candidateParts.filter(function (p) { return !p.thought; }).map(function (p) { return p.text || ''; }).join('')
+          : null;
+        if (!text) throw new Error('[PromptEnhancer] Empty response');
+        console.log('[PromptEnhancer] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | brief:', text.trim().slice(0, 120) + '...');
+        var result = { prompt: text.trim(), manifest: imageContext, enhancerInput: userMessage, directorPlan: buildDirectorPlan(userIntent, imageContext) };
+        if (canCacheEnhancer) {
+          cacheSet(activeCacheKey, result);
+          console.log('[PromptEnhancer] cached enhancer output for key:', activeCacheKey);
+        }
+        return result;
+      });
   }
 
   return { enhance: enhance, collectImageContext: collectImageContext };

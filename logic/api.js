@@ -129,28 +129,11 @@ window.CafeAPI = (function () {
     };
     if (opts.systemInstruction) body.systemInstruction = opts.systemInstruction;
 
-    function runOne(attempt) {
-      attempt = attempt || 0;
-      return fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok) {
-            if (res.status === 429 && attempt < 2) {
-              var wait = (attempt + 1) * 5000;
-              console.warn('[CafeAPI] 429 — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ')');
-              return new Promise(function (r) { setTimeout(r, wait); }).then(function () { return runOne(attempt + 1); });
-            }
-            throw new Error('API error ' + res.status + ': ' + JSON.stringify(data));
-          }
-          return data;
-        });
-      });
-    }
-
-    return runOne(0);
+    return window.CafeNet.fetchJSON(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }, { label: '[CafeAPI]' });
   }
 
   function dataUrlToBase64(dataUrl) {

@@ -66,58 +66,34 @@ window.VisionScan = (function () {
     var t0 = Date.now();
     console.log('[VisionScan] → POST', MODEL, '| mime:', mimeType, '| prompt:', prompt.slice(0, 80) + '...');
 
-    function runOne(attempt) {
-      var controller = new AbortController();
-      var timer = setTimeout(function () { controller.abort(); }, getTimeoutMs());
-
-      return fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            role: 'user', parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType, data: base64 } }
-            ]
-          }],
-          generationConfig: { maxOutputTokens: 1024 }
-        })
+    return window.CafeNet.fetchJSON(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user', parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: base64 } }
+          ]
+        }],
+        generationConfig: { maxOutputTokens: 1024 }
       })
-        .then(function (res) {
-          clearTimeout(timer);
-          return res.json().then(function (data) {
-            if (!res.ok) {
-              if (res.status === 429 && attempt < 2) {
-                var wait = (attempt + 1) * 5000;
-                console.warn('[VisionScan] 429 rate limit — retrying in ' + (wait / 1000) + 's (attempt ' + (attempt + 1) + ' of 2)');
-                return new Promise(function (resolve) { setTimeout(resolve, wait); })
-                  .then(function () { return runOne(attempt + 1); });
-              }
-              throw new Error('[VisionScan] ' + res.status + ': ' + JSON.stringify(data));
-            }
-            return data;
-          });
-        })
-        .then(function (data) {
-          var text = data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts &&
-            data.candidates[0].content.parts[0] &&
-            data.candidates[0].content.parts[0].text;
-          if (!text) throw new Error('[VisionScan] Empty response');
-          console.log('[VisionScan] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | chars:', text.trim().length);
-          return text.trim();
-        })
-        .catch(function (err) {
-          clearTimeout(timer);
-          console.warn('[VisionScan] ✗', MODEL, '| ' + (Date.now() - t0) + 'ms |', err.message);
-          throw err;
-        });
-    }
-
-    return runOne(0);
+    }, { label: '[VisionScan]', timeoutMs: getTimeoutMs() })
+      .then(function (data) {
+        var text = data.candidates &&
+          data.candidates[0] &&
+          data.candidates[0].content &&
+          data.candidates[0].content.parts &&
+          data.candidates[0].content.parts[0] &&
+          data.candidates[0].content.parts[0].text;
+        if (!text) throw new Error('[VisionScan] Empty response');
+        console.log('[VisionScan] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | chars:', text.trim().length);
+        return text.trim();
+      })
+      .catch(function (err) {
+        console.warn('[VisionScan] ✗', MODEL, '| ' + (Date.now() - t0) + 'ms |', err.message);
+        throw err;
+      });
   }
 
   function parseDataUrl(dataUrl) {
