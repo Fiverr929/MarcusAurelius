@@ -6,7 +6,7 @@ Client-side rendering pipeline with modular prompt composition, multi-modal infe
 
 ## Current Build
 
-Single-file architecture backed by a `logic/` module layer. Settings and state are managed client-side via `localStorage`. All inference calls are routed through a keyed endpoint configured at runtime.
+Single-file architecture backed by a `logic/` module layer. Settings and state are managed client-side via `localStorage`. All inference calls are routed through a keyed endpoint configured at runtime. Studio now uses its own dedicated reference module instead of the shared `ModulePanel` path.
 
 ```
 /
@@ -18,6 +18,8 @@ Single-file architecture backed by a `logic/` module layer. Settings and state a
 │   ├── workspace.js      — session + state management
 │   ├── settings.js       — runtime config + key binding
 │   ├── storage.js        — persistence layer
+│   ├── studio-module.js  — Studio-specific reference groups + action drawers
+│   ├── studio.js         — Studio canvas + generation wiring
 │   └── debug-logger.js   — structured event logging
 │
 └── Components/
@@ -52,6 +54,7 @@ Input
 - **Prompt composition** — `prompt-builder.js` assembles context dynamically. Token length is not currently capped, which can cause silent failures at the endpoint.
 - **State isolation** — workspace state lives in memory and `localStorage`. No sync between tabs. Refreshing mid-session can drop unsaved context.
 - **Single file constraint** — `CafeHTML-v2.html` carries inline logic that hasn't been fully offloaded to modules yet. Causes duplication with some `logic/` functions.
+- **Studio consistency** — Studio now has a dedicated reference flow with `INSERT / SWAP / TRANSFER / REMOVE / PRESERVE`, inline intent editing, and a max of 3 images per reference group. The empty default reference layer was removed so the header `+` is the creation entry point.
 
 ---
 
@@ -65,4 +68,4 @@ Input
 
 ## Status
 
-Active development. Build is functional but not hardened. Module separation is ongoing.
+Active development. Build is functional but not hardened. Studio module separation is in place and the reference workflow is being refined.
