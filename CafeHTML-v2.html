@@ -479,94 +479,6 @@
 
   <!-- ── IMAGE HUD ── -->
 
-  <!-- ── REFINE OVERLAY ── -->
-  <div id="refine-overlay">
-    <button id="refine-close">&#8592; BACK</button>
-
-    <div class="refine-history">
-      <div class="history-header">HISTORY</div>
-      <div class="history-frames" id="refineHistoryFrames"></div>
-    </div>
-
-    <div class="refine-main">
-      <div class="refine-center">
-        <div class="refine-canvas-wrap">
-          <div class="canvas-group">
-            <div class="refine-canvas" id="refineCanvas">
-              <canvas id="refineDrawLayer"></canvas>
-              <div id="refineCropOverlay"></div>
-            </div>
-
-            <div class="tool-submenu" id="refineToolSubmenu">
-              <div class="submenu-panel" data-tool="pencil">
-                <div class="size-options">
-                  <button class="size-dot active" data-size="3"></button>
-                  <button class="size-dot" data-size="8"></button>
-                  <button class="size-dot" data-size="16"></button>
-                </div>
-                <div class="sub-divider"></div>
-                <div class="color-options">
-                  <button class="color-swatch active" data-color="#ea5823" style="background:#ea5823"></button>
-                  <button class="color-swatch" data-color="#c7c7c7" style="background:#c7c7c7"></button>
-                  <button class="color-swatch" data-color="#22c55e" style="background:#22c55e"></button>
-                </div>
-                <div class="sub-divider"></div>
-                <div class="edit-options">
-                  <button class="edit-btn" id="refineUndoBtn">
-                    <svg viewBox="0 0 18 18" fill="none"><path d="M3 7H11C13.2 7 15 8.8 15 11C15 13.2 13.2 15 11 15H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 4L3 7L6 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                  <button class="edit-btn" id="refineRedoBtn">
-                    <svg viewBox="0 0 18 18" fill="none"><path d="M15 7H7C4.8 7 3 8.8 3 11C3 13.2 4.8 15 7 15H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 4L15 7L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                </div>
-              </div>
-
-              <div class="submenu-panel" data-tool="crop">
-                <div class="crop-options">
-                  <button class="crop-btn active" data-ratio="16/9">
-                    <svg viewBox="0 0 36 28" fill="none"><rect x="2" y="7" width="32" height="14" stroke="currentColor" stroke-width="1.5"/></svg>
-                  </button>
-                  <button class="crop-btn" data-ratio="9/16">
-                    <svg viewBox="0 0 36 28" fill="none"><rect x="12" y="1" width="12" height="26" stroke="currentColor" stroke-width="1.5"/></svg>
-                  </button>
-                  <button class="crop-btn" data-ratio="1/1">
-                    <svg viewBox="0 0 36 28" fill="none"><rect x="8" y="2" width="20" height="24" stroke="currentColor" stroke-width="1.5"/></svg>
-                  </button>
-                  <button class="crop-btn" data-ratio="free">
-                    <svg viewBox="0 0 36 28" fill="none"><rect x="3" y="3" width="30" height="22" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><rect x="1" y="1" width="5" height="5" fill="currentColor"/><rect x="30" y="1" width="5" height="5" fill="currentColor"/><rect x="1" y="22" width="5" height="5" fill="currentColor"/><rect x="30" y="22" width="5" height="5" fill="currentColor"/></svg>
-                  </button>
-                </div>
-                <div class="sub-divider"></div>
-                <button class="apply-btn" id="refineApplyCropBtn">APPLY</button>
-              </div>
-            </div>
-
-            <div class="refine-toolbar">
-              <button class="tool-btn" data-tool="pencil">
-                <svg viewBox="0 0 40 40" fill="none"><path d="M7 33L10.5 22L28 7L35 14L16.5 30.5L7 33Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M25.5 9.5L32 16" stroke="currentColor" stroke-width="2"/><path d="M7 33L11 29.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              </button>
-              <button class="tool-btn" data-tool="crop">
-                <svg viewBox="0 0 40 40" fill="none"><line x1="8" y1="4" x2="8" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="32" x2="36" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="8" x2="32" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="8" x2="32" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="14" y="8" width="18" height="18" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="prompt-wrap" id="refinePromptWrap">
-          <div class="ref-chips-row" id="refineRefChipsRow"></div>
-          <div class="refine-prompt">
-            <button class="prompt-ref-btn" id="refineRefUploadBtn">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><line x1="10" y1="2" x2="10" y2="18" stroke="#c7c7c7" stroke-width="2.5" stroke-linecap="round"/><line x1="2" y1="10" x2="18" y2="10" stroke="#c7c7c7" stroke-width="2.5" stroke-linecap="round"/></svg>
-            </button>
-            <input class="prompt-input" id="refinePromptInput" type="text" placeholder="What do you want me to do now?" />
-            <button class="prompt-refine-btn" id="refineBtn">REFINE</button>
-          </div>
-        </div>
-        <input type="file" id="refineRefFileInput" accept="image/*" style="display:none">
-      </div>
-    </div>
-  </div>
-
   <!-- ── STUDIO OVERLAY ── -->
   <div id="studio-overlay">
     <div class="studio-header">
@@ -794,7 +706,6 @@
   <script src="logic/module-panel.js"></script>
   <script src="logic/gallery.js"></script>
   <script src="logic/sequence-bar.js"></script>
-  <script src="logic/refine.js"></script>
   <script src="logic/studio-module.js"></script>
   <script src="logic/studio.js"></script>
 

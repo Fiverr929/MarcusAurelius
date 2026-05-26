@@ -475,7 +475,14 @@ window.Workspace = (function () {
     }).then(function () {
       return DB.projects.getAll();
     }).then(function (projects) {
-      if (!projects.length) return;
+      if (!projects.length) {
+        // Always have an active project before any upload can fire. Otherwise
+        // images written with a null project_id get removed by orphan cleanup
+        // on the next load — silent data loss for a first-action upload.
+        return DB.projects.create({ name: 'Project' }).then(function (id) {
+          window.activeProjectId = id;
+        });
+      }
       projects.sort(function (a, b) { return a.date_modified < b.date_modified ? 1 : a.date_modified > b.date_modified ? -1 : 0; });
       loadProject(projects[0].id, true);
     }).catch(function (e) {
