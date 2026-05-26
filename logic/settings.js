@@ -22,7 +22,8 @@ window.CafeSettings = (function () {
       resolutions: ['512', '1K', '2K', '4K'],
       defaultResolution: '1K',
       costByResolution: { '512': 0.045, '1K': 0.067, '2K': 0.101, '4K': 0.150 },
-      thinkingLevel: 'MINIMAL'
+      thinkingLevel: 'minimal',
+      thinkingLevels: ['minimal', 'high']
     },
     'nano-banana-pro': {
       id: 'gemini-3-pro-image-preview',
@@ -42,6 +43,7 @@ window.CafeSettings = (function () {
     googleApiKey: '',
     activeModel: 'google-nano-banana',
     activeResolution: '1K',
+    thinkingLevel: 'minimal',
     scanTiming: 'generate',
     keepDescriptions: true,
     scanTimeout: 20
@@ -55,6 +57,7 @@ window.CafeSettings = (function () {
         if (saved.googleApiKey) state.googleApiKey = saved.googleApiKey;
         if (saved.activeModel && MODELS[saved.activeModel]) state.activeModel = saved.activeModel;
         if (saved.activeResolution) state.activeResolution = saved.activeResolution;
+        if (saved.thinkingLevel) state.thinkingLevel = saved.thinkingLevel;
         if (saved.scanTiming) state.scanTiming = saved.scanTiming;
         if (typeof saved.keepDescriptions === 'boolean') state.keepDescriptions = saved.keepDescriptions;
         if (typeof saved.scanTimeout === 'number' && saved.scanTimeout >= 5) state.scanTimeout = saved.scanTimeout;
@@ -68,6 +71,7 @@ window.CafeSettings = (function () {
         googleApiKey: state.googleApiKey,
         activeModel: state.activeModel,
         activeResolution: state.activeResolution,
+        thinkingLevel: state.thinkingLevel,
         scanTiming: state.scanTiming,
         keepDescriptions: state.keepDescriptions,
         scanTimeout: state.scanTimeout
@@ -101,6 +105,24 @@ window.CafeSettings = (function () {
     var model = MODELS[state.activeModel];
     if (!model || model.resolutions.indexOf(res) === -1) return;
     state.activeResolution = res;
+    saveState();
+    renderModal();
+  }
+
+  // Returns the thinking level for the active model: the user choice when the
+  // model exposes selectable levels, otherwise the model's fixed default (or null).
+  function getActiveThinkingLevel() {
+    var model = MODELS[state.activeModel];
+    if (model && model.thinkingLevels && model.thinkingLevels.length) {
+      return model.thinkingLevels.indexOf(state.thinkingLevel) !== -1 ? state.thinkingLevel : model.thinkingLevels[0];
+    }
+    return (model && model.thinkingLevel) || null;
+  }
+
+  function setThinkingLevel(level) {
+    var model = MODELS[state.activeModel];
+    if (!model || !model.thinkingLevels || model.thinkingLevels.indexOf(level) === -1) return;
+    state.thinkingLevel = level;
     saveState();
     renderModal();
   }
@@ -144,6 +166,27 @@ window.CafeSettings = (function () {
         row.addEventListener('click', function () { setActiveResolution(res); });
         resList.appendChild(row);
       });
+    }
+
+    var thinkingSection = modal.querySelector('.csm-thinking-section');
+    var thinkingList = modal.querySelector('.csm-thinking-list');
+    if (thinkingSection && thinkingList) {
+      var levels = MODELS[state.activeModel].thinkingLevels || [];
+      if (levels.length) {
+        thinkingSection.style.display = '';
+        thinkingList.innerHTML = '';
+        var activeLevel = getActiveThinkingLevel();
+        levels.forEach(function (level) {
+          var isActive = level === activeLevel;
+          var row = document.createElement('div');
+          row.className = 'csm-resolution-row' + (isActive ? ' active' : '');
+          row.innerHTML = (isActive ? '<span class="csm-resolution-check">✓</span>' : '') + level.charAt(0).toUpperCase() + level.slice(1);
+          row.addEventListener('click', function () { setThinkingLevel(level); });
+          thinkingList.appendChild(row);
+        });
+      } else {
+        thinkingSection.style.display = 'none';
+      }
     }
 
     modal.querySelector('.csm-cost-value').textContent = '$' + getCostPerImage().toFixed(3) + ' per image';
@@ -251,6 +294,7 @@ window.CafeSettings = (function () {
     setActiveModel: setActiveModel,
     getActiveResolution: getActiveResolution,
     setActiveResolution: setActiveResolution,
+    getActiveThinkingLevel: getActiveThinkingLevel,
     getCostPerImage: getCostPerImage,
     getScanTiming: function () { return state.scanTiming; },
     getKeepDescriptions: function () { return state.keepDescriptions; },

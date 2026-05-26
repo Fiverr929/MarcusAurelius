@@ -241,7 +241,7 @@ window.CafeAPI = (function () {
     _activeRequests++;
     var ratio = '1:1';
     var imageSize = model.defaultResolution || '1K';
-    var thinkingLevel = model.thinkingLevel || null;
+    var thinkingLevel = window.CafeSettings.getActiveThinkingLevel();
 
     return googleGenerate(model.id, apiKey, promptText, 1, ratio, [], imageSize, thinkingLevel)
       .then(function (result) {
@@ -367,7 +367,7 @@ window.CafeAPI = (function () {
         })
         .map(function (item) { return item.imgUrl; });
       var imageSize = window.CafeSettings.getActiveResolution();
-      var thinkingLevel = model.thinkingLevel || null;
+      var thinkingLevel = window.CafeSettings.getActiveThinkingLevel();
 
       debugEntry.imagesSent = {
         total:       imageRefs.length,
