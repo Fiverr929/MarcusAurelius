@@ -406,7 +406,7 @@ window.ProjectsPanel = (function () {
           if (idToDelete === window.activeProjectId) {
             DB.projects.getAll().then(function(projects) {
               if (projects.length) {
-                projects.sort(function (a, b) { return b.date_modified > a.date_modified ? 1 : -1; });
+                projects.sort(function (a, b) { return a.date_modified < b.date_modified ? 1 : a.date_modified > b.date_modified ? -1 : 0; });
                 window.Workspace.loadProject(projects[0].id, true);
               } else {
                 window.Workspace.clearWorkspace();
@@ -425,7 +425,7 @@ window.ProjectsPanel = (function () {
 
   function loadAndRender() {
     DB.projects.getAll().then(function (projects) {
-      projects.sort(function (a, b) { return b.date_modified > a.date_modified ? 1 : -1; });
+      projects.sort(function (a, b) { return a.date_modified < b.date_modified ? 1 : a.date_modified > b.date_modified ? -1 : 0; });
       render(projects);
     });
   }

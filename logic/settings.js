@@ -89,7 +89,8 @@ window.CafeSettings = (function () {
   function setActiveModel(id) {
     if (!MODELS[id]) return;
     state.activeModel = id;
-    state.activeResolution = MODELS[id].defaultResolution;
+    var model = MODELS[id];
+    state.activeResolution = model.defaultResolution || (model.resolutions && model.resolutions[0]) || '1K';
     saveState();
     renderModal();
   }

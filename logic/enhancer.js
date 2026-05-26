@@ -315,6 +315,18 @@ window.PromptEnhancer = (function () {
   }
 
   var _cache = {};
+  var _cacheOrder = [];
+  var _CACHE_MAX = 50;
+
+  function cacheSet(key, value) {
+    if (!(key in _cache)) {
+      _cacheOrder.push(key);
+      if (_cacheOrder.length > _CACHE_MAX) {
+        delete _cache[_cacheOrder.shift()];
+      }
+    }
+    _cache[key] = value;
+  }
 
   function cacheKey(userMessage, imageItems) {
     return userMessage + '||' + imageItems.map(function (i) {
@@ -424,7 +436,7 @@ window.PromptEnhancer = (function () {
           console.log('[PromptEnhancer] ✓', MODEL, '| ' + (Date.now() - t0) + 'ms | brief:', text.trim().slice(0, 120) + '...');
           var result = { prompt: text.trim(), manifest: imageContext, enhancerInput: userMessage, directorPlan: buildDirectorPlan(userIntent, imageContext) };
           if (canCacheEnhancer) {
-            _cache[activeCacheKey] = result;
+            cacheSet(activeCacheKey, result);
             console.log('[PromptEnhancer] cached enhancer output for key:', activeCacheKey);
           }
           return result;

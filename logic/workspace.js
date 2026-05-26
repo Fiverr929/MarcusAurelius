@@ -476,7 +476,7 @@ window.Workspace = (function () {
       return DB.projects.getAll();
     }).then(function (projects) {
       if (!projects.length) return;
-      projects.sort(function (a, b) { return b.date_modified > a.date_modified ? 1 : -1; });
+      projects.sort(function (a, b) { return a.date_modified < b.date_modified ? 1 : a.date_modified > b.date_modified ? -1 : 0; });
       loadProject(projects[0].id, true);
     }).catch(function (e) {
       console.warn('[Workspace] init failed:', e);
