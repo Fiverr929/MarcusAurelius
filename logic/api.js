@@ -3,20 +3,8 @@ window.CafeAPI = (function () {
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  var DIMS = {
-    '1:1':  { w: 1024, h: 1024 },
-    '16:9': { w: 1344, h: 768  },
-    '9:16': { w: 768,  h: 1344 },
-    '4:3':  { w: 1152, h: 864  },
-    '3:4':  { w: 864,  h: 1152 }
-  };
-
   function formatDate(d) {
     return MONTHS[d.getMonth()] + ' ' + d.getDate() + ' ' + d.getFullYear();
-  }
-
-  function dimsFromRatio(ratio) {
-    return DIMS[ratio] || DIMS['1:1'];
   }
 
   function collectUsedImagesFromManifest(manifest) {
@@ -146,7 +134,7 @@ window.CafeAPI = (function () {
     return match ? match[1] : 'image/jpeg';
   }
 
-  function googleGenerate(modelId, apiKey, prompt, numImages, aspectRatio, imageRefs, imageSize, thinkingLevel) {
+  function googleGenerate(modelId, apiKey, prompt, numImages, aspectRatio, imageRefs, imageSize, thinkingLevel, onVariationReady, onVariationFailed, onVariationBlocked) {
     var arMap = { '1:1': '1:1', '16:9': '16:9', '9:16': '9:16', '4:3': '4:3', '3:4': '3:4' };
     var ar = arMap[aspectRatio] || '1:1';
 
@@ -185,7 +173,31 @@ window.CafeAPI = (function () {
     function runParallel(n) {
       var calls = [];
       for (var i = 0; i < n; i++) {
-        calls.push(callGoogleAPI(modelId, apiKey, parts, generationConfig, opts));
+        (function (idx) {
+          var baseCall = callGoogleAPI(modelId, apiKey, parts, generationConfig, opts);
+          // Fire onVariationFailed independently so allSettled still sees the rejection.
+          if (onVariationFailed) baseCall.catch(function () { onVariationFailed(idx); });
+          var call = baseCall;
+          if (onVariationReady || onVariationBlocked) {
+            call = baseCall.then(function (result) {
+              var prediction = null;
+              var blocked = !!(result.promptFeedback && result.promptFeedback.blockReason);
+              (result.candidates || []).forEach(function (candidate) {
+                if (candidate.finishReason && candidate.finishReason !== 'STOP') blocked = true;
+                if (prediction) return;
+                ((candidate.content && candidate.content.parts) || []).forEach(function (part) {
+                  if (prediction) return;
+                  var id = part.inlineData || part.inline_data;
+                  if (id && id.data) prediction = { mimeType: id.mimeType || id.mime_type || 'image/png', bytesBase64Encoded: id.data };
+                });
+              });
+              if (prediction && onVariationReady) onVariationReady('data:' + prediction.mimeType + ';base64,' + prediction.bytesBase64Encoded, idx);
+              else if (blocked && onVariationBlocked) onVariationBlocked(idx);
+              return result;
+            });
+          }
+          calls.push(call);
+        }(i));
       }
       // allSettled — a failed variation must not discard the ones that succeeded.
       return Promise.allSettled(calls);
@@ -282,7 +294,6 @@ window.CafeAPI = (function () {
     var payload = window.PromptBuilder.collect();
     var moduleSnapshot = snapshotModuleState();
     var ratio = payload.settings.aspectRatio || '1:1';
-    var dims = dimsFromRatio(ratio);
     var now = new Date();
     var numImages = payload.settings.variation || 1;
     var mode = payload.mode || 'FRAME';
@@ -400,54 +411,64 @@ window.CafeAPI = (function () {
       };
       console.log('[CafeAPI] Generation manifest fingerprints:', JSON.stringify(debugEntry.imagesSent.manifest));
 
+      function buildCell(dataUrl) {
+        var cell = {
+          id: Date.now() + Math.random(),
+          uuid: crypto.randomUUID(),
+          ratio: ratio,
+          imgUrl: dataUrl,
+          date: formatDate(now),
+          type: 'Image',
+          dims: '—',
+          prompt: finalPrompt,
+          manifest: manifest,
+          model: model.label,
+          cost: window.CafeSettings.getCostPerImage(),
+          generated: true,
+          moduleSnapshot: moduleSnapshot,
+          usedImages: collectUsedImagesFromManifest(manifest)
+        };
+        var img = new Image();
+        img.onload = function () { cell.dims = img.naturalWidth + ' × ' + img.naturalHeight; window.Workspace.autosave(); };
+        img.src = dataUrl;
+        return cell;
+      }
+
+      function onVariationReady(dataUrl, idx) {
+        window.Gallery.resolveLoading(loadingIds[idx] || loadingIds[0], buildCell(dataUrl));
+        window.Workspace.autosave();
+      }
+
+      function onVariationBlocked(idx) {
+        window.Gallery.blockLoading(loadingIds[idx]);
+      }
+
+      function onVariationFailed(idx) {
+        function retry(newLid) {
+          googleGenerate(model.id, apiKey, finalPrompt, 1, ratio, imageRefs, imageSize, thinkingLevel,
+            function (dataUrl) {
+              window.Gallery.resolveLoading(newLid, buildCell(dataUrl));
+              window.Workspace.autosave();
+            },
+            function () { window.Gallery.failLoading(newLid, retry); },
+            function () { window.Gallery.blockLoading(newLid); }
+          );
+        }
+        window.Gallery.failLoading(loadingIds[idx], retry);
+      }
+
       var tGen = Date.now();
       console.log('[CafeAPI] Generation start | model:', model.id, '| images:', numImages, '| ratio:', ratio, '| active requests:', _activeRequests);
-      return googleGenerate(model.id, apiKey, finalPrompt, numImages, ratio, imageRefs, imageSize, thinkingLevel)
+      return googleGenerate(model.id, apiKey, finalPrompt, numImages, ratio, imageRefs, imageSize, thinkingLevel, onVariationReady, onVariationFailed, onVariationBlocked)
         .then(function (result) {
-          var predictions = result.predictions || [];
-          var imgUrls = predictions
-            .filter(function (p) { return p.bytesBase64Encoded; })
-            .map(function (p) { return 'data:' + (p.mimeType || 'image/png') + ';base64,' + p.bytesBase64Encoded; });
-
-          console.log('[CafeAPI] ✓ Generation complete | ' + (Date.now() - tGen) + 'ms | images received:', imgUrls.length);
-
+          var imgCount = (result.predictions || []).filter(function (p) { return p.bytesBase64Encoded; }).length;
+          console.log('[CafeAPI] ✓ Generation complete | ' + (Date.now() - tGen) + 'ms | images received:', imgCount);
           var t2 = Date.now();
           debugEntry.timingMs = { enhancer: t1 - t0, generation: t2 - t1, total: t2 - t0 };
-          debugEntry.result   = { success: true, imagesReceived: imgUrls.length };
+          debugEntry.result   = { success: true, imagesReceived: imgCount };
           window.CafeDebug.record(debugEntry);
-
-          try {
-            imgUrls.forEach(function (dataUrl, i) {
-              var cell = {
-                id: Date.now() + Math.random(),
-                uuid: crypto.randomUUID(),
-                ratio: ratio,
-                imgUrl: dataUrl,
-                date: formatDate(now),
-                type: 'Image',
-                dims: '—',
-                prompt: finalPrompt,
-                manifest: manifest,
-                model: model.label,
-                cost: window.CafeSettings.getCostPerImage(),
-                generated: true,
-                moduleSnapshot: moduleSnapshot,
-                usedImages: collectUsedImagesFromManifest(manifest)
-              };
-              var img = new Image();
-              img.onload = function () {
-                cell.dims = img.naturalWidth + ' × ' + img.naturalHeight;
-                window.Workspace.autosave();
-              };
-              img.src = dataUrl;
-              window.Gallery.resolveLoading(loadingIds[i] || loadingIds[0], cell);
-              window.Workspace.autosave();
-            });
-          } finally {
-            for (var ri = imgUrls.length; ri < loadingIds.length; ri++) {
-              window.Gallery.removeLoading(loadingIds[ri]);
-            }
-          }
+          // Remove any loading cells whose variation failed — resolved ones are already replaced.
+          loadingIds.forEach(function (lid) { window.Gallery.removeLoading(lid); });
         })
         .catch(function (err) {
           console.error('[CafeAPI] Generation failed:', err.message);

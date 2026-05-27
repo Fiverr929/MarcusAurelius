@@ -705,6 +705,40 @@ window.Gallery = {
   removeLoading: function (loadingId) {
     var loadingEl = $grid.querySelector('[data-loading-id="' + loadingId + '"]');
     if (loadingEl) loadingEl.remove();
+  },
+  blockLoading: function (loadingId) {
+    var el = $grid.querySelector('[data-loading-id="' + loadingId + '"]');
+    if (!el) return;
+    el.removeAttribute('data-loading-id');
+    var inner = el.querySelector('.cell-inner');
+    if (inner) {
+      inner.className = 'cell-inner cell-blocked';
+      inner.style.backgroundColor = '';
+      inner.innerHTML = '<span class="cell-blocked-label">BLOCKED</span>';
+    }
+    el.addEventListener('click', function () { el.remove(); });
+  },
+  failLoading: function (loadingId, retryFn) {
+    var el = $grid.querySelector('[data-loading-id="' + loadingId + '"]');
+    if (!el) return;
+    el.removeAttribute('data-loading-id');
+    var inner = el.querySelector('.cell-inner');
+    if (inner) {
+      inner.className = 'cell-inner cell-error';
+      inner.style.backgroundColor = '';
+      inner.innerHTML = '<span class="cell-error-label">RETRY</span>';
+    }
+    el.addEventListener('click', function onClick() {
+      el.removeEventListener('click', onClick);
+      var newLid = 'loading-' + Date.now() + '-r';
+      if (inner) {
+        inner.className = 'cell-inner cafe-loading';
+        inner.style.backgroundColor = '#ea5823';
+        inner.innerHTML = '';
+      }
+      el.dataset.loadingId = newLid;
+      retryFn(newLid);
+    });
   }
 };
 

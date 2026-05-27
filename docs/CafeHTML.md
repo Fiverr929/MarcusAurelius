@@ -481,6 +481,10 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-27 | Multi-variation calls run in parallel (again) | `googleGenerate` fires N variation calls concurrently via `Promise.allSettled` instead of a sequential chain. Restores the 2026-05-21 intent after the code had drifted back to sequential. No single-request multi-image param exists, so N images require N calls. |
 | 2026-05-27 | A failed variation no longer discards the batch | `allSettled` keeps the images that succeeded; a rejected call is dropped. The batch only throws when zero images come back, surfacing the underlying error if every call failed. |
 | 2026-05-27 | NB2 thinking level is user-selectable | NANO BANANA 2 exposes `minimal`/`high` via a Thinking control on the settings API page; `api.js` reads `CafeSettings.getActiveThinkingLevel()`. NB and Pro return null (thinkingConfig omitted). Values lowercased to match the docs. |
+| 2026-05-27 | Gallery resolves variations one by one as each finishes | `googleGenerate` fires N calls in parallel; each resolves its own loading cell via `onVariationReady(dataUrl, idx)` callback as it completes. Results appear incrementally instead of all at once after `allSettled`. |
+| 2026-05-27 | Failed variations show a RETRY cell | Rejected calls (network/429) fire `onVariationFailed(idx)` → `Gallery.failLoading()`. Cell stays in place, orange RETRY label. Click converts back to loading and retries one generation call using the same captured `finalPrompt`/`imageRefs` — no enhancer re-run. Retry failure loops back to RETRY cell. |
+| 2026-05-27 | `DIMS`, `dimsFromRatio`, and `var dims` removed from `api.js` | Dead code — pixel dimensions were never used in the API call. Generation uses `aspectRatio` and `imageSize` strings, not explicit width/height values. |
+| 2026-05-27 | Blocked variations show a BLOCKED cell | `promptFeedback.blockReason` (prompt-level) and `candidate.finishReason !== 'STOP'` (all non-success finish reasons) route to `onVariationBlocked(idx)` → `Gallery.blockLoading()`. Gray cell, gray BLOCKED label, click to dismiss. Not retryable — same prompt gets same result. |
 
 ---
 

@@ -14,6 +14,43 @@ Track component work, decisions, and session continuations here.
 
 ## Sessions
 
+### 2026-05-27 — Per-Variation Gallery Resolution + Error Cells
+
+**Status:** COMPLETED
+
+**What Was Done:**
+
+**`logic/api.js` — Per-variation gallery resolution:**
+- `googleGenerate()` now accepts `onVariationReady(dataUrl, idx)`, `onVariationFailed(idx)`, and `onVariationBlocked(idx)` callbacks.
+- `runParallel()` refactored — each call is wrapped independently. `onVariationFailed` fires via `baseCall.catch()` (independent, so allSettled still sees the rejection). `onVariationReady` and `onVariationBlocked` fire via `baseCall.then()`.
+- `blocked` detection covers both `result.promptFeedback.blockReason` (prompt-level) and `candidate.finishReason !== 'STOP'` (all non-success finish reasons: `SAFETY`, `RECITATION`, `OTHER`, `IMAGE_PROHIBITED_CONTENT`).
+- `buildCell(dataUrl)` extracted as shared helper — used by `onVariationReady` and retry closure.
+- `onVariationFailed(idx)` — calls `Gallery.failLoading(loadingId, retryFn)`. Retry closure calls `googleGenerate` with `numImages=1` using the same `finalPrompt`/`imageRefs` already in the closure — no re-running the enhancer. Retry can fail again and show error cell again.
+- `onVariationBlocked(idx)` — calls `Gallery.blockLoading(loadingId)`.
+- Gallery cells now resolve one by one as each variation finishes, not all at once after `allSettled`.
+- Cleanup `loadingIds.forEach(removeLoading)` at end of `.then()` — no-op on resolved/failed/blocked cells (all strip `data-loading-id`), removes any remaining spinners from unexpected empty responses.
+
+**`logic/gallery.js` — Error cell methods:**
+- `Gallery.failLoading(loadingId, retryFn)` — converts loading cell to gray `#999997` error cell with centered orange `RETRY` label. Strips `data-loading-id`. Click restores orange pulsing loading state, assigns new `loadingId`, calls `retryFn(newLid)`.
+- `Gallery.blockLoading(loadingId)` — converts loading cell to gray `#999997` blocked cell with centered gray `BLOCKED` label. Strips `data-loading-id`. Click removes the cell.
+
+**`style.css` — Error cell styles:**
+- `.cell-inner.cell-error` + `.cell-error-label` — gray background, orange RETRY text, pointer cursor.
+- `.cell-inner.cell-blocked` + `.cell-blocked-label` — gray background, light gray BLOCKED text, pointer cursor (click to dismiss).
+
+**Decisions:**
+- Results appear as each variation finishes, not batched — matches Whisk pattern, feels faster without changing actual generation time.
+- RETRY only for rejected promises (network/429) — transient errors. Retry reuses captured `finalPrompt`/`imageRefs` from closure, no enhancer re-run.
+- BLOCKED for all model-refused responses — not retryable. Click to dismiss.
+- `promptFeedback.blockReason` (prompt-level) and `finishReason !== 'STOP'` (candidate-level) both route to BLOCKED — covers all refusal paths.
+
+**Files Touched:**
+- `logic/api.js`
+- `logic/gallery.js`
+- `style.css`
+
+---
+
 ### 2026-05-08 — VisionScan Pipeline + Enhancer + Retry + Cache
 
 **Status:** COMPLETED

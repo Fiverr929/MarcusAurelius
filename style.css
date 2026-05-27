@@ -2754,6 +2754,39 @@
       animation: cafe-pulse 1.4s ease-in-out infinite;
     }
 
+    /* ── Error cell ── */
+    .cell-inner.cell-error {
+      background-color: #999997;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cell-error-label {
+      font-family: 'Times New Roman', serif;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #ea5823;
+    }
+
+    .cell-inner.cell-blocked {
+      background-color: #999997;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cell-blocked-label {
+      font-family: 'Times New Roman', serif;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #c7c7c7;
+    }
+
     .clr-main.generating {
       background: #ea5823;
       animation: cafe-pulse 1.4s ease-in-out infinite;
