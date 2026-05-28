@@ -101,7 +101,51 @@ All Google calls share one helper — `CafeNet.fetchJSON` (`logic/net.js`) — w
 
 ## Module Architecture
 
-Three sections: SUBJECT, STAGE, STYLE. **Only SUBJECT has slots.** STAGE and STYLE are layer-only.
+The visible Module Panel is now the S-C reference manager: a 264px sidebar for image references, loose uploads, named modules/folders, per-image AI-use controls, and image inspection.
+
+### Current Module Panel (`logic/module-panel.js`)
+
+Primary state is `window.ModuleState.cafeModule`:
+
+```js
+{
+  files: [
+    {
+      id, folder, kind: 'IMG',
+      label, name, size, dims, modified,
+      linked, eye, strength, mode,
+      uuid, url, visionDesc
+    }
+  ],
+  folders: [
+    { id, name, accent, locked }
+  ],
+  openFolders: []
+}
+```
+
+- **Locked system folders** - `SUBJECT`, `STAGE`, `STYLE`; always present.
+- **Custom modules** - user-created folders with name + accent color.
+- **Loose images** - root-level files with `folder: null`; shown above folders and counted as `LOOSE`.
+- **Image row menu** - `STUDIO`, `RENAME`, `MOVE TO...`, `DUPLICATE`, `REMOVE`.
+- **Image Inspector** - opens on row click; controls label, reference mode, strength, linked/visible state, info panel, and top-right `...` actions (`STUDIO`, `REPLACE`, `RENAME`, `REMOVE`).
+- **Generation inclusion** - only `linked && eye && url` files are sent into generation.
+
+### Legacy Generation Bridge
+
+PromptBuilder still reads `window.ModuleState.subject/stage/style` HTML snapshots. The new panel keeps that contract alive by generating hidden compatible snapshots from `cafeModule`.
+
+Mode-to-section mapping for custom-folder files:
+
+- `SUBJECT` -> subject
+- `COMP` / `ALL` -> stage
+- `STYLE` / `ALL` -> style
+
+System folders also map directly: `SUBJECT` -> subject, `STAGE` -> stage, `STYLE` -> style.
+
+### Legacy Layer Model
+
+The old visible layer model is no longer the primary UI, but the shape remains important for PromptBuilder compatibility and old saved projects. Legacy project state without `cafeModule` is imported into the new flat file list when possible.
 
 ```
 SUBJECT
@@ -116,7 +160,7 @@ STAGE / STYLE
 
 - Multiple slots = independent sets (not the same thing from multiple angles)
 - Multiple image children in the same layer = multiple views of the same thing
-- `window.ModuleState = { subject, stage, style }` — live state
+- `window.ModuleState = { subject, stage, style, cafeModule }` — live state
 
 ---
 
@@ -141,7 +185,7 @@ Each child slot (`.clr`) has a `T` badge:
 
 Studio is the current image editing workspace for Gallery images and Module image layers.
 
-- **Entry points** — Gallery HUD pencil and Module image-layer pencil both call `window.Studio.open({ imgUrl, uuid, ratio, caller, onDone })`
+- **Entry points** — Gallery HUD pencil and Module image row / Image Inspector `...` menu `STUDIO` both call `window.Studio.open({ imgUrl, uuid, ratio, caller, onDone })`
 - **History is image-specific** — saved under `DB.studioState.histories[uuid]`, not shared globally
 - **Active history image** — clicking a history thumbnail updates `activeUrl`; Back returns that selected active image to the caller
 - **Gallery return** — replaces the original Gallery image in place with the selected active Studio image
@@ -208,7 +252,7 @@ window.DB               — IndexedDB abstraction (storage.js)
 window.CafeDebug        — generation run logger (debug-logger.js)
 window.Gallery          — gallery UI (gallery.js)
 window.ModuleState      — live module state (module-panel.js)
-window.ModulePanel      — module section factory { makeSection } (module-panel.js)
+window.ModulePanel      — module panel facade { getState, render } (module-panel.js)
 window.Studio           — studio overlay (studio.js)
 window.StudioModule     — studio reference panel (studio-module.js)
 window.StudioModuleState — live studio module state (studio-module.js)
@@ -486,6 +530,8 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-27 | `DIMS`, `dimsFromRatio`, and `var dims` removed from `api.js` | Dead code — pixel dimensions were never used in the API call. Generation uses `aspectRatio` and `imageSize` strings, not explicit width/height values. |
 | 2026-05-27 | Blocked variations show a BLOCKED cell | `promptFeedback.blockReason` (prompt-level) and `candidate.finishReason !== 'STOP'` (all non-success finish reasons) route to `onVariationBlocked(idx)` → `Gallery.blockLoading()`. Gray cell, gray BLOCKED label, click to dismiss. Not retryable — same prompt gets same result. |
 
+| 2026-05-28 | Module Panel S-C redesign | Visible module UI is now the image-reference manager with loose images, locked/custom folders, per-image mode/strength/state, Image Inspector, row/inspector `...` action menus, and `cafeModule` persistence. Legacy `subject/stage/style` snapshots are generated as a PromptBuilder compatibility bridge. |
+
 ---
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-05-28*

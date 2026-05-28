@@ -156,6 +156,25 @@ window.Workspace = (function () {
         result[key] = data;
       }
     });
+    if (ms.cafeModule) {
+      result.cafeModule = {
+        folders: (ms.cafeModule.folders || []).map(function (folder) {
+          return Object.assign({}, folder);
+        }),
+        openFolders: (ms.cafeModule.openFolders || []).slice(),
+        files: (ms.cafeModule.files || []).map(function (file) {
+          var next = Object.assign({}, file);
+          if (next.url && next.url.startsWith('data:') && next.uuid && window.DB && window.activeProjectId) {
+            window.DB.images.put(next.uuid, next.url, window.activeProjectId);
+            next.url = '';
+            next.dataUuid = next.uuid;
+          }
+          return next;
+        })
+      };
+    } else {
+      result.cafeModule = null;
+    }
     result.studioLayers = null;
     return result;
   }
@@ -182,7 +201,29 @@ window.Workspace = (function () {
     })).then(function (pairs) {
       var result = {};
       pairs.forEach(function (p) { result[p[0]] = p[1]; });
-      return result;
+      if (!ms.cafeModule) {
+        result.cafeModule = null;
+        return result;
+      }
+      result.cafeModule = {
+        folders: (ms.cafeModule.folders || []).map(function (folder) {
+          return Object.assign({}, folder);
+        }),
+        openFolders: (ms.cafeModule.openFolders || []).slice(),
+        files: (ms.cafeModule.files || []).map(function (file) {
+          return Object.assign({}, file);
+        })
+      };
+      return Promise.all(result.cafeModule.files.map(function (file) {
+        var uuid = file.dataUuid || file.uuid;
+        if (file.url || !uuid || !window.DB) return Promise.resolve();
+        return DB.images.get(uuid).then(function (record) {
+          if (record && record.dataUrl) file.url = record.dataUrl;
+          delete file.dataUuid;
+        }).catch(function () {
+          delete file.dataUuid;
+        });
+      })).then(function () { return result; });
     });
   }
 
@@ -261,6 +302,22 @@ window.Workspace = (function () {
     })).then(function () { return tmp.innerHTML; });
   }
 
+  function restoreCafeModule(cafeModule) {
+    if (!cafeModule || !cafeModule.files || !window.DB) return Promise.resolve(cafeModule || null);
+    return Promise.all(cafeModule.files.map(function (file) {
+      var uuid = file.dataUuid || file.uuid;
+      if (file.url || !uuid) return Promise.resolve();
+      return DB.images.get(uuid).then(function (record) {
+        if (record && record.dataUrl) file.url = record.dataUrl;
+        delete file.dataUuid;
+      }).catch(function () {
+        delete file.dataUuid;
+      });
+    })).then(function () {
+      return cafeModule;
+    });
+  }
+
   function restoreModuleState(moduleState) {
     // Clear properties on the EXISTING object instead of replacing it.
     // makeSection() closures capture config.stateTarget = window.ModuleState by reference.
@@ -269,6 +326,7 @@ window.Workspace = (function () {
     window.ModuleState.subject = null;
     window.ModuleState.stage   = null;
     window.ModuleState.style   = null;
+    window.ModuleState.cafeModule = moduleState && moduleState.cafeModule ? moduleState.cafeModule : null;
     if (!moduleState) { window.applyModuleState(); return; }
 
     Promise.all(['subject', 'stage', 'style'].map(function (key) {
@@ -289,7 +347,9 @@ window.Workspace = (function () {
         });
       }
       return Promise.resolve();
-    })).then(function () {
+    }).concat([restoreCafeModule(moduleState.cafeModule).then(function (cafeModule) {
+      window.ModuleState.cafeModule = cafeModule || null;
+    })])).then(function () {
       window.applyModuleState();
     });
   }

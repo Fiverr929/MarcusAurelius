@@ -899,6 +899,52 @@ Pipeline work following a docs check of the Gemini image models (`ai.google.dev/
 
 ---
 
+### 2026-05-28 — CafeHTML Module Panel S-C Redesign
+
+**What Was Done:**
+
+Implemented the new CafeHTML Module Panel design from the S-C handoff as a vanilla JS panel in `logic/module-panel.js` with matching CSS in `style.css`.
+
+**Module model / UI:**
+- Replaced the visible legacy SUBJECT/STAGE/STYLE layer editor with a flat image-reference manager: root-level loose images, locked system modules (`SUBJECT`, `STAGE`, `STYLE`), custom modules, folder accordions, image rows, image inspector, sort/select toolbar, upload form, and status bar.
+- Added per-image fields: `label`, `folder`, `linked`, `eye`, `strength`, `mode`, `name`, `size`, `dims`, `modified`, `uuid`, `url`, and `visionDesc`.
+- Added custom module creation/edit UI with shared create/settings layout, accent swatches, locked system folder handling, and delete for custom modules only.
+- Added root-level loose image styling and `LOOSE` marker for unassigned uploads.
+- Polished image-row `...` menus and move-to picker. Row menu now contains `STUDIO`, `RENAME`, `MOVE TO...`, `DUPLICATE`, and `REMOVE`.
+- Added Image Inspector `...` menu in the navbar with `STUDIO`, `REPLACE`, `RENAME`, and `REMOVE`; removed the lower inspector ACTIONS block.
+- Image Inspector remains focused on mode, strength, linked/visible state, label, info panel, and selected-image actions.
+
+**Generation compatibility:**
+- Preserved the existing generation bridge by syncing the new `cafeModule` state back into compatible legacy `window.ModuleState.subject/stage/style` HTML snapshots.
+- Only linked + visible files are included in generated legacy snapshots.
+- Custom-folder files route into generation by reference mode:
+  - `SUBJECT` → subject
+  - `COMP` / `ALL` → stage
+  - `STYLE` / `ALL` → style
+- Hidden or unlinked files remain visible/manageable in the panel but do not enter the generation payload.
+
+**Persistence:**
+- `workspace.js` now serializes/restores `ModuleState.cafeModule` alongside legacy `subject/stage/style`.
+- Module image data uses UUID-backed `DB.images`; saved `cafeModule.files` store UUID pointers and restore data URLs on load/export.
+- Legacy saved module HTML can be imported into the new flat file list as a fallback when `cafeModule` is absent.
+
+**Studio integration:**
+- Studio entry moved into image action menus instead of separate row buttons to avoid clutter.
+- `STUDIO` opens `window.Studio.open(...)` for the selected module image and writes the returned image back into the same module record.
+
+**Files Touched:**
+- `logic/module-panel.js`
+- `logic/workspace.js`
+- `style.css`
+- `docs/log.md`
+- `docs/CafeHTML.md`
+
+**Known follow-ups:**
+- Browser/manual QA pass for upload, replace, Studio return, project reload, export/import, drag-to-module, and select-mode bulk actions.
+- Consider moving common dropdown styling into a documented mini component pattern if more panel menus are added.
+
+---
+
 ## Design Tokens (Quick Reference)
 
 | Token | Hex | Role |
