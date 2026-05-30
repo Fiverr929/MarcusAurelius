@@ -13,9 +13,7 @@
 
   <!-- ── PROMPT BAR ── -->
   <div class="prompt-bar" id="promptBar" data-state="FRAME">
-    <div class="ref-chips-row" id="liveRefChips" style="display:none"></div>
-    <div class="btn-upload-ref" id="liveUpload"></div>
-
+    <div class="btn-upload-ref" id="moduleQuickUpload" title="Add module image"></div>
     <!-- Settings button + dropdown anchored together -->
     <div class="settings-anchor">
       <div class="btn-settings" id="settingsBtn">
@@ -95,9 +93,6 @@
         </div>
         <div class="ddrop-item disabled" id="ddrop-reuse">
           <span>Reuse</span>
-        </div>
-        <div class="ddrop-item disabled" id="ddrop-ref">
-          <span>Set as Reference</span>
         </div>
         <div class="ddrop-divider"></div>
         <div class="ddrop-item disabled" id="ddrop-upscale">
@@ -208,7 +203,6 @@
         <button class="hud-icon-btn" id="hud-threedot" title="More">⋯</button>
         <div class="dropdown" id="hud-threedot-dropdown">
           <div class="ddrop-item" id="hud-drop-reuse"><span>Reuse</span></div>
-          <div class="ddrop-item" id="hud-drop-ref"><span>Set as Reference</span></div>
           <div class="ddrop-divider"></div>
           <div class="ddrop-item" id="hud-drop-duplicate"><span>Duplicate</span></div>
         </div>
@@ -435,7 +429,6 @@
   </div>
 
 
-  <input type="file" id="refFileInput" accept="image/*" multiple style="display:none">
   <input type="file" id="mp-file-input" accept="image/*" style="display:none">
 
   <div id="info-setup-popup">
@@ -677,6 +670,7 @@
   <script src="logic/net.js"></script>
   <script src="logic/vision.js"></script>
   <script src="logic/registry.js"></script>
+  <script src="logic/composition.js"></script>
   <script src="logic/enhancer.js"></script>
   <script src="logic/prompt-builder.js"></script>
   <script src="logic/settings.js"></script>

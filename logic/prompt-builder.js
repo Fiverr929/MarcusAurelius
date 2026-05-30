@@ -47,10 +47,14 @@ window.PromptBuilder = (function () {
     var data = ms[sectionKey];
     var slots = [];
 
-    if (data.html) {
+    if (Object.prototype.hasOwnProperty.call(data, 'html')) {
       // STAGE / STYLE — flat shape, single always-active slot
       slots.push({ label: 'A', active: true, layers: parseLayersFromHTML(data.html), section: sectionKey });
       return { slots: slots, selected: 0 };
+    }
+
+    if (!Array.isArray(data.slots)) {
+      return { slots: slots, selected: data.selected || 0 };
     }
 
     data.slots.forEach(function (s, i) {
@@ -96,17 +100,10 @@ window.PromptBuilder = (function () {
 
     var rawPrompt = promptText.textContent.trim();
 
-    var keepDesc = window.CafeSettings ? window.CafeSettings.getKeepDescriptions() : true;
-    var refs = window.refState[mode].slice().map(function (ref) {
-      return typeof ref === 'string'
-        ? { url: ref, desc: null }
-        : { url: ref.url, desc: keepDesc ? (ref.desc || null) : null };
-    });
-
     return {
       mode: mode,
       prompt: rawPrompt,
-      refs: refs,
+      refs: [],
       subject: collectSection('subject'),
       stage: collectSection('stage'),
       style: collectSection('style'),

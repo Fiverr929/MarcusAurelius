@@ -6,8 +6,17 @@
   var text = document.getElementById('promptText');
   var settBtn = document.getElementById('settingsBtn');
   var drop = document.getElementById('settingsDropdown');
+  var moduleQuickUpload = document.getElementById('moduleQuickUpload');
 
   document.body.dataset.state = bar.dataset.state;
+
+  if (moduleQuickUpload) {
+    moduleQuickUpload.addEventListener('click', function () {
+      if (window.ModulePanel && window.ModulePanel.openUpload) {
+        window.ModulePanel.openUpload();
+      }
+    });
+  }
 
   /* ── Prompt Switch ── */
   sw.addEventListener('click', function () {
@@ -22,7 +31,6 @@
     drop.dataset.open = 'false';
     settBtn.classList.remove('open');
 
-    renderChips();
   });
 
   /* ── Prompt Field ── */
@@ -177,91 +185,9 @@
   });
 }());
 
-// ── Reference Upload State ─────────────────────
+// ── Removed Global Reference Compatibility ─────
 window.refState = { FRAME: [], SCENE: [] };
-
-function renderChips() {
-  var mode = document.getElementById('promptBar').dataset.state;
-  var refs = window.refState[mode];
-  var row = document.getElementById('liveRefChips');
-  var uploadBtn = document.getElementById('liveUpload');
-
-  row.innerHTML = refs.map(function (ref, i) {
-    var src = typeof ref === 'string' ? ref : ref.url;
-    return '<div class="ref-chip ' + mode.toLowerCase() + '" data-index="' + i + '">' +
-      '<div class="ref-chip-remove"></div>' +
-      '<div class="ref-chip-thumb">' +
-      '<img src="' + src + '" alt="">' +
-      '<div class="ref-chip-overlay"></div>' +
-      '<span class="ref-chip-label">R' + (i + 1) + '</span>' +
-      '</div>' +
-      '</div>';
-  }).join('');
-
-  row.style.display = refs.length ? 'flex' : 'none';
-
-  if (refs.length >= 5) {
-    uploadBtn.classList.add('disabled');
-  } else {
-    uploadBtn.classList.remove('disabled');
-  }
-
-  row.querySelectorAll('.ref-chip').forEach(function (chip) {
-    chip.querySelector('.ref-chip-remove').addEventListener('click', function () {
-      var idx = parseInt(chip.dataset.index, 10);
-      var ref = window.refState[mode][idx];
-      if (ref && ref.uuid && window.DB) window.DB.images.delete(ref.uuid);
-      window.refState[mode].splice(idx, 1);
-      renderChips();
-      window.Workspace.autosave();
-    });
-  });
-}
-window.renderChips = renderChips;
-
-document.getElementById('liveUpload').addEventListener('click', function () {
-  var mode = document.getElementById('promptBar').dataset.state;
-  if (window.refState[mode].length >= 5) return;
-  document.getElementById('refFileInput').click();
-});
-
-document.getElementById('refFileInput').addEventListener('change', function (e) {
-  var files = Array.from(e.target.files);
-  if (!files.length) return;
-  var mode = document.getElementById('promptBar').dataset.state;
-  var remaining = 5 - window.refState[mode].length;
-  files.slice(0, remaining).forEach(function (file) {
-    var reader = new FileReader();
-    reader.onload = function (evt) {
-      if (window.refState[mode].length < 5) {
-        var refUrl = evt.target.result;
-        var uuid = crypto.randomUUID();
-        var pid = window.activeProjectId;
-        if (window.DB) window.DB.images.put(uuid, refUrl, pid)
-          .catch(function (e) { console.error('[PromptBar] Failed to save ref image to DB:', e); });
-        var chipIdx = window.refState[mode].length;
-        window.refState[mode].push({ url: refUrl, desc: null, uuid: uuid });
-        renderChips();
-        window.Workspace.autosave();
-
-        if (window.CafeSettings && window.CafeSettings.getScanTiming() === 'load') {
-          var chipThumb = document.querySelector('#liveRefChips .ref-chip[data-index="' + chipIdx + '"] .ref-chip-thumb');
-          if (chipThumb) chipThumb.classList.add('scanning');
-          window.DescriptionRegistry.ensure(refUrl, { type: 'ref' })
-            .then(function (desc) {
-              window.refState[mode][chipIdx].desc = desc;
-              if (chipThumb) chipThumb.classList.remove('scanning');
-            })
-            .catch(function () {
-              if (chipThumb) chipThumb.classList.remove('scanning');
-            });
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-  e.target.value = '';
-});
+window.renderChips = function () {};
 
 // ── Title Bar Tabs ─────────────────────────────
 document.querySelectorAll('.tab').forEach(function (tab) {

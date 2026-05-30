@@ -1,6 +1,6 @@
 // workspace.js
 // IndexedDB-backed workspace. Replaces localStorage autosave entirely.
-// Depends on: storage.js (window.DB), prompt-builder.js, and Gallery/refState/ModuleState globals.
+// Depends on: storage.js (window.DB), prompt-builder.js, and Gallery/ModuleState globals.
 
 window.Workspace = (function () {
 
@@ -48,17 +48,6 @@ window.Workspace = (function () {
         frameCount : s.frameCount
       }),
       DB.moduleState.save(pid, serializeModuleState(window.ModuleState) || {}),
-      (function () {
-        var rs = window.refState;
-        var all = rs.FRAME.map(function (ref) {
-          var r = typeof ref === 'string' ? { url: ref, desc: null } : ref;
-          return { mode: 'FRAME', uuid: r.uuid || null, src: r.uuid ? null : r.url, desc: r.desc || null };
-        }).concat(rs.SCENE.map(function (ref) {
-          var r = typeof ref === 'string' ? { url: ref, desc: null } : ref;
-          return { mode: 'SCENE', uuid: r.uuid || null, src: r.uuid ? null : r.url, desc: r.desc || null };
-        }));
-        return DB.references.replace(pid, all);
-      }()),
       DB.sequence.save(pid, window.getSeqSlots ? window.getSeqSlots() : [])
     ])
     .then(function () { showSaveIndicator(true); })
@@ -226,22 +215,6 @@ window.Workspace = (function () {
       })).then(function () { return result; });
     });
   }
-
-  // resolveRefsForExport — resolves UUID refs back to base64 data URLs for self-contained export.
-  function resolveRefsForExport(refList) {
-    return Promise.all((refList || []).map(function (ref) {
-      var r = typeof ref === 'string' ? { url: ref, desc: null } : ref;
-      if (r.uuid && window.DB) {
-        return window.DB.images.get(r.uuid).then(function (rec) {
-          return { url: rec ? rec.dataUrl : r.url || '', desc: r.desc || null };
-        }).catch(function () {
-          return { url: r.url || '', desc: r.desc || null };
-        });
-      }
-      return Promise.resolve({ url: r.url || '', desc: r.desc || null });
-    }));
-  }
-
   // resolveGalleryForExport — resolves UUID imgUrls in gallery cells to base64 for export.
   // Also strips internal fields (_dbId, _imgUuid) that are meaningless outside this DB.
   function resolveGalleryForExport(cells) {
@@ -363,44 +336,18 @@ window.Workspace = (function () {
     Promise.all([
       DB.settings.get(id),
       DB.moduleState.get(id),
-      DB.references.getAll(id),
       DB.gallery.getAll(id),
       DB.sequence.getAll(id)
     ]).then(function (results) {
       var settings     = results[0];
       var moduleState  = results[1];
-      var refs         = results[2];
-      var galleryItems = results[3];
-      var seqItems     = results[4];
+      var galleryItems = results[2];
+      var seqItems     = results[3];
 
       applySettings(settings);
       restoreModuleState(moduleState);
 
       window._pendingStudioLayers = null;
-
-      function resolveRef(r) {
-        if (r.uuid && window.DB) {
-          return window.DB.images.get(r.uuid).then(function (rec) {
-            return { url: rec ? rec.dataUrl : '', desc: r.desc || null, uuid: r.uuid };
-          }).catch(function () {
-            return { url: '', desc: r.desc || null, uuid: r.uuid };
-          });
-        }
-        return Promise.resolve({ url: r.src || '', desc: r.desc || null });
-      }
-
-      var frameRefs = refs.filter(function (r) { return r.mode === 'FRAME'; });
-      var sceneRefs = refs.filter(function (r) { return r.mode === 'SCENE'; });
-
-      Promise.all(frameRefs.map(resolveRef)).then(function (resolved) {
-        resolved.forEach(function (r) { if (!r.url) console.warn('[Workspace] ref image missing from DB, dropping:', r.uuid); });
-        window.refState.FRAME = resolved.filter(function (r) { return r.url; });
-        return Promise.all(sceneRefs.map(resolveRef));
-      }).then(function (resolved) {
-        resolved.forEach(function (r) { if (!r.url) console.warn('[Workspace] ref image missing from DB, dropping:', r.uuid); });
-        window.refState.SCENE = resolved.filter(function (r) { return r.url; });
-        window.renderChips();
-      });
 
       window.Gallery.clearGenerated();
       var orderedItems = galleryItems.slice().reverse();
@@ -437,11 +384,6 @@ window.Workspace = (function () {
     applySettings({ mode: 'FRAME', prompt: '' });
     restoreModuleState(null);
     window._pendingStudioLayers = null;
-    if (window.refState) {
-      window.refState.FRAME = [];
-      window.refState.SCENE = [];
-      if (window.renderChips) window.renderChips();
-    }
     if (window.Gallery) window.Gallery.clearGenerated();
     if (window.clearSeqSlots) window.clearSeqSlots();
     if (_saveTimer) {
@@ -561,18 +503,12 @@ window.Workspace = (function () {
 
   function _doExport(name) {
     var payload = window.PromptBuilder.collect();
-    var rs = window.refState;
-
     Promise.all([
       resolveModuleStateForExport(window.ModuleState),
-      resolveRefsForExport(rs.FRAME || []),
-      resolveRefsForExport(rs.SCENE || []),
       resolveGalleryForExport(window.Gallery.getGeneratedCells())
     ]).then(function (results) {
       var resolvedModuleState = results[0];
-      var resolvedFrame       = results[1];
-      var resolvedScene       = results[2];
-      var resolvedGallery     = results[3];
+      var resolvedGallery     = results[1];
 
       var snapshot = {
         version    : 1,
@@ -582,7 +518,6 @@ window.Workspace = (function () {
         settings   : payload.settings || {},
         gallery    : resolvedGallery,
         moduleState: resolvedModuleState,
-        refs       : { FRAME: resolvedFrame, SCENE: resolvedScene },
         sequence   : window.getSeqSlots ? window.getSeqSlots() : []
       };
 
@@ -617,11 +552,6 @@ window.Workspace = (function () {
           }
           applySettings(Object.assign({ mode: snap.mode, prompt: snap.prompt }, snap.settings));
           if (snap.moduleState) restoreModuleState(snap.moduleState);
-          if (snap.refs) {
-            window.refState.FRAME = (snap.refs.FRAME || []).map(function (ref) { return typeof ref === 'string' ? { url: ref, desc: null } : { url: ref.url, desc: ref.desc || null }; });
-            window.refState.SCENE = (snap.refs.SCENE || []).map(function (ref) { return typeof ref === 'string' ? { url: ref, desc: null } : { url: ref.url, desc: ref.desc || null }; });
-            window.renderChips();
-          }
           if (snap.sequence && snap.sequence.length && window.addSeqSlot) {
             if (window.clearSeqSlots) window.clearSeqSlots();
             snap.sequence.forEach(function (slot) { window.addSeqSlot(slot); });

@@ -576,21 +576,6 @@ document.getElementById('hud-drop-reuse').addEventListener('click', function () 
   closeHUD();
 });
 
-document.getElementById('hud-drop-ref').addEventListener('click', function () {
-  var cell = visibleCells[hudIndex];
-  if (!cell || !cell.imgUrl) return;
-  var mode = document.getElementById('promptBar').dataset.state;
-  if (window.refState[mode].length < 5) {
-    var refUuid = crypto.randomUUID();
-    var pid = window.activeProjectId;
-    if (window.DB) window.DB.images.put(refUuid, cell.imgUrl, pid);
-    window.refState[mode].push({ url: cell.imgUrl, desc: null, uuid: refUuid });
-    renderChips();
-  }
-  closeDropdown($hudThreedotDrop);
-  closeHUD();
-});
-
 document.getElementById('hud-drop-duplicate').addEventListener('click', function () {
   var cell = visibleCells[hudIndex];
   if (!cell) return;

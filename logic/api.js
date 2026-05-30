@@ -85,15 +85,17 @@ window.CafeAPI = (function () {
     var snap = {};
     ['subject', 'stage', 'style'].forEach(function (key) {
       if (!ms[key]) { snap[key] = null; return; }
-      if (ms[key].html) {
+      if (Object.prototype.hasOwnProperty.call(ms[key], 'html')) {
         snap[key] = { html: snapshotHTML(ms[key].html) };
-      } else {
+      } else if (Array.isArray(ms[key].slots)) {
         snap[key] = {
           selected: ms[key].selected,
           slots: ms[key].slots.map(function (s) {
             return { on: s.on, html: snapshotHTML(s.html || '') };
           })
         };
+      } else {
+        snap[key] = null;
       }
     });
     return snap;
@@ -299,7 +301,7 @@ window.CafeAPI = (function () {
     var mode = payload.mode || 'FRAME';
     var rawPrompt = payload.prompt || '';
 
-    if (!rawPrompt && !(payload.refs && payload.refs.length) && !hasModuleImages(payload)) {
+    if (!rawPrompt && !hasModuleImages(payload)) {
       console.warn('[CafeAPI] No prompt and no images — type something or add module layers.');
       return;
     }
@@ -317,7 +319,7 @@ window.CafeAPI = (function () {
       aspectRatio:    ratio,
       numImages:      numImages,
       rawPrompt:      rawPrompt,
-      refCount:       (payload.refs || []).length,
+      refCount:       0,
       payload:        payload,
       enhancerInput:  null,
       enhancerOutput: null,
@@ -344,15 +346,8 @@ window.CafeAPI = (function () {
             var desc = window.DescriptionRegistry.get(item.url);
             if (!desc) return;
             if (item.domTarget) item.domTarget.dataset.visionDesc = desc;
-            if (item.refTarget) {
-              var m = item.refTarget.mode;
-              var idx = item.refTarget.index;
-              if (window.refState[m] && window.refState[m][idx]) {
-                window.refState[m][idx].desc = desc;
-              }
-            }
           });
-          // Re-collect with fresh descriptions written to DOM and refState
+          // Re-collect with fresh descriptions written to DOM
           payload = window.PromptBuilder.collect();
           console.log('[CafeAPI] Payload image fingerprints after catch-up:', JSON.stringify(summarizePayloadImages(payload)));
         });
@@ -393,8 +388,8 @@ window.CafeAPI = (function () {
 
       debugEntry.imagesSent = {
         total:       imageRefs.length,
-        refs:        (payload.refs || []).length,
-        layerImages: imageRefs.length - (payload.refs || []).length,
+        refs:        0,
+        layerImages: imageRefs.length,
         manifest:    (manifest || []).filter(function (item) { return item.kind === 'image'; }).map(function (item) {
           return {
             role: item.role || item.layerName || 'IMAGE',

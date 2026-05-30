@@ -13,68 +13,10 @@ window.PromptEnhancer = (function () {
     return match ? match[1] : 'image/jpeg';
   }
 
+  // Normalization moved to composition.js (window.Composition). Kept here as a
+  // thin delegate so the internal call site and the public export are unchanged.
   function collectImageContext(payload) {
-    var moduleItems = [];
-    var refItems = [];
-    var position = 1;
-
-    function fromSection(section) {
-      if (!section || !section.slots) return;
-      section.slots.forEach(function (slot) {
-        if (!slot.active) return;
-        var slotLabel = slot.label || '?';
-        slot.layers.forEach(function (layer) {
-          if (!layer.visible) return;
-          var imageChildren = layer.children.filter(function (c) { return c.visible && c.type === 'image' && c.imgUrl; });
-          var total = imageChildren.length;
-          layer.children.forEach(function (child) {
-            if (!child.visible) return;
-            if (child.type === 'image' && child.imgUrl) {
-              var idx = imageChildren.indexOf(child);
-              var desc = child.visionDesc || null;
-              var angleNote = total > 1 ? ' (view ' + (idx + 1) + ' of ' + total + ' — same subject)' : '';
-              moduleItems.push({
-                kind: 'image',
-                role: layer.name || 'LAYER',
-                slot: slotLabel,
-                section: slot.section || 'subject',
-                layerName: layer.name || 'LAYER',
-                desc: desc ? desc + angleNote : null,
-                imgUrl: child.imgUrl,
-                uuid: child.uuid || null
-              });
-            } else if (child.type === 'prompt' && child.text) {
-              moduleItems.push({
-                kind: 'text',
-                role: layer.name || 'LAYER',
-                slot: slotLabel,
-                section: slot.section || 'subject',
-                layerName: layer.name || 'LAYER',
-                text: child.text
-              });
-            }
-          });
-        });
-      });
-    }
-
-    fromSection(payload.subject);
-    fromSection(payload.stage);
-    fromSection(payload.style);
-
-    var refs = payload.refs || [];
-    refs.forEach(function (ref, idx) {
-      refItems.push({ kind: 'image', role: 'R' + (idx + 1), slot: null, section: 'ref', layerName: 'REFERENCE', desc: ref.desc || null, imgUrl: ref.url });
-    });
-
-    // Keep image positions stable across runs. R1 is always before module images.
-    // Only non-described images get a position — they are the ones sent inline.
-    var items = refItems.concat(moduleItems);
-    items.forEach(function (item) {
-      if (item.kind === 'image' && !item.desc) item.position = position++;
-    });
-
-    return items;
+    return window.Composition.build(payload);
   }
 
   var SYSTEM_INSTRUCTION = [
@@ -89,16 +31,13 @@ window.PromptEnhancer = (function () {
     'Your task: write a complete generation brief by analysing the provided inputs — attached inline images and pre-scanned text descriptions — and their assigned roles.',
     'Before writing, act as a creative director: decide the final image, not a pile of assets.',
     'Use specific, concrete language drawn directly from the images and descriptions — never generic placeholders.',
-    'Prompt-bar references R1-R5 are freeform references attached to the user intent. Infer their role from the prompt text; do not assign fixed subject, scene, or style roles to them.',
-    'If the prompt is empty and modules are present, modules own subject, scene, and style details while R1-R5 provide overall look, composition, or mood support.',
-    'If only R1-R5 are present, treat them as the primary prompt input.',
     '',
     'Rules:',
     '- The generation model receives the actual images alongside this brief.',
     '- The final output must be one newly generated coherent image, not transferred pixels from one reference onto another.',
     '- Write an edit/composition brief, not an inventory of separate assets.',
     '- If the user prompt is empty, infer the default production move from the modules and references.',
-    '- Default production move: SUBJECT provides identity/objects, SCENE provides world/camera/environment, STYLE provides rendering only, and R1-R5 provide full-scene composition/style support when present.',
+    '- Default production move: SUBJECT provides identity/objects, SCENE provides world/camera/environment, and STYLE provides rendering only.',
     '- Use positional image references ("the person in Image N", "the outfit in Image N", "the lighting from Image N") to anchor every concrete subject, garment, scene, and style source.',
     '- Only use Image N references for images explicitly listed in the user message.',
     '- If multiple subject slots are present, each is a separate independent subject — keep them distinct.',
@@ -129,12 +68,11 @@ window.PromptEnhancer = (function () {
     var subjectItems = imageContext.filter(function (i) { return i.section === 'subject'; });
     var stageItems = imageContext.filter(function (i) { return i.section === 'stage'; });
     var styleItems = imageContext.filter(function (i) { return i.section === 'style'; });
-    var refItems = imageContext.filter(function (i) { return i.section === 'ref'; });
 
     var plan = {
       goal: 'single_coherent_generated_image',
       userIntent: text || '(none)',
-      defaultAction: 'synthesize_references_into_one_scene',
+      defaultAction: 'synthesize_modules_into_one_scene',
       subjectSources: subjectItems.map(function (i) {
         var ref = (i.role || i.layerName) + ' Slot ' + (i.slot || '-');
         return i.position ? ref + ' / Image ' + i.position : ref;
@@ -146,25 +84,13 @@ window.PromptEnhancer = (function () {
       avoid: ['collage', 'cutout', 'sticker overlay', 'side-by-side composite', 'literal pasted reference pixels']
     };
 
-    var mentionedRef = text.match(/\bR([1-5])\b/i);
-    var activeRef = mentionedRef
-      ? firstImage(refItems, function (i) { return i.role.toUpperCase() === ('R' + mentionedRef[1]).toUpperCase(); })
-      : firstImage(refItems);
     var stageImage = firstImage(stageItems);
     var styleImage = firstImage(styleItems);
 
-    var wantsSameStyle = /\b(same\s+style|style\s+as|look\s+like|like\s+R[1-5])\b/i.test(text);
     var wantsPose = /\b(same\s+pose|pose|posture|framing|composition)\b/i.test(text);
-    var wantsReplace = /\b(replace|swap|insert|put|place|use)\b/i.test(text) &&
-      /\b(subject|person|character|model|face|body)\b/i.test(text);
 
-    if (subjectItems.length && (stageImage || activeRef)) {
+    if (subjectItems.length && stageImage) {
       plan.defaultAction = 'integrate_subject_sources_into_a_base_world';
-    }
-    if (subjectItems.length && !stageImage && activeRef) {
-      plan.sceneSource = activeRef.role + ' / Image ' + activeRef.position;
-      plan.compositionSource = activeRef.role + ' / Image ' + activeRef.position;
-      plan.styleSource = activeRef.role + ' / Image ' + activeRef.position;
     }
     if (stageImage) {
       var stageRef = (stageImage.role || stageImage.layerName) + ' Slot ' + (stageImage.slot || '-');
@@ -175,14 +101,9 @@ window.PromptEnhancer = (function () {
       var styleRef = (styleImage.role || styleImage.layerName) + ' Slot ' + (styleImage.slot || '-');
       plan.styleSource = styleImage.position ? styleRef + ' / Image ' + styleImage.position : styleRef;
     }
-    if (activeRef && (wantsSameStyle || wantsPose || wantsReplace)) {
-      plan.compositionSource = activeRef.role + ' / Image ' + activeRef.position;
-      if (wantsSameStyle) plan.styleSource = activeRef.role + ' / Image ' + activeRef.position;
-      if (!plan.sceneSource) plan.sceneSource = activeRef.role + ' / Image ' + activeRef.position;
-    }
     if (wantsPose) plan.preserve.push('pose language from ' + (plan.compositionSource || 'the main reference'));
 
-    if (!text && subjectItems.length && !stageImage && !refItems.length) {
+    if (!text && subjectItems.length && !stageImage) {
       plan.defaultAction = 'create_a_subject_led_image_from_available_identity_sources';
     }
 
@@ -203,38 +124,6 @@ window.PromptEnhancer = (function () {
     lines.push('  Avoid: ' + plan.avoid.join(', '));
     lines.push('  Write the final brief as if describing the finished coherent image. Do not describe stacking, overlaying, or pasting assets.');
     return lines.join('\n');
-  }
-
-  function buildIntentGuidance(userIntent, imageContext) {
-    var text = (userIntent || '').trim();
-    var refItems = imageContext.filter(function (i) { return i.section === 'ref'; });
-    var moduleItems = imageContext.filter(function (i) { return i.section !== 'ref'; });
-    if (!refItems.length) return null;
-
-    var refMatch = text.match(/\bR([1-5])\b/i);
-    var activeRef = refMatch
-      ? refItems.filter(function (i) { return i.role.toUpperCase() === ('R' + refMatch[1]).toUpperCase(); })[0]
-      : refItems[0];
-    if (!activeRef) activeRef = refItems[0];
-
-    var mentionsRef = !!refMatch;
-    var wantsBase = /\b(base|main|look\s*a?\s*like|look\s+like|reference|reff?erence|in\s+R[1-5])\b/i.test(text);
-    var wantsReplace = /\b(replace|use|put|insert|place)\b/i.test(text) &&
-      /\b(subject|subjects|module|person|people|character|characters)\b/i.test(text);
-
-    if (mentionsRef && moduleItems.length && (wantsReplace || wantsBase)) {
-      return 'Use ' + activeRef.role + ' / Image ' + activeRef.position + ' as the base composition and lived-in scene. Replace or fill its subjects with the active module subject images while preserving the base image camera, framing, environment, lighting, colour grade, perspective, and atmosphere. The result must look photographed as one coherent scene, not pasted together.';
-    }
-
-    if (!text && moduleItems.length) {
-      return 'Use the modules for concrete subject, scene, and style details. Use R1-R5 only as supporting overall look, composition, or mood unless the user prompt makes a reference primary.';
-    }
-
-    if (!moduleItems.length) {
-      return 'Use the prompt-bar references as the primary visual source and keep the final image coherent with their composition, lighting, and atmosphere.';
-    }
-
-    return null;
   }
 
   function renderSlotGroup(items, sectionLabel, lines, slotType) {
@@ -279,14 +168,7 @@ window.PromptEnhancer = (function () {
     var subjectItems = imageContext.filter(function (i) { return i.section === 'subject'; });
     var stageItems = imageContext.filter(function (i) { return i.section === 'stage'; });
     var styleItems = imageContext.filter(function (i) { return i.section === 'style'; });
-    var refItems = imageContext.filter(function (i) { return i.section === 'ref'; });
-    var intentGuidance = buildIntentGuidance(userIntent, imageContext);
     var directorPlan = buildDirectorPlan(userIntent, imageContext);
-
-    if (intentGuidance) {
-      lines.push('INTERPRETED TASK: ' + intentGuidance);
-      lines.push('');
-    }
 
     lines.push(renderDirectorPlan(directorPlan));
     lines.push('');
@@ -295,14 +177,6 @@ window.PromptEnhancer = (function () {
     renderSlotGroup(stageItems, 'SCENE MODULE (where and when):', lines, 'scene');
 
     renderSlotGroup(styleItems, 'STYLE MODULE (visual treatment only — colour grade, lens, rendering, mood — NOT a place or person):', lines, 'style');
-
-    if (refItems.length) {
-      lines.push('PROMPT-BAR REFERENCES (R1-R5, interpret through the user intent):');
-      refItems.forEach(function (img) {
-        lines.push('  [' + img.role + ' — Image ' + img.position + ']');
-      });
-      lines.push('');
-    }
 
     if (userIntent && userIntent.trim()) {
       lines.push('User intent: ' + userIntent.trim());

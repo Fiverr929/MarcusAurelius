@@ -356,6 +356,16 @@
     img.src = fileObj.url;
   }
 
+  function openUpload() {
+    state.view = 'root';
+    state.activeFileId = null;
+    state.showUpload = true;
+    state.menuFileId = null;
+    state.moveFileId = null;
+    state.inspectorMenuOpen = false;
+    render();
+  }
+
   function handleStrength(e) {
     var bar = e.target.closest('[data-strength]');
     var f = activeFile();
@@ -689,7 +699,8 @@
 
   window.ModulePanel = {
     getState: function () { return state; },
-    render: render
+    render: render,
+    openUpload: openUpload
   };
 
   sync();

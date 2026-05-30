@@ -19,12 +19,6 @@ window.DescriptionRegistry = (function () {
     document.querySelectorAll('.mod-layers .clr').forEach(function (clr) {
       delete clr.dataset.visionDesc;
     });
-    // Clear refState descriptions
-    ['FRAME', 'SCENE'].forEach(function (mode) {
-      (window.refState[mode] || []).forEach(function (ref) {
-        if (typeof ref !== 'string') ref.desc = null;
-      });
-    });
     console.log('[Registry] Cleared all descriptions');
   }
 
@@ -100,23 +94,6 @@ window.DescriptionRegistry = (function () {
         url: img.src,
         context: { type: section === 'style' ? 'style' : 'module', layerName: layerName, section: section, uuid: clr.dataset.uuid || null },
         domTarget: clr
-      });
-    });
-
-    // refState refs — check for {url, desc: null} entries
-    ['FRAME', 'SCENE'].forEach(function (mode) {
-      (window.refState[mode] || []).forEach(function (ref, i) {
-        if (typeof ref === 'string') return; // legacy string — skip
-        if (ref.desc) return;                // already described
-        if (_store[ref.url]) {
-          ref.desc = _store[ref.url];        // populate from registry
-          return;
-        }
-        missing.push({
-          url: ref.url,
-          context: { type: 'ref' },
-          refTarget: { mode: mode, index: i }
-        });
       });
     });
 
