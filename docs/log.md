@@ -954,3 +954,114 @@ Implemented the new CafeHTML Module Panel design from the S-C handoff as a vanil
 | Gray mid | `#999997` | Neutral/inactive bg |
 | Gray light | `#c7c7c7` | Text, borders |
 | Font | Times New Roman | All labels |
+
+---
+
+### 2026-05-30 - Remove Global References + Module Quick Upload Shortcut
+
+**Status:** COMPLETED
+
+**What Was Done:**
+
+**Global reference flow removed from active pipeline:**
+- Removed prompt-bar global reference chip UI and hidden ref file input from `CafeHTML-v2.html`.
+- Removed global "Set as Reference" actions from gallery/HUD menus.
+- `PromptBuilder.collect()` no longer reads prompt-bar global references.
+- `Composition.build()` no longer creates `R1-R5` global-ref entries.
+- `PromptEnhancer` `R1-R5` handling removed from brief construction/director plan.
+- `Workspace` no longer saves/loads/exports/imports global refs via `DB.references`.
+- `DescriptionRegistry.collectMissing()` now scans module images only.
+
+**Module quick upload UX added back:**
+- Re-added prompt-bar plus button as a module shortcut (`#moduleQuickUpload`).
+- Added `ModulePanel.openUpload()` API to open existing module upload form from anywhere.
+- `prompt-bar.js` now routes the plus button to `window.ModulePanel.openUpload()`.
+- Upload ownership remains in `module-panel.js`; no separate global ref lane reintroduced.
+
+**Safety + compatibility notes:**
+- Kept empty shim: `window.refState = { FRAME: [], SCENE: [] }` and no-op `window.renderChips()` to avoid crashing old callers during transition.
+- Added `logic/composition.js` script include in `CafeHTML-v2.html` so enhancer normalization resolves correctly.
+
+**Files Touched:**
+- `CafeHTML-v2.html`
+- `logic/api.js`
+- `logic/composition.js`
+- `logic/enhancer.js`
+- `logic/gallery.js`
+- `logic/module-panel.js`
+- `logic/prompt-bar.js`
+- `logic/prompt-builder.js`
+- `logic/registry.js`
+- `logic/workspace.js`
+
+---
+
+### 2026-05-30 - Base Module State Reference Layer
+
+**Status:** COMPLETED
+
+**What Was Done:**
+
+**Module/reference semantics tightened:**
+- Kept the base modules as `SUBJECT`, `STAGE`, and `STYLE`.
+- Defined loose module-panel uploads (`folder: null`) as the new neutral Reference layer instead of leaving them outside generation.
+- `PromptBuilder.collect()` now returns loose visible images in `refs` with `{ role, imgUrl, uuid, visionDesc, strength }`.
+- `Composition.build()` converts those refs into manifest entries with `source: "reference"` and `section: "reference"`.
+- `PromptEnhancer` now knows Reference-layer images are supporting context only and should not override Subject, Stage, or Style.
+
+**Image names now matter in generation:**
+- Assigned image labels become module layer roles.
+- Loose image labels become Reference-layer roles.
+- This gives the user's image name a prompt meaning without adding new UI.
+
+**Description flow fixed for loose references:**
+- `DescriptionRegistry.collectMissing()` now scans loose Reference-layer files in `ModulePanel` state.
+- Catch-up scan writes loose-reference descriptions back through `ModulePanel.setVisionDesc()`.
+- `ModulePanel.clearVisionDescriptions()` clears cached descriptions for both module and loose files when Keep Descriptions is off.
+
+**Files Touched:**
+- `logic/api.js`
+- `logic/composition.js`
+- `logic/enhancer.js`
+- `logic/module-panel.js`
+- `logic/prompt-builder.js`
+- `logic/registry.js`
+- `docs/CafeHTML.md`
+- `docs/log.md`
+
+---
+
+### 2026-05-30 - Optional Preset Modules
+
+**Status:** COMPLETED
+
+**What Was Done:**
+
+**Permanent modules removed:**
+- Fresh module state now starts with no active folders.
+- `SUBJECT`, `STAGE`, and `STYLE` are preset module choices, not permanent defaults.
+- `+ NEW MODULE` uses the existing module form to choose from inactive presets only.
+- The `+ NEW MODULE` button hides once all three presets are active.
+
+**Module action dropdown added:**
+- Module header `...` now opens a small dropdown with `EDIT` and `DELETE`.
+- `EDIT` opens the existing module settings form.
+- `DELETE` removes the module and returns its images to loose Reference layer instead of deleting them.
+
+**Preset-backed add/edit form:**
+- The old add/rename form now acts as a preset selector plus accent/color editor.
+- No custom module names are accepted in this iteration.
+- Editing an active module can swap it to another inactive preset while keeping its images.
+- If all presets are active, the module name field is locked to the current module but accent swatches still work.
+- Swapping modules updates the contained images' module mode (`SUBJECT`, `COMP`, or `STYLE`) so generation routing stays aligned.
+
+**Compatibility:**
+- Existing saved folders are normalized to valid presets on load.
+- Unknown/custom saved folder IDs are converted back to loose references.
+- Legacy module-state imports recreate only the preset modules that actually contain images.
+
+**Files Touched:**
+- `logic/module-panel.js`
+- `style.css`
+- `docs/CafeHTML.md`
+- `docs/log.md`

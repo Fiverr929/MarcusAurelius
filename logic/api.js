@@ -32,7 +32,9 @@ window.CafeAPI = (function () {
         });
       });
     }
-    return checkSection(payload.subject) || checkSection(payload.stage) || checkSection(payload.style);
+    return checkSection(payload.subject) || checkSection(payload.stage) || checkSection(payload.style) || ((payload.refs || []).some(function (ref) {
+      return ref && ref.imgUrl;
+    }));
   }
 
   function summarizePayloadImages(payload) {
@@ -58,6 +60,21 @@ window.CafeAPI = (function () {
             });
           });
         });
+      });
+    });
+    (payload.refs || []).forEach(function (ref) {
+      if (!ref || !ref.imgUrl) return;
+      out.push({
+        section: 'reference',
+        slot: null,
+        active: true,
+        layer: ref.role || 'REFERENCE',
+        visible: true,
+        uuid: ref.uuid || null,
+        described: !!ref.visionDesc,
+        len: ref.imgUrl.length,
+        head: ref.imgUrl.slice(0, 24),
+        tail: ref.imgUrl.slice(-24)
       });
     });
     return out;
@@ -162,7 +179,7 @@ window.CafeAPI = (function () {
           text: [
             'Follow the user brief as an ordered visual reference manifest.',
             'The inline images are supplied in the same Image N order named in the brief.',
-            'Use the brief to decide whether an image is a subject source, wardrobe source, scene source, style source, or base composition.',
+            'Use the brief to decide whether an image is a subject source, wardrobe source, scene source, style source, loose supporting reference, or base composition.',
             'When an image is the base or main reference, preserve its camera, framing, perspective, lighting, colour grade, environment, and atmosphere.',
             'When subjects or garments are replaced or inserted, integrate them physically into that base scene with matching scale, occlusion, shadows, reflections, and light response.',
             'Do not create a collage, pasted cutout, side-by-side composite, contact sheet, or flat overlay.',
@@ -346,6 +363,9 @@ window.CafeAPI = (function () {
             var desc = window.DescriptionRegistry.get(item.url);
             if (!desc) return;
             if (item.domTarget) item.domTarget.dataset.visionDesc = desc;
+            if (item.stateTarget && window.ModulePanel && window.ModulePanel.setVisionDesc) {
+              window.ModulePanel.setVisionDesc(item.stateTarget.uuid, desc);
+            }
           });
           // Re-collect with fresh descriptions written to DOM
           payload = window.PromptBuilder.collect();

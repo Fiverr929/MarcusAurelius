@@ -333,8 +333,3 @@ window.ProjectsPanel = (function () {
 
   return { open: open };
 }());
-
-// ── MOD STRIP COLLAPSE ────────────────────────────
-document.querySelector('.mod-tab-module').addEventListener('click', function () {
-  this.closest('.mod-panel-wrap').classList.toggle('collapsed');
-});

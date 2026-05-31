@@ -64,6 +64,24 @@ window.PromptBuilder = (function () {
     return { slots: slots, selected: data.selected };
   }
 
+  function collectReferences() {
+    var cm = window.ModuleState && window.ModuleState.cafeModule;
+    if (!cm || !Array.isArray(cm.files)) return [];
+
+    return cm.files.filter(function (file) {
+      return file && file.folder == null && file.eye !== false && file.url;
+    }).map(function (file) {
+      return {
+        type: 'image',
+        role: file.label || 'REFERENCE',
+        imgUrl: file.url,
+        uuid: file.uuid || null,
+        visionDesc: file.visionDesc || null,
+        strength: file.strength == null ? 50 : file.strength
+      };
+    });
+  }
+
   // ── Settings collector ────────────────────────────────────────────────────
 
   function collectSettings() {
@@ -103,7 +121,7 @@ window.PromptBuilder = (function () {
     return {
       mode: mode,
       prompt: rawPrompt,
-      refs: [],
+      refs: collectReferences(),
       subject: collectSection('subject'),
       stage: collectSection('stage'),
       style: collectSection('style'),

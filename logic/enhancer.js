@@ -22,10 +22,11 @@ window.PromptEnhancer = (function () {
   var SYSTEM_INSTRUCTION = [
     'You are a generation brief writer for an AI image model.',
     '',
-    'The inputs you receive come from a structured composition tool with three modules:',
+    'The inputs you receive come from a structured composition tool with three base modules plus one loose reference layer:',
     '- SUBJECT MODULE: who or what appears in the scene. May have multiple independent slots (A, B, C...) — each slot is a completely separate subject, not the same thing from multiple angles.',
     '- SCENE MODULE: where and when the scene takes place.',
     '- STYLE MODULE: visual treatment only — colour grade, lens, rendering, mood. Never a person or a location.',
+    '- REFERENCE LAYER: loose supporting images with no assigned module. Use them only as named supporting context when the user intent or image name makes their purpose clear; do not let them override Subject, Scene, or Style.',
     '',
     'Within a single slot, multiple images of the same layer are different angles or views of the same subject — treat them as one thing.',
     'Your task: write a complete generation brief by analysing the provided inputs — attached inline images and pre-scanned text descriptions — and their assigned roles.',
@@ -37,7 +38,7 @@ window.PromptEnhancer = (function () {
     '- The final output must be one newly generated coherent image, not transferred pixels from one reference onto another.',
     '- Write an edit/composition brief, not an inventory of separate assets.',
     '- If the user prompt is empty, infer the default production move from the modules and references.',
-    '- Default production move: SUBJECT provides identity/objects, SCENE provides world/camera/environment, and STYLE provides rendering only.',
+    '- Default production move: SUBJECT provides identity/objects, SCENE provides world/camera/environment, STYLE provides rendering only, and REFERENCE only supports those choices.',
     '- Use positional image references ("the person in Image N", "the outfit in Image N", "the lighting from Image N") to anchor every concrete subject, garment, scene, and style source.',
     '- Only use Image N references for images explicitly listed in the user message.',
     '- If multiple subject slots are present, each is a separate independent subject — keep them distinct.',
@@ -68,6 +69,7 @@ window.PromptEnhancer = (function () {
     var subjectItems = imageContext.filter(function (i) { return i.section === 'subject'; });
     var stageItems = imageContext.filter(function (i) { return i.section === 'stage'; });
     var styleItems = imageContext.filter(function (i) { return i.section === 'style'; });
+    var referenceItems = imageContext.filter(function (i) { return i.section === 'reference'; });
 
     var plan = {
       goal: 'single_coherent_generated_image',
@@ -75,6 +77,10 @@ window.PromptEnhancer = (function () {
       defaultAction: 'synthesize_modules_into_one_scene',
       subjectSources: subjectItems.map(function (i) {
         var ref = (i.role || i.layerName) + ' Slot ' + (i.slot || '-');
+        return i.position ? ref + ' / Image ' + i.position : ref;
+      }),
+      referenceSources: referenceItems.map(function (i) {
+        var ref = i.role || i.layerName || 'REFERENCE';
         return i.position ? ref + ' / Image ' + i.position : ref;
       }),
       sceneSource: null,
@@ -117,6 +123,7 @@ window.PromptEnhancer = (function () {
       '  Default action: ' + plan.defaultAction
     ];
     if (plan.subjectSources.length) lines.push('  Subject source(s): ' + plan.subjectSources.join('; '));
+    if (plan.referenceSources.length) lines.push('  Loose reference(s): ' + plan.referenceSources.join('; '));
     if (plan.sceneSource) lines.push('  Scene/world source: ' + plan.sceneSource);
     if (plan.compositionSource) lines.push('  Composition/camera source: ' + plan.compositionSource);
     if (plan.styleSource) lines.push('  Style/rendering source: ' + plan.styleSource);
@@ -168,6 +175,7 @@ window.PromptEnhancer = (function () {
     var subjectItems = imageContext.filter(function (i) { return i.section === 'subject'; });
     var stageItems = imageContext.filter(function (i) { return i.section === 'stage'; });
     var styleItems = imageContext.filter(function (i) { return i.section === 'style'; });
+    var referenceItems = imageContext.filter(function (i) { return i.section === 'reference'; });
     var directorPlan = buildDirectorPlan(userIntent, imageContext);
 
     lines.push(renderDirectorPlan(directorPlan));
@@ -177,6 +185,7 @@ window.PromptEnhancer = (function () {
     renderSlotGroup(stageItems, 'SCENE MODULE (where and when):', lines, 'scene');
 
     renderSlotGroup(styleItems, 'STYLE MODULE (visual treatment only — colour grade, lens, rendering, mood — NOT a place or person):', lines, 'style');
+    renderSlotGroup(referenceItems, 'REFERENCE LAYER (loose support only; use according to its name, do not override modules):', lines, 'reference');
 
     if (userIntent && userIntent.trim()) {
       lines.push('User intent: ' + userIntent.trim());

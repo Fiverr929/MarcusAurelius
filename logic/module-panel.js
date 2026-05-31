@@ -9,11 +9,12 @@
   };
   var ACCENTS = ['#ea5823', '#5271ff', '#5a8a3a', '#7a4a8a', '#c79a2a', '#3a8a7a'];
   var MODES = ['SUBJECT', 'STYLE', 'COMP', 'ALL'];
-  var DEFAULT_FOLDERS = [
-    { id: 'SUBJECT', name: 'SUBJECT', accent: C.orange, locked: true },
-    { id: 'STAGE', name: 'STAGE', accent: C.orange, locked: true },
-    { id: 'STYLE', name: 'STYLE', accent: C.orange, locked: true }
+  var MODULE_PRESETS = [
+    { id: 'SUBJECT', name: 'SUBJECT', accent: C.orange },
+    { id: 'STAGE', name: 'STAGE', accent: C.orange },
+    { id: 'STYLE', name: 'STYLE', accent: C.orange }
   ];
+  var DEFAULT_FOLDERS = [];
   var uid = 10;
 
   window.ModuleState = window.ModuleState || { subject: null, stage: null, style: null, cafeModule: null };
@@ -26,13 +27,13 @@
     openFolders: new Set(['SUBJECT', 'STAGE', 'STYLE']),
     editingFolder: null,
     addingFolder: false,
-    sortBy: 'MOD',
     selectMode: false,
     selectedIds: new Set(),
     searchQuery: '',
     showUpload: false,
     menuFileId: null,
     moveFileId: null,
+    folderMenuId: null,
     inspectorMenuOpen: false,
     renamingFileId: null,
     dragOver: null,
@@ -86,9 +87,6 @@
   function sortFiles(list) {
     var out = list.slice();
     out.sort(function (a, b) {
-      if (state.sortBy === 'NAME') return (a.label || '').localeCompare(b.label || '');
-      if (state.sortBy === 'SIZE') return parseFloat(b.size) - parseFloat(a.size);
-      if (state.sortBy === 'STR') return (b.strength || 0) - (a.strength || 0);
       return String(b.modified || '').localeCompare(String(a.modified || ''));
     });
     return out;
@@ -102,9 +100,36 @@
     return state.folders.find(function (f) { return f.id === file.folder; }) || null;
   }
 
+  function presetById(id) {
+    return MODULE_PRESETS.find(function (p) { return p.id === id; }) || null;
+  }
+
+  function folderMode(id) {
+    if (id === 'STYLE') return 'STYLE';
+    if (id === 'STAGE') return 'COMP';
+    return 'SUBJECT';
+  }
+
+  function activePresetIds(exceptId) {
+    return state.folders.filter(function (f) { return f.id !== exceptId; }).map(function (f) { return f.id; });
+  }
+
+  function availablePresets(exceptId) {
+    var active = activePresetIds(exceptId);
+    return MODULE_PRESETS.filter(function (p) { return active.indexOf(p.id) === -1; });
+  }
+
   function updateFile(id, patch, shouldRender) {
     state.files = state.files.map(function (f) {
       return f.id === id ? Object.assign({}, f, patch) : f;
+    });
+    sync(shouldRender);
+  }
+
+  function updateFileByUuid(uuid, patch, shouldRender) {
+    if (!uuid) return;
+    state.files = state.files.map(function (f) {
+      return f.uuid === uuid ? Object.assign({}, f, patch) : f;
     });
     sync(shouldRender);
   }
@@ -134,7 +159,7 @@
   }
 
   function assignFile(id, folderId) {
-    updateFile(id, { folder: folderId, linked: true });
+    updateFile(id, { folder: folderId, linked: true, mode: folderMode(folderId) });
     state.openFolders.add(folderId);
   }
 
@@ -240,30 +265,53 @@
     var open = state.openFolders.has(folder.id);
     var list = sortFiles(state.files.filter(function (f) { return f.folder === folder.id; }));
     if (state.editingFolder === folder.id) return folderForm(folder);
+    var menuOpen = state.folderMenuId === folder.id;
     return '<div class="cmp-folder' + (state.dragOver === folder.id ? ' drag-over' : '') + '" data-folder="' + esc(folder.id) + '">' +
       '<div class="cmp-folder-head' + (open ? ' open' : '') + '" style="' + (open ? 'background:' + esc(folder.accent) : '') + '">' +
         '<button class="cmp-folder-toggle" data-folder-toggle="' + esc(folder.id) + '"><span class="cmp-chevron"></span><span class="cmp-folder-icon"></span>' +
         '<span class="cmp-folder-name">' + (state.dragOver === folder.id ? 'DROP INTO ' + esc(folder.name) : esc(folder.name)) + '</span>' +
-        (folder.locked && state.dragOver !== folder.id ? '<span class="cmp-sys">SYS</span>' : '') + '<span class="cmp-count">' + list.length + '</span></button>' +
-        '<button class="cmp-folder-dot" data-folder-edit="' + esc(folder.id) + '">&#8943;</button>' +
+        '<span class="cmp-count">' + list.length + '</span></button>' +
+        '<button class="cmp-folder-dot' + (menuOpen ? ' open' : '') + '" data-folder-menu="' + esc(folder.id) + '">&#8943;</button>' +
+        folderMenu(folder) +
       '</div>' +
       (open ? '<div class="cmp-folder-body">' + list.map(function (f) { return imageRow(f, false); }).join('') + '</div>' : '') +
+    '</div>';
+  }
+
+  function folderMenu(folder) {
+    if (state.folderMenuId !== folder.id) return '';
+    return '<div class="cmp-menu cmp-folder-menu"><div class="cmp-menu-title">' + esc(folder.name) + '</div>' +
+      '<button class="primary" data-folder-action="edit">EDIT</button>' +
+      '<button class="danger" data-folder-action="delete">DELETE</button>' +
     '</div>';
   }
 
   function folderForm(folder) {
     var isNew = !folder;
     var id = folder ? folder.id : '';
+    var options = availablePresets(isNew ? null : id);
+    var currentValue = folder ? folder.id : '';
+    var typed = isNew ? '' : currentValue;
+    var lockName = !isNew && options.length === 1 && options[0].id === id;
     return '<div class="cmp-folder-form" data-folder-form="' + esc(id) + '">' +
       '<div class="cmp-folder-form-head"><span>' + (isNew ? 'NEW MODULE' : 'MODULE SETTINGS') + '</span>' +
-        (!isNew && folder.locked ? '<b>SYS</b>' : '') + '</div>' +
-      '<div class="cmp-field-block"><label>FOLDER NAME</label>' +
-        '<input data-folder-name value="' + esc(folder ? folder.name : '') + '" placeholder="LIGHTING / CAMERA / MOOD..."></div>' +
+        '<b>PRESET</b></div>' +
+      '<div class="cmp-field-block"><label>MODULE</label>' +
+        '<div class="cmp-preset-input"><input data-folder-name value="' + esc(typed) + '" placeholder="SUBJECT / STAGE / STYLE" ' + (lockName ? 'readonly' : '') + '><button data-preset-toggle type="button">&#9662;</button></div>' +
+        presetList(options, typed) + '</div>' +
       '<div class="cmp-field-block"><label>ACCENT</label><div class="cmp-swatches">' + ACCENTS.map(function (a, i) {
         return '<button data-accent="' + esc(a) + '" class="' + ((!folder && i === 0) || (folder && folder.accent === a) ? 'active' : '') + '" style="background:' + esc(a) + '"></button>';
       }).join('') + '</div></div>' +
-      '<div class="cmp-form-actions' + (!isNew && !folder.locked ? ' has-danger' : '') + '"><button class="primary" data-folder-save>' + (isNew ? 'CREATE' : 'SAVE') + '</button><button data-folder-cancel>CANCEL</button>' +
-      (!isNew && !folder.locked ? '<button class="danger" data-folder-delete>DELETE</button>' : '') + '</div></div>';
+      '<div class="cmp-form-actions"><button class="primary" data-folder-save>' + (isNew ? 'CREATE' : 'SAVE') + '</button><button data-folder-cancel>CANCEL</button></div></div>';
+  }
+
+  function presetList(options, typed) {
+    var q = (typed || '').trim().toUpperCase();
+    var list = options.filter(function (p) { return !q || p.name.indexOf(q) !== -1; });
+    if (!list.length) return '<div class="cmp-preset-list"><span>NO MODULES</span></div>';
+    return '<div class="cmp-preset-list">' + list.map(function (p) {
+      return '<button data-preset-option="' + esc(p.id) + '"><i style="background:' + esc(p.accent) + '"></i><span>' + esc(p.name) + '</span></button>';
+    }).join('') + '</div>';
   }
 
   function uploadForm() {
@@ -272,9 +320,13 @@
   }
 
   function toolbar() {
-    return '<div class="cmp-sort"><span>SORT</span>' + ['MOD', 'NAME', 'SIZE', 'STR'].map(function (k) {
-      return '<button class="' + (state.sortBy === k ? 'active' : '') + '" data-sort="' + k + '">' + k + '</button>';
-    }).join('') + '<i></i><button class="' + (state.selectMode ? 'active' : '') + '" data-select-toggle>' + (state.selectMode ? 'DONE' : 'SELECT') + '</button></div>' +
+    return '<div class="cmp-actions">' +
+      '<div class="cmp-actions-left">' +
+        '<button class="cmp-icon-btn" data-upload-toggle title="Load image"><span class="cmp-plus-icon"></span></button>' +
+        '<button class="cmp-icon-btn" data-new-folder title="New module"><span class="cmp-folder-icon"></span></button>' +
+      '</div>' +
+      '<button class="cmp-select-btn' + (state.selectMode ? ' active' : '') + '" data-select-toggle>' + (state.selectMode ? 'DONE' : 'SELECT') + '</button>' +
+    '</div>' +
     (state.selectMode && state.selectedIds.size ? '<div class="cmp-bulk"><span>' + state.selectedIds.size + ' SELECTED</span><div><button data-bulk="link">LINK</button><button data-bulk="unlink">UNLINK</button><button data-bulk="hide">HIDE</button><button data-bulk="delete">DELETE</button></div></div>' : '');
   }
 
@@ -287,12 +339,12 @@
       return (f.label || '').toLowerCase().indexOf(q) >= 0 || (folder && folder.name.toLowerCase().indexOf(q) >= 0);
     });
     return '<div class="cmp-panel">' +
-      '<div class="cmp-header"><span>MODULE</span><b></b><button data-upload-toggle>+</button></div>' +
+      '<div class="cmp-header"><span>MODULE</span><button class="cmp-header-collapse" data-panel-collapse-toggle title="Collapse module"></button></div>' +
       '<div class="cmp-search"><span>&#8981;</span><input value="' + esc(state.searchQuery) + '" placeholder="SEARCH" data-search>' + (state.searchQuery ? '<button data-search-clear>&times;</button>' : '') + '</div>' +
       (state.showUpload ? uploadForm() : '') + toolbar() +
       '<div class="cmp-scroll">' +
       (q ? '<div class="cmp-results-head"><span>RESULTS</span><b>' + results.length + ' OF ' + assigned.length + '</b></div>' + results.map(function (f) { return imageRow(f, true); }).join('')
-        : rootFiles.map(function (f) { return imageRow(f, false); }).join('') + state.folders.map(folderCard).join('') + (state.addingFolder ? folderForm(null) : '<button class="cmp-new-module" data-new-folder>+ NEW MODULE</button>')) +
+        : rootFiles.map(function (f) { return imageRow(f, false); }).join('') + state.folders.map(folderCard).join('') + (state.addingFolder ? folderForm(null) : '')) +
       '</div><div class="cmp-status"><span>' + state.folders.length + ' MOD · ' + assigned.length + ' FILES</span><span>' + rootFiles.length + ' LOOSE</span></div></div>';
   }
 
@@ -362,6 +414,7 @@
     state.showUpload = true;
     state.menuFileId = null;
     state.moveFileId = null;
+    state.folderMenuId = null;
     state.inspectorMenuOpen = false;
     render();
   }
@@ -395,8 +448,6 @@
     }
     if (e.target.closest('[data-search-clear]')) { state.searchQuery = ''; render(); return; }
     if (e.target.closest('[data-select-toggle]')) { state.selectMode = !state.selectMode; state.selectedIds.clear(); render(); return; }
-    var sort = e.target.closest('[data-sort]');
-    if (sort) { state.sortBy = sort.dataset.sort; render(); return; }
     var dot = e.target.closest('[data-dot]');
     if (dot) {
       var dotId = +dot.dataset.dot;
@@ -436,12 +487,41 @@
     if (e.target.closest('[data-menu-close]')) { state.menuFileId = null; state.moveFileId = null; render(); return; }
     var ft = e.target.closest('[data-folder-toggle]');
     if (ft) { state.openFolders.has(ft.dataset.folderToggle) ? state.openFolders.delete(ft.dataset.folderToggle) : state.openFolders.add(ft.dataset.folderToggle); sync(); return; }
-    var fe = e.target.closest('[data-folder-edit]');
-    if (fe) { state.editingFolder = fe.dataset.folderEdit; render(); return; }
-    if (e.target.closest('[data-new-folder]')) { state.addingFolder = true; render(); return; }
+    if (e.target.closest('[data-new-folder]')) { state.addingFolder = true; state.folderMenuId = null; render(); return; }
+    var fm = e.target.closest('[data-folder-menu]');
+    if (fm) { state.folderMenuId = state.folderMenuId === fm.dataset.folderMenu ? null : fm.dataset.folderMenu; render(); return; }
+    var folderAction = e.target.closest('[data-folder-action]');
+    if (folderAction) {
+      var folderWrap = folderAction.closest('[data-folder]');
+      var folderId = folderWrap ? folderWrap.dataset.folder : null;
+      if (folderAction.dataset.folderAction === 'edit') state.editingFolder = folderId;
+      if (folderAction.dataset.folderAction === 'delete') deleteFolder(folderId);
+      state.folderMenuId = null;
+      render();
+      return;
+    }
+    var preset = e.target.closest('[data-preset-option]');
+    if (preset) {
+      var input = preset.closest('[data-folder-form]').querySelector('[data-folder-name]');
+      input.value = preset.dataset.presetOption;
+      return;
+    }
+    if (e.target.closest('[data-preset-toggle]')) {
+      var field = e.target.closest('[data-folder-form]').querySelector('[data-folder-name]');
+      if (field) {
+        if (!field.readOnly) {
+          field.value = '';
+          var toggleForm = field.closest('[data-folder-form]');
+          var toggleFolder = toggleForm && toggleForm.dataset.folderForm ? state.folders.find(function (f) { return f.id === toggleForm.dataset.folderForm; }) : null;
+          var toggleList = toggleForm.querySelector('.cmp-preset-list');
+          if (toggleList) toggleList.outerHTML = presetList(availablePresets(toggleFolder ? toggleFolder.id : null), '');
+        }
+        field.focus();
+      }
+      return;
+    }
     if (e.target.closest('[data-folder-cancel]')) { state.addingFolder = false; state.editingFolder = null; render(); return; }
     if (e.target.closest('[data-folder-save]')) { saveFolder(e.target.closest('[data-folder-form]')); return; }
-    if (e.target.closest('[data-folder-delete]')) { deleteFolder(e.target.closest('[data-folder-form]').dataset.folderForm); return; }
     var bulk = e.target.closest('[data-bulk]');
     if (bulk) { runBulk(bulk.dataset.bulk); return; }
     if (e.target.closest('[data-back]')) { state.view = 'root'; state.activeFileId = null; state.inspectorMenuOpen = false; render(); return; }
@@ -469,6 +549,10 @@
       state.moveFileId = null;
       render();
     }
+    if (state.folderMenuId && !e.target.closest('.cmp-menu') && !e.target.closest('[data-folder-menu]')) {
+      state.folderMenuId = null;
+      render();
+    }
     if (state.inspectorMenuOpen && !e.target.closest('.cmp-inspector-menu-wrap')) {
       state.inspectorMenuOpen = false;
       render();
@@ -478,6 +562,14 @@
   panel.addEventListener('input', function (e) {
     if (e.target.matches('[data-search]')) { state.searchQuery = e.target.value; render(); }
     if (e.target.matches('[data-detail-label]')) updateFile(state.activeFileId, { label: e.target.value.toUpperCase() || 'UNLABELED' }, false);
+    if (e.target.matches('[data-folder-name]')) {
+      var value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+      e.target.value = value;
+      var form = e.target.closest('[data-folder-form]');
+      var folder = form && form.dataset.folderForm ? state.folders.find(function (f) { return f.id === form.dataset.folderForm; }) : null;
+      var list = form.querySelector('.cmp-preset-list');
+      if (list) list.outerHTML = presetList(availablePresets(folder ? folder.id : null), value);
+    }
   });
 
   panel.addEventListener('keydown', function (e) {
@@ -531,6 +623,10 @@
       state.moveFileId = null;
       render();
     }
+    if (!e.target.closest('.module-panel') && state.folderMenuId) {
+      state.folderMenuId = null;
+      render();
+    }
   });
 
   fileInput.addEventListener('change', function () {
@@ -562,24 +658,41 @@
     var name = (form.querySelector('[data-folder-name]').value || '').trim().toUpperCase();
     var active = form.querySelector('.cmp-swatches .active');
     var accent = active ? active.dataset.accent : C.orange;
-    if (!name) return;
     var id = form.dataset.folderForm;
+    var current = id ? state.folders.find(function (f) { return f.id === id; }) : null;
+    var preset = presetById(name);
+    var allowed = preset && availablePresets(current ? current.id : null).some(function (p) { return p.id === preset.id; });
+    if (!allowed) return;
     if (id) {
-      state.folders = state.folders.map(function (f) { return f.id === id ? Object.assign({}, f, { name: name, accent: accent }) : f; });
+      state.folders = state.folders.map(function (f) {
+        return f.id === id ? { id: preset.id, name: preset.name, accent: accent, locked: false } : f;
+      });
+      if (preset.id !== id) {
+        state.files = state.files.map(function (f) {
+          return f.folder === id ? Object.assign({}, f, { folder: preset.id, mode: folderMode(preset.id), linked: true }) : f;
+        });
+        if (state.openFolders.has(id)) {
+          state.openFolders.delete(id);
+          state.openFolders.add(preset.id);
+        }
+      }
       state.editingFolder = null;
     } else {
-      var newId = name.replace(/\s+/g, '_') + '_' + Date.now().toString().slice(-4);
-      state.folders.push({ id: newId, name: name, accent: accent, locked: false });
-      state.openFolders.add(newId);
+      state.folders.push({ id: preset.id, name: preset.name, accent: accent, locked: false });
+      state.openFolders.add(preset.id);
       state.addingFolder = false;
     }
     sync();
   }
 
   function deleteFolder(id) {
-    state.folders = state.folders.filter(function (f) { return f.id !== id || f.locked; });
-    state.files = state.files.filter(function (f) { return f.folder !== id; });
+    state.folders = state.folders.filter(function (f) { return f.id !== id; });
+    state.files = state.files.map(function (f) {
+      return f.folder === id ? Object.assign({}, f, { folder: null, linked: false }) : f;
+    });
+    state.openFolders.delete(id);
     state.editingFolder = null;
+    state.folderMenuId = null;
     sync();
   }
 
@@ -630,6 +743,11 @@
   }
 
   panel.addEventListener('click', function (e) {
+    if (e.target.closest('[data-panel-collapse-toggle]')) {
+      var wrap = panel.closest('.mod-panel-wrap');
+      if (wrap) wrap.classList.toggle('collapsed');
+      return;
+    }
     var swatch = e.target.closest('[data-accent]');
     if (!swatch) return;
     swatch.parentElement.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
@@ -685,13 +803,23 @@
     var saved = window.ModuleState && window.ModuleState.cafeModule;
     if (saved && saved.files && saved.folders) {
       state.files = saved.files;
-      state.folders = saved.folders;
-      state.openFolders = new Set(saved.openFolders || ['SUBJECT', 'STAGE', 'STYLE']);
+      state.folders = (saved.folders || []).filter(function (folder) { return presetById(folder.id); }).map(function (folder) {
+        var preset = presetById(folder.id);
+        return { id: preset.id, name: preset.name, accent: folder.accent || preset.accent, locked: false };
+      });
+      state.files = state.files.map(function (file) {
+        return file.folder && !presetById(file.folder) ? Object.assign({}, file, { folder: null, linked: false }) : file;
+      });
+      state.openFolders = new Set((saved.openFolders || []).filter(function (id) { return presetById(id); }));
       uid = state.files.reduce(function (max, f) { return Math.max(max, Number(f.id) || 0); }, 10) + 1;
     } else {
       state.files = importLegacyModuleState();
-      state.folders = DEFAULT_FOLDERS.slice();
-      state.openFolders = new Set(['SUBJECT', 'STAGE', 'STYLE']);
+      var used = {};
+      state.files.forEach(function (file) { if (presetById(file.folder)) used[file.folder] = true; });
+      state.folders = MODULE_PRESETS.filter(function (p) { return used[p.id]; }).map(function (p) {
+        return { id: p.id, name: p.name, accent: p.accent, locked: false };
+      });
+      state.openFolders = new Set(Object.keys(used));
       uid = state.files.reduce(function (max, f) { return Math.max(max, Number(f.id) || 0); }, 10) + 1;
     }
     sync();
@@ -700,7 +828,12 @@
   window.ModulePanel = {
     getState: function () { return state; },
     render: render,
-    openUpload: openUpload
+    openUpload: openUpload,
+    setVisionDesc: function (uuid, desc) { updateFileByUuid(uuid, { visionDesc: desc || '' }, false); },
+    clearVisionDescriptions: function () {
+      state.files = state.files.map(function (f) { return Object.assign({}, f, { visionDesc: '' }); });
+      sync(false);
+    }
   };
 
   sync();

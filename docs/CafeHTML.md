@@ -37,11 +37,11 @@ Docs: `docs/` folder
                                  reads clr.dataset.visionDesc from DOM
 2. DescriptionRegistry         — On Load only: catch-up scan finds missing descriptions
    .collectMissing()           — ensureAll() scans via VisionScan when scanTiming === 'load'
-   .ensureAll()                — results written to DOM + refState, then PromptBuilder re-collects
+   .ensureAll()                — results written to module DOM, then PromptBuilder re-collects
                                  On Generate skips catch-up scan and leaves missing descriptions inline
-3. PromptEnhancer.enhance()    — builds text message with descriptions + sends only undescribed images inline
+3. PromptEnhancer.enhance()    — builds text message from modules + loose references, sends only undescribed images inline
                                  calls Gemini 2.5 Flash → returns { prompt, manifest }
-4. googleGenerate()            — sends enhanced prompt + ALL images (refs + module, positioned first then described) → returns predictions
+4. googleGenerate()            — sends enhanced prompt + all active module/reference images → returns predictions
                                  N variations = N parallel calls (allSettled — successes survive a failed call)
 5. Gallery.resolveLoading()    — displays result, saves to IndexedDB via Workspace hook
 6. Registry.clear()            — if Keep Descriptions OFF, clears all stored descriptions
@@ -61,21 +61,20 @@ All caching is handled by **DescriptionRegistry** (`registry.js`) — VisionScan
 
 **On Load** — VisionScan runs immediately when an image is uploaded to a module slot. Description is stored via `DescriptionRegistry.ensure()` which populates `_store` (URL→description map). Result also written to `clr.dataset.visionDesc` in the DOM for PromptBuilder to read.
 
-**On Generate** — No scan on upload and no catch-up scan before enhancement. Missing descriptions stay `null`; `PromptEnhancer` sends those module/ref images inline to Gemini so it reads the current pixels. This mode must not reuse enhancer output when inline images are present.
+**On Generate** — No scan on upload and no catch-up scan before enhancement. Missing descriptions stay `null`; `PromptEnhancer` sends those module/reference images inline to Gemini so it reads the current pixels. This mode must not reuse enhancer output when inline images are present.
 
 ### How Descriptions Flow Into the Enhancer
 
 - `collectImageContext()` reads `child.visionDesc` → stores as `desc` on each image item
 - Items with `desc` → rendered as text in the message (`[Identity anchor] tall woman, black hair...`)
 - Items without `desc` → rendered as `[Identity anchor — Image N]` and sent inline
-- Ref images (R1–R5) get descriptions from Registry when available → sent as text; fall back to inline when null
 - The final Gemini call receives: text message + only the undescribed inline images
 
 ### Keep Descriptions Setting
 
 **Keep ON** — Description text is cached for the session.
 - Registry `_store` persists across generates → described images can reuse text descriptions
-- Enhancer output is cached only when there are **zero inline images**. If module/ref images are sent inline, the enhancer cache is disabled so Gemini re-reads the current image pixels.
+- Enhancer output is cached only when there are **zero inline images**. If module/reference images are sent inline, the enhancer cache is disabled so Gemini re-reads the current image pixels.
 
 **Keep OFF** — Always fresh.
 - Registry descriptions are used for the current generation
@@ -124,12 +123,16 @@ Primary state is `window.ModuleState.cafeModule`:
 }
 ```
 
-- **Locked system folders** - `SUBJECT`, `STAGE`, `STYLE`; always present.
-- **Custom modules** - user-created folders with name + accent color.
-- **Loose images** - root-level files with `folder: null`; shown above folders and counted as `LOOSE`.
+- **Optional preset modules** - `SUBJECT`, `STAGE`, `STYLE`; added on demand through `+ NEW MODULE`.
+- **No custom modules in this iteration** - the module form only accepts inactive presets.
+- **Loose images** - root-level files with `folder: null`; shown above folders, counted as `LOOSE`, and treated as the neutral Reference layer during generation.
 - **Image row menu** - `STUDIO`, `RENAME`, `MOVE TO...`, `DUPLICATE`, `REMOVE`.
 - **Image Inspector** - opens on row click; controls label, reference mode, strength, linked/visible state, info panel, and top-right `...` actions (`STUDIO`, `REPLACE`, `RENAME`, `REMOVE`).
-- **Generation inclusion** - only `linked && eye && url` files are sent into generation.
+- **Module action menu** - module header `...` opens `EDIT` and `DELETE`.
+- **Module edit form** - reuses the old add/rename form as a preset selector plus accent swatches. Existing modules can swap to another inactive preset; if all presets are active, only color can change.
+- **Module delete** - removes the module and returns its images to loose Reference layer; images are not deleted.
+- **Generation inclusion** - assigned module files require `linked && eye && url`; loose Reference-layer files require `eye && url`.
+- **Image names** - assigned file labels become module layer roles; loose file labels become Reference-layer roles. These names are prompt semantics, not just UI labels.
 
 ### Legacy Generation Bridge
 
@@ -175,9 +178,16 @@ Each child slot (`.clr`) has a `T` badge:
 
 ---
 
-## Global References
+## Prompt Bar Upload Shortcut
 
-`refState = { FRAME: [], SCENE: [] }` — up to 5 refs per mode, each entry is `{url, desc}` (legacy strings supported via typeof fallback). Uploaded via prompt bar `+` button. Labelled R1–R5 in the manifest, sent first in the image array.
+The prompt-bar `+` button is a module intake shortcut only.
+
+- Button id: `#moduleQuickUpload`
+- Action: calls `window.ModulePanel.openUpload()`
+- Result: opens existing module upload form; uploaded images go into module panel flow (loose/module files)
+- No separate global reference lane, no R1-R5 manifest path
+
+Loose uploads now enter `PromptBuilder.collect().refs` as the Reference layer. They are not Subject, Stage, or Style, so the enhancer treats them as supporting context only. Moving an image into a folder promotes its name into that module's role instead.
 
 ---
 
@@ -252,11 +262,11 @@ window.DB               — IndexedDB abstraction (storage.js)
 window.CafeDebug        — generation run logger (debug-logger.js)
 window.Gallery          — gallery UI (gallery.js)
 window.ModuleState      — live module state (module-panel.js)
-window.ModulePanel      — module panel facade { getState, render } (module-panel.js)
+window.ModulePanel      — module panel facade { getState, render, openUpload, setVisionDesc, clearVisionDescriptions } (module-panel.js)
 window.Studio           — studio overlay (studio.js)
 window.StudioModule     — studio reference panel (studio-module.js)
 window.StudioModuleState — live studio module state (studio-module.js)
-window.refState         — global reference images { FRAME: [], SCENE: [] }
+window.refState         — empty compatibility shim { FRAME: [], SCENE: [] }
 ```
 
 No `CafeEntities` registry — direct window globals only.
@@ -530,7 +540,7 @@ Orange = active, expanded. `.collapsed` rotates arrow −90°. Collapsing hides 
 | 2026-05-27 | `DIMS`, `dimsFromRatio`, and `var dims` removed from `api.js` | Dead code — pixel dimensions were never used in the API call. Generation uses `aspectRatio` and `imageSize` strings, not explicit width/height values. |
 | 2026-05-27 | Blocked variations show a BLOCKED cell | `promptFeedback.blockReason` (prompt-level) and `candidate.finishReason !== 'STOP'` (all non-success finish reasons) route to `onVariationBlocked(idx)` → `Gallery.blockLoading()`. Gray cell, gray BLOCKED label, click to dismiss. Not retryable — same prompt gets same result. |
 
-| 2026-05-28 | Module Panel S-C redesign | Visible module UI is now the image-reference manager with loose images, locked/custom folders, per-image mode/strength/state, Image Inspector, row/inspector `...` action menus, and `cafeModule` persistence. Legacy `subject/stage/style` snapshots are generated as a PromptBuilder compatibility bridge. |
+| 2026-05-28 | Module Panel S-C redesign | Visible module UI is now the image-reference manager with loose images, preset folders, per-image mode/strength/state, Image Inspector, row/inspector `...` action menus, and `cafeModule` persistence. Legacy `subject/stage/style` snapshots are generated as a PromptBuilder compatibility bridge. |
 
 ---
 

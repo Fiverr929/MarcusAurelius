@@ -19,6 +19,9 @@ window.DescriptionRegistry = (function () {
     document.querySelectorAll('.mod-layers .clr').forEach(function (clr) {
       delete clr.dataset.visionDesc;
     });
+    if (window.ModulePanel && window.ModulePanel.clearVisionDescriptions) {
+      window.ModulePanel.clearVisionDescriptions();
+    }
     console.log('[Registry] Cleared all descriptions');
   }
 
@@ -96,6 +99,18 @@ window.DescriptionRegistry = (function () {
         domTarget: clr
       });
     });
+
+    if (window.ModulePanel && window.ModulePanel.getState) {
+      var state = window.ModulePanel.getState();
+      (state.files || []).forEach(function (file) {
+        if (!file || file.folder != null || file.eye === false || !file.url || file.visionDesc) return;
+        missing.push({
+          url: file.url,
+          context: { type: 'ref', layerName: file.label || 'REFERENCE', section: 'reference', uuid: file.uuid || null },
+          stateTarget: { uuid: file.uuid || null }
+        });
+      });
+    }
 
     return missing;
   }

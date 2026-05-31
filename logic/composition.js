@@ -4,7 +4,7 @@
 // reference entries that every downstream stage (enhancer, api) consumes.
 //
 // Entry shape:
-//   { kind:'image'|'text', source:'module'|'ref',
+//   { kind:'image'|'text', source:'module'|'reference',
 //     role, slot, section, layerName,
 //     desc, imgUrl, uuid,          // images
 //     text,                        // text entries
@@ -19,6 +19,24 @@ window.Composition = (function () {
   function build(payload) {
     var moduleItems = [];
     var position = 1;
+
+    function fromReferences(refs) {
+      (refs || []).forEach(function (ref) {
+        if (!ref || !ref.imgUrl) return;
+        moduleItems.push({
+          kind: 'image',
+          source: 'reference',
+          role: ref.role || 'REFERENCE',
+          slot: null,
+          section: 'reference',
+          layerName: ref.role || 'REFERENCE',
+          desc: ref.visionDesc || null,
+          imgUrl: ref.imgUrl,
+          uuid: ref.uuid || null,
+          strength: ref.strength == null ? 50 : ref.strength
+        });
+      });
+    }
 
     function fromSection(section) {
       if (!section || !section.slots) return;
@@ -65,6 +83,7 @@ window.Composition = (function () {
     fromSection(payload.subject);
     fromSection(payload.stage);
     fromSection(payload.style);
+    fromReferences(payload.refs);
 
     // Keep image positions stable across runs.
     // Only non-described images get a position — they are the ones sent inline.
